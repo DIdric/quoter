@@ -109,7 +109,42 @@ export default function MaterialsPage() {
       .filter(Boolean);
 
     if (newMaterials.length > 0) {
-      await supabase.from("materials").insert(newMaterials);
+      // Check which materials already exist (by name) to update their prices
+      const { data: existing } = await supabase
+        .from("materials")
+        .select("id, name")
+        .eq("user_id", user.id);
+
+      const existingMap = new Map(
+        (existing ?? []).map((m) => [m.name.toLowerCase(), m.id])
+      );
+
+      const toUpdate: { id: string; unit: string; cost_price: number }[] = [];
+      const toInsert: typeof newMaterials = [];
+
+      for (const mat of newMaterials) {
+        if (!mat) continue;
+        const existingId = existingMap.get(mat.name.toLowerCase());
+        if (existingId) {
+          toUpdate.push({ id: existingId, unit: mat.unit, cost_price: mat.cost_price });
+        } else {
+          toInsert.push(mat);
+        }
+      }
+
+      // Update existing materials
+      for (const item of toUpdate) {
+        await supabase
+          .from("materials")
+          .update({ unit: item.unit, cost_price: item.cost_price })
+          .eq("id", item.id);
+      }
+
+      // Insert new materials
+      if (toInsert.length > 0) {
+        await supabase.from("materials").insert(toInsert);
+      }
+
       loadMaterials();
     }
 
