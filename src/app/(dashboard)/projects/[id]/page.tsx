@@ -13,6 +13,7 @@ import {
   MapPin,
   Sparkles,
 } from "lucide-react";
+import { QuoteActions } from "./actions";
 
 function formatCurrency(amount: number) {
   return new Intl.NumberFormat("nl-NL", {
@@ -298,6 +299,9 @@ export default async function QuoteDetailPage({
               <strong>Opmerkingen:</strong> {result.notes}
             </div>
           )}
+
+          {/* Actions */}
+          <QuoteActions quoteId={quote.id} status={quote.status} />
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center text-slate-500">
