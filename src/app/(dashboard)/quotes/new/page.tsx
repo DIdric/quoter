@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -193,10 +193,27 @@ function QuoteDisplay({ quote }: { quote: QuoteResult }) {
   );
 }
 
-export default function NewQuotePage() {
+export default function NewQuotePageWrapper() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-3xl mx-auto flex items-center justify-center py-20">
+          <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+          <span className="ml-2 text-slate-600">Laden...</span>
+        </div>
+      }
+    >
+      <NewQuotePage />
+    </Suspense>
+  );
+}
+
+function NewQuotePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadingProject, setLoadingProject] = useState(false);
   const [result, setResult] = useState<QuoteResult | null>(null);
+  const [existingProjectId, setExistingProjectId] = useState<string | null>(null);
   const [form, setForm] = useState({
     client_name: "",
     client_email: "",
@@ -207,7 +224,44 @@ export default function NewQuotePage() {
     ai_input: "",
   });
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  useEffect(() => {
+    const projectId = searchParams.get("project");
+    if (!projectId) return;
+
+    setLoadingProject(true);
+    supabase
+      .from("quotes")
+      .select("*")
+      .eq("id", projectId)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          setExistingProjectId(data.id);
+          const savedForm = data.json_data?.form;
+          if (savedForm) {
+            setForm({
+              client_name: savedForm.client_name || "",
+              client_email: savedForm.client_email || "",
+              client_phone: savedForm.client_phone || "",
+              project_title: savedForm.project_title || "",
+              project_description: savedForm.project_description || "",
+              project_location: savedForm.project_location || "",
+              ai_input: savedForm.ai_input || "",
+            });
+          } else {
+            setForm((prev) => ({
+              ...prev,
+              client_name: data.client_name || "",
+            }));
+          }
+          setCurrentStep(2);
+        }
+        setLoadingProject(false);
+      });
+  }, [searchParams, supabase]);
 
   function updateForm(field: string, value: string) {
     setForm({ ...form, [field]: value });
@@ -237,14 +291,24 @@ export default function NewQuotePage() {
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase.from("quotes").insert({
-      user_id: user.id,
-      client_name: form.client_name,
-      status: "draft",
-      json_data: { form, result },
-    });
-
-    router.push("/projects");
+    if (existingProjectId) {
+      await supabase
+        .from("quotes")
+        .update({
+          client_name: form.client_name,
+          json_data: { form, result },
+        })
+        .eq("id", existingProjectId);
+      router.push(`/projects/${existingProjectId}`);
+    } else {
+      await supabase.from("quotes").insert({
+        user_id: user.id,
+        client_name: form.client_name,
+        status: "draft",
+        json_data: { form, result },
+      });
+      router.push("/projects");
+    }
   }
 
   async function handleSaveDraft() {
@@ -253,14 +317,24 @@ export default function NewQuotePage() {
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase.from("quotes").insert({
-      user_id: user.id,
-      client_name: form.client_name,
-      status: "draft",
-      json_data: { form, result: null },
-    });
-
-    router.push("/projects");
+    if (existingProjectId) {
+      await supabase
+        .from("quotes")
+        .update({
+          client_name: form.client_name,
+          json_data: { form, result: null },
+        })
+        .eq("id", existingProjectId);
+      router.push(`/projects/${existingProjectId}`);
+    } else {
+      await supabase.from("quotes").insert({
+        user_id: user.id,
+        client_name: form.client_name,
+        status: "draft",
+        json_data: { form, result: null },
+      });
+      router.push("/projects");
+    }
   }
 
   function handleRegenerate() {
@@ -270,17 +344,34 @@ export default function NewQuotePage() {
   const hasError = result && ("error" in result && result.error);
   const hasQuote = result && result.lines && !hasError;
 
+  if (loadingProject) {
+    return (
+      <div className="max-w-3xl mx-auto flex items-center justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+        <span className="ml-2 text-slate-600">Project laden...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-8">
         <button
-          onClick={() => router.push("/projects")}
+          onClick={() =>
+            router.push(
+              existingProjectId
+                ? `/projects/${existingProjectId}`
+                : "/projects"
+            )
+          }
           className="p-2 rounded-lg hover:bg-slate-200 text-slate-600 transition"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-bold text-slate-800">Nieuwe Offerte</h1>
+        <h1 className="text-2xl font-bold text-slate-800">
+          {existingProjectId ? "Offerte Genereren" : "Nieuwe Offerte"}
+        </h1>
       </div>
 
       {/* Step Indicator */}

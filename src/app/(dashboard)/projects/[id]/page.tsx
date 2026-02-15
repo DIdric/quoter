@@ -11,6 +11,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  Sparkles,
 } from "lucide-react";
 
 function formatCurrency(amount: number) {
@@ -304,10 +305,16 @@ export default async function QuoteDetailPage({
           <p className="font-medium text-slate-700">
             Nog geen offerte gegenereerd
           </p>
-          <p className="text-sm mt-1">
-            Dit project is opgeslagen zonder AI-offerte. Maak een nieuwe offerte
-            aan om een gedetailleerde berekening te genereren.
+          <p className="text-sm mt-1 mb-4">
+            Dit project is opgeslagen zonder AI-offerte.
           </p>
+          <Link
+            href={`/quotes/new?project=${quote.id}`}
+            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-medium px-5 py-2.5 rounded-lg transition"
+          >
+            <Sparkles className="w-4 h-4" />
+            Offerte genereren
+          </Link>
         </div>
       )}
     </div>
