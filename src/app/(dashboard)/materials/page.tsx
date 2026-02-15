@@ -87,14 +87,22 @@ export default function MaterialsPage() {
     // Skip header row
     const dataLines = lines.slice(1);
 
+    // Detect delimiter: semicolon (Dutch Excel) or comma
+    const delimiter = dataLines[0]?.includes(";") ? ";" : ",";
+
     const newMaterials = dataLines
       .map((line) => {
-        const [name, unit, cost_price] = line.split(",").map((s) => s.trim());
-        if (!name || !cost_price) return null;
+        const parts = line.split(delimiter).map((s) => s.trim());
+        const [name, unit, ...priceParts] = parts;
+        // Support both comma (12,50) and dot (12.50) as decimal separator
+        const priceStr = priceParts.join("").replace(",", ".");
+        if (!name || !priceStr) return null;
+        const price = parseFloat(priceStr);
+        if (isNaN(price)) return null;
         return {
           name,
           unit: unit || "stuk",
-          cost_price: parseFloat(cost_price),
+          cost_price: price,
           user_id: user.id,
         };
       })
@@ -151,11 +159,11 @@ export default function MaterialsPage() {
 
       {/* CSV Format Info */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-700">
-        <strong>CSV formaat:</strong> naam, eenheid, kostprijs (bijv:{" "}
+        <strong>CSV formaat:</strong> naam;eenheid;kostprijs (bijv:{" "}
         <code className="bg-blue-100 px-1 rounded">
-          Schroeven M8,doos,12.50
+          Schroeven M8;doos;12,50
         </code>
-        )
+        ) — Komma-gescheiden bestanden werken ook.
       </div>
 
       {/* Add/Edit Form */}
@@ -264,8 +272,7 @@ export default function MaterialsPage() {
                   </td>
                   <td className="px-6 py-4 text-slate-600">{material.unit}</td>
                   <td className="px-6 py-4 text-right text-slate-800">
-                    &euro;{" "}
-                    {Number(material.cost_price).toFixed(2)}
+                    {new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(material.cost_price))}
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
