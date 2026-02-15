@@ -4,9 +4,6 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Clock,
-  Package,
-  Wrench,
-  Euro,
   User,
   Mail,
   Phone,
@@ -14,13 +11,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { QuoteActions } from "./actions";
-
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("nl-NL", {
-    style: "currency",
-    currency: "EUR",
-  }).format(amount);
-}
+import { EditableQuoteLines } from "./editable-lines";
 
 interface QuoteLine {
   category: string;
@@ -76,6 +67,16 @@ export default async function QuoteDetailPage({
   if (!quote) {
     notFound();
   }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("margin_percentage").eq("id", user.id).single()
+    : { data: null };
+
+  const marginPercentage = profile?.margin_percentage ?? 15;
 
   const jsonData = quote.json_data as QuoteJsonData | null;
   const form = jsonData?.form;
@@ -184,114 +185,13 @@ export default async function QuoteDetailPage({
             )}
           </div>
 
-          {/* Lines grouped by category */}
-          {[...new Set(result.lines.map((l) => l.category))].map(
-            (category) => {
-              const categoryLines = result.lines.filter(
-                (l) => l.category === category
-              );
-              return (
-                <div key={category}>
-                  <h3 className="font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                    {categoryLines[0]?.type === "materiaal" ? (
-                      <Package className="w-4 h-4 text-blue-500" />
-                    ) : (
-                      <Wrench className="w-4 h-4 text-orange-500" />
-                    )}
-                    {category}
-                  </h3>
-                  <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-slate-50">
-                        <tr>
-                          <th className="text-left px-3 py-2 text-slate-600 font-medium">
-                            Omschrijving
-                          </th>
-                          <th className="text-center px-3 py-2 text-slate-600 font-medium w-16">
-                            Type
-                          </th>
-                          <th className="text-right px-3 py-2 text-slate-600 font-medium w-20">
-                            Aantal
-                          </th>
-                          <th className="text-right px-3 py-2 text-slate-600 font-medium w-24">
-                            Prijs
-                          </th>
-                          <th className="text-right px-3 py-2 text-slate-600 font-medium w-24">
-                            Totaal
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {categoryLines.map((line, i) => (
-                          <tr key={i} className="hover:bg-slate-50">
-                            <td className="px-3 py-2 text-slate-800">
-                              {line.description}
-                            </td>
-                            <td className="px-3 py-2 text-center">
-                              <span
-                                className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                                  line.type === "materiaal"
-                                    ? "bg-blue-100 text-blue-700"
-                                    : "bg-orange-100 text-orange-700"
-                                }`}
-                              >
-                                {line.type === "materiaal" ? "Mat" : "Arbeid"}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 text-right text-slate-600">
-                              {line.quantity} {line.unit}
-                            </td>
-                            <td className="px-3 py-2 text-right text-slate-600">
-                              {formatCurrency(line.unit_price)}
-                            </td>
-                            <td className="px-3 py-2 text-right font-medium text-slate-800">
-                              {formatCurrency(line.total)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              );
-            }
-          )}
-
-          {/* Totals */}
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2">
-            <div className="flex justify-between text-sm text-slate-600">
-              <span className="flex items-center gap-1.5">
-                <Package className="w-4 h-4 text-blue-500" /> Materialen
-              </span>
-              <span>{formatCurrency(result.subtotal_materials)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-slate-600">
-              <span className="flex items-center gap-1.5">
-                <Wrench className="w-4 h-4 text-orange-500" /> Arbeid
-              </span>
-              <span>{formatCurrency(result.subtotal_labor)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-slate-600">
-              <span>Winstmarge</span>
-              <span>{formatCurrency(result.margin_amount)}</span>
-            </div>
-            <div className="border-t border-slate-300 pt-2 flex justify-between text-sm font-medium text-slate-700">
-              <span>Totaal excl. BTW</span>
-              <span>{formatCurrency(result.total_excl_btw)}</span>
-            </div>
-            <div className="flex justify-between text-sm text-slate-600">
-              <span>BTW (21%)</span>
-              <span>{formatCurrency(result.btw_amount)}</span>
-            </div>
-            <div className="border-t border-slate-300 pt-2 flex justify-between text-lg font-bold text-slate-800">
-              <span className="flex items-center gap-1.5">
-                <Euro className="w-5 h-5 text-green-600" /> Totaal incl. BTW
-              </span>
-              <span className="text-green-700">
-                {formatCurrency(result.total_incl_btw)}
-              </span>
-            </div>
-          </div>
+          {/* Editable Lines & Totals */}
+          <EditableQuoteLines
+            quoteId={quote.id}
+            result={result}
+            isDraft={quote.status === "draft"}
+            marginPercentage={marginPercentage}
+          />
 
           {/* Notes */}
           {result.notes && (
