@@ -337,7 +337,8 @@ export async function GET(
 
   // Return PDF
   const pdfBuffer = doc.output("arraybuffer");
-  const filename = `Offerte-${quote.client_name.replace(/[^a-zA-Z0-9]/g, "_")}-${dateStr.replace(/\s/g, "-")}.pdf`;
+  const clientNameSafe = (quote.client_name || form?.client_name || "Klant").replace(/[^a-zA-Z0-9]/g, "_");
+  const filename = `Offerte-${clientNameSafe}-${dateStr.replace(/\s/g, "-")}.pdf`;
 
   return new NextResponse(pdfBuffer, {
     headers: {
