@@ -3,16 +3,28 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { Check, Undo2, Sparkles } from "lucide-react";
+import {
+  Check,
+  Undo2,
+  Sparkles,
+  Download,
+  Mail,
+  Loader2,
+} from "lucide-react";
 
 export function QuoteActions({
   quoteId,
   status,
+  clientName,
+  clientEmail,
 }: {
   quoteId: string;
   status: string;
+  clientName?: string;
+  clientEmail?: string;
 }) {
   const [loading, setLoading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(status);
   const router = useRouter();
   const supabase = createClient();
@@ -28,34 +40,102 @@ export function QuoteActions({
     router.refresh();
   }
 
+  async function handleDownloadPdf() {
+    setDownloading(true);
+    try {
+      const res = await fetch(`/api/generate-pdf/${quoteId}`);
+      if (!res.ok) throw new Error("PDF generation failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download =
+        res.headers
+          .get("Content-Disposition")
+          ?.match(/filename="(.+)"/)?.[1] || "offerte.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF download failed:", err);
+    }
+    setDownloading(false);
+  }
+
+  function handleSendEmail() {
+    const subject = encodeURIComponent(
+      `Offerte${clientName ? ` - ${clientName}` : ""}`
+    );
+    const body = encodeURIComponent(
+      `Beste${clientName ? ` ${clientName}` : ""},\n\nBijgaand vindt u de offerte.\n\nMet vriendelijke groet`
+    );
+    const mailto = `mailto:${clientEmail || ""}?subject=${subject}&body=${body}`;
+    window.open(mailto, "_blank");
+  }
+
   return (
-    <div className="flex items-center gap-3 pt-2">
-      {currentStatus === "draft" ? (
-        <button
-          onClick={() => updateStatus("final")}
-          disabled={loading}
-          className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2.5 rounded-lg transition disabled:opacity-50"
+    <div className="space-y-3 pt-2">
+      <div className="flex items-center gap-3">
+        {currentStatus === "draft" ? (
+          <button
+            onClick={() => updateStatus("final")}
+            disabled={loading}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2.5 rounded-lg transition disabled:opacity-50"
+          >
+            <Check className="w-4 h-4" />
+            Markeer als definitief
+          </button>
+        ) : (
+          <button
+            onClick={() => updateStatus("draft")}
+            disabled={loading}
+            className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-medium px-5 py-2.5 rounded-lg transition disabled:opacity-50"
+          >
+            <Undo2 className="w-4 h-4" />
+            Terugzetten naar concept
+          </button>
+        )}
+        <a
+          href={`/quotes/new?project=${quoteId}`}
+          className="flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 font-medium px-4 py-2.5 rounded-lg transition"
         >
-          <Check className="w-4 h-4" />
-          Markeer als definitief
-        </button>
-      ) : (
-        <button
-          onClick={() => updateStatus("draft")}
-          disabled={loading}
-          className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-medium px-5 py-2.5 rounded-lg transition disabled:opacity-50"
-        >
-          <Undo2 className="w-4 h-4" />
-          Terugzetten naar concept
-        </button>
+          <Sparkles className="w-4 h-4" />
+          Opnieuw genereren
+        </a>
+      </div>
+
+      {currentStatus === "final" && (
+        <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <span className="text-sm text-green-700 font-medium mr-auto">
+            Offerte is definitief
+          </span>
+          <button
+            onClick={handleDownloadPdf}
+            disabled={downloading}
+            className="flex items-center gap-2 bg-white border border-green-300 hover:bg-green-50 text-green-700 font-medium px-4 py-2 rounded-lg transition text-sm disabled:opacity-50"
+          >
+            {downloading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4" />
+            )}
+            Download PDF
+          </button>
+          <button
+            onClick={() => {
+              handleDownloadPdf().then(() => {
+                setTimeout(handleSendEmail, 500);
+              });
+            }}
+            disabled={downloading}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2 rounded-lg transition text-sm disabled:opacity-50"
+          >
+            <Mail className="w-4 h-4" />
+            Verstuur per email
+          </button>
+        </div>
       )}
-      <a
-        href={`/quotes/new?project=${quoteId}`}
-        className="flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 font-medium px-4 py-2.5 rounded-lg transition"
-      >
-        <Sparkles className="w-4 h-4" />
-        Opnieuw genereren
-      </a>
     </div>
   );
 }

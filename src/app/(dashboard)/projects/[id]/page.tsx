@@ -301,7 +301,12 @@ export default async function QuoteDetailPage({
           )}
 
           {/* Actions */}
-          <QuoteActions quoteId={quote.id} status={quote.status} />
+          <QuoteActions
+            quoteId={quote.id}
+            status={quote.status}
+            clientName={form?.client_name}
+            clientEmail={form?.client_email}
+          />
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center text-slate-500">
