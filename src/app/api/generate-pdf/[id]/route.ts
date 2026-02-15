@@ -1,15 +1,10 @@
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
-
-// Extend jsPDF type for autotable plugin
-declare module "jspdf" {
-  interface jsPDF {
-    autoTable: (options: Record<string, unknown>) => jsPDF;
-    lastAutoTable: { finalY: number };
-  }
-}
+import autoTable from "jspdf-autotable";
 
 interface QuoteLine {
   category: string;
@@ -58,6 +53,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  try {
   const { id } = await params;
   const supabase = await createClient();
 
@@ -237,7 +233,7 @@ export async function GET(
       });
   });
 
-  doc.autoTable({
+  autoTable(doc, {
     startY: y,
     head: [["Omschrijving", "Type", "Aantal", "Prijs", "Totaal"]],
     body: tableBody,
@@ -262,7 +258,8 @@ export async function GET(
     margin: { left: margin, right: margin },
   });
 
-  y = doc.lastAutoTable.finalY + 10;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  y = (doc as any).lastAutoTable.finalY + 10;
 
   // Check if we need a new page for totals
   if (y > 240) {
@@ -346,4 +343,12 @@ export async function GET(
       "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });
+  } catch (error: unknown) {
+    console.error("PDF generation error:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json(
+      { error: "PDF generation failed", details: message },
+      { status: 500 }
+    );
+  }
 }
