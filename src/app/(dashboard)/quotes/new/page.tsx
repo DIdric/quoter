@@ -247,6 +247,22 @@ export default function NewQuotePage() {
     router.push("/projects");
   }
 
+  async function handleSaveDraft() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    await supabase.from("quotes").insert({
+      user_id: user.id,
+      client_name: form.client_name,
+      status: "draft",
+      json_data: { form, result: null },
+    });
+
+    router.push("/projects");
+  }
+
   function handleRegenerate() {
     setResult(null);
   }
@@ -484,17 +500,28 @@ export default function NewQuotePage() {
             <ArrowLeft className="w-4 h-4" />
             Vorige
           </button>
-          {currentStep < steps.length - 1 && (
-            <button
-              onClick={() =>
-                setCurrentStep(Math.min(steps.length - 1, currentStep + 1))
-              }
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2 rounded-lg transition"
-            >
-              Volgende
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {currentStep >= 1 && form.client_name && !hasQuote && (
+              <button
+                onClick={handleSaveDraft}
+                className="flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 font-medium px-4 py-2 rounded-lg transition"
+              >
+                <FileText className="w-4 h-4" />
+                Opslaan als concept
+              </button>
+            )}
+            {currentStep < steps.length - 1 && (
+              <button
+                onClick={() =>
+                  setCurrentStep(Math.min(steps.length - 1, currentStep + 1))
+                }
+                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2 rounded-lg transition"
+              >
+                Volgende
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

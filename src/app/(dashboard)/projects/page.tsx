@@ -27,9 +27,10 @@ export default async function ProjectsPage() {
         {quotes && quotes.length > 0 ? (
           <div className="divide-y divide-slate-200">
             {quotes.map((quote) => (
-              <div
+              <Link
                 key={quote.id}
-                className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition"
+                href={`/projects/${quote.id}`}
+                className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition block"
               >
                 <div>
                   <p className="font-medium text-slate-800">
@@ -50,7 +51,7 @@ export default async function ProjectsPage() {
                     {quote.status === "final" ? "Definitief" : "Concept"}
                   </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         ) : (

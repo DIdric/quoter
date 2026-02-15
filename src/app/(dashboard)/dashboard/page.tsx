@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import { FileText, Package, Clock, Euro } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -88,9 +89,10 @@ export default async function DashboardPage() {
         <div className="divide-y divide-slate-200">
           {quotes && quotes.length > 0 ? (
             quotes.map((quote) => (
-              <div
+              <Link
                 key={quote.id}
-                className="px-6 py-4 flex items-center justify-between"
+                href={`/projects/${quote.id}`}
+                className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition block"
               >
                 <div>
                   <p className="font-medium text-slate-800">
@@ -109,7 +111,7 @@ export default async function DashboardPage() {
                 >
                   {quote.status === "final" ? "Definitief" : "Concept"}
                 </span>
-              </div>
+              </Link>
             ))
           ) : (
             <div className="px-6 py-12 text-center text-slate-500">
