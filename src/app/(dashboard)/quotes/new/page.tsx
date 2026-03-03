@@ -16,6 +16,7 @@ import {
   Clock,
   Euro,
 } from "lucide-react";
+import { VoiceInput } from "@/components/voice-input";
 
 const steps = [
   { label: "Klantgegevens", icon: User },
@@ -410,13 +411,20 @@ function NewQuotePage() {
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Naam klant *
               </label>
-              <input
-                type="text"
-                value={form.client_name}
-                onChange={(e) => updateForm("client_name", e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
-                placeholder="Jan de Vries"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={form.client_name}
+                  onChange={(e) => updateForm("client_name", e.target.value)}
+                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                  placeholder="Jan de Vries"
+                />
+                <VoiceInput
+                  onResult={(text) =>
+                    updateForm("client_name", form.client_name ? form.client_name + " " + text : text)
+                  }
+                />
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -457,13 +465,20 @@ function NewQuotePage() {
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Projecttitel *
               </label>
-              <input
-                type="text"
-                value={form.project_title}
-                onChange={(e) => updateForm("project_title", e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
-                placeholder="Badkamerrenovatie"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={form.project_title}
+                  onChange={(e) => updateForm("project_title", e.target.value)}
+                  className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                  placeholder="Badkamerrenovatie"
+                />
+                <VoiceInput
+                  onResult={(text) =>
+                    updateForm("project_title", form.project_title ? form.project_title + " " + text : text)
+                  }
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -483,15 +498,26 @@ function NewQuotePage() {
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Projectomschrijving
               </label>
-              <textarea
-                value={form.project_description}
-                onChange={(e) =>
-                  updateForm("project_description", e.target.value)
-                }
-                rows={4}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none text-slate-800"
-                placeholder="Beschrijf het project..."
-              />
+              <div className="relative">
+                <textarea
+                  value={form.project_description}
+                  onChange={(e) =>
+                    updateForm("project_description", e.target.value)
+                  }
+                  rows={4}
+                  className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none text-slate-800"
+                  placeholder="Beschrijf het project..."
+                />
+                <VoiceInput
+                  className="absolute top-2 right-2"
+                  onResult={(text) =>
+                    updateForm(
+                      "project_description",
+                      form.project_description ? form.project_description + " " + text : text
+                    )
+                  }
+                />
+              </div>
             </div>
           </div>
         )}
@@ -506,13 +532,27 @@ function NewQuotePage() {
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 AI-input (beschrijf wat je wilt laten berekenen)
               </label>
-              <textarea
-                value={form.ai_input}
-                onChange={(e) => updateForm("ai_input", e.target.value)}
-                rows={6}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none text-slate-800"
-                placeholder="Bijv: Ik moet een badkamer van 3x4 meter volledig strippen en opnieuw betegelen. Inclusief nieuwe douche, toilet en wastafel. Vloerverwarming aanleggen."
-              />
+              <div className="relative">
+                <textarea
+                  value={form.ai_input}
+                  onChange={(e) => updateForm("ai_input", e.target.value)}
+                  rows={6}
+                  className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none text-slate-800"
+                  placeholder="Bijv: Ik moet een badkamer van 3x4 meter volledig strippen en opnieuw betegelen. Inclusief nieuwe douche, toilet en wastafel. Vloerverwarming aanleggen."
+                />
+                <VoiceInput
+                  className="absolute top-2 right-2"
+                  onResult={(text) =>
+                    updateForm(
+                      "ai_input",
+                      form.ai_input ? form.ai_input + " " + text : text
+                    )
+                  }
+                />
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                Tip: Gebruik de microfoon om je opdracht in te spreken
+              </p>
             </div>
 
             {!result && (

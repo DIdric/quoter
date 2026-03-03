@@ -14,6 +14,7 @@ import {
   Trash2,
   Plus,
 } from "lucide-react";
+import { VoiceInput } from "@/components/voice-input";
 
 interface QuoteLine {
   category: string;
@@ -276,14 +277,26 @@ export function EditableQuoteLines({
                     <tr key={line._index} className="hover:bg-slate-50">
                       <td className="px-3 py-2 text-slate-800">
                         {editing ? (
-                          <input
-                            type="text"
-                            value={line.description}
-                            onChange={(e) =>
-                              updateLine(line._index, "description", e.target.value)
-                            }
-                            className="w-full px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"
-                          />
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              value={line.description}
+                              onChange={(e) =>
+                                updateLine(line._index, "description", e.target.value)
+                              }
+                              className="flex-1 px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"
+                            />
+                            <VoiceInput
+                              className="shrink-0"
+                              onResult={(text) =>
+                                updateLine(
+                                  line._index,
+                                  "description",
+                                  line.description ? line.description + " " + text : text
+                                )
+                              }
+                            />
+                          </div>
                         ) : (
                           line.description
                         )}
