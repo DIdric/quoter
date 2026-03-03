@@ -12,14 +12,15 @@ export default async function ProjectsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Projecten</h1>
+      <div className="flex items-center justify-between mb-4 md:mb-6">
+        <h1 className="text-xl md:text-2xl font-bold text-slate-800">Projecten</h1>
         <Link
           href="/quotes/new"
-          className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2.5 rounded-lg transition"
+          className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition text-sm md:text-base"
         >
           <Plus className="w-4 h-4" />
-          Nieuwe Offerte
+          <span className="hidden sm:inline">Nieuwe Offerte</span>
+          <span className="sm:hidden">Nieuw</span>
         </Link>
       </div>
 
@@ -30,7 +31,7 @@ export default async function ProjectsPage() {
               <Link
                 key={quote.id}
                 href={`/projects/${quote.id}`}
-                className="px-6 py-4 flex items-center justify-between hover:bg-slate-50 transition block"
+                className="px-4 py-3 md:px-6 md:py-4 flex items-center justify-between hover:bg-slate-50 transition block"
               >
                 <div>
                   <p className="font-medium text-slate-800">
@@ -55,7 +56,7 @@ export default async function ProjectsPage() {
             ))}
           </div>
         ) : (
-          <div className="px-6 py-12 text-center text-slate-500">
+          <div className="px-4 py-8 md:px-6 md:py-12 text-center text-slate-500">
             <FileText className="w-12 h-12 mx-auto mb-3 text-slate-300" />
             <p>Nog geen projecten</p>
             <p className="text-sm mt-1">

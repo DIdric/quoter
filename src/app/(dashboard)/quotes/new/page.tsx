@@ -91,8 +91,8 @@ function QuoteDisplay({ quote }: { quote: QuoteResult }) {
               )}
               {category}
             </h4>
-            <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="bg-white border border-slate-200 rounded-lg overflow-x-auto">
+              <table className="w-full text-sm min-w-[500px]">
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="text-left px-3 py-2 text-slate-600 font-medium">
@@ -356,7 +356,7 @@ function NewQuotePage() {
   return (
     <div className="max-w-3xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-8">
+      <div className="flex items-center gap-3 mb-6 md:mb-8">
         <button
           onClick={() =>
             router.push(
@@ -365,21 +365,21 @@ function NewQuotePage() {
                 : "/projects"
             )
           }
-          className="p-2 rounded-lg hover:bg-slate-200 text-slate-600 transition"
+          className="p-2 rounded-lg hover:bg-slate-200 text-slate-600 transition shrink-0"
         >
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-2xl font-bold text-slate-800">
+        <h1 className="text-lg md:text-2xl font-bold text-slate-800">
           {existingProjectId ? "Offerte Genereren" : "Nieuwe Offerte"}
         </h1>
       </div>
 
       {/* Step Indicator */}
-      <div className="flex items-center gap-2 mb-8">
+      <div className="flex items-center gap-1.5 md:gap-2 mb-6 md:mb-8">
         {steps.map((step, i) => (
           <div key={step.label} className="flex items-center gap-2 flex-1">
             <div
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium w-full justify-center transition ${
+              className={`flex items-center gap-1.5 md:gap-2 px-2 py-2 md:px-4 rounded-lg text-xs md:text-sm font-medium w-full justify-center transition ${
                 i === currentStep
                   ? "bg-brand-500 text-white"
                   : i < currentStep
@@ -388,18 +388,18 @@ function NewQuotePage() {
               }`}
             >
               {i < currentStep ? (
-                <Check className="w-4 h-4" />
+                <Check className="w-4 h-4 shrink-0" />
               ) : (
-                <step.icon className="w-4 h-4" />
+                <step.icon className="w-4 h-4 shrink-0" />
               )}
-              {step.label}
+              <span className="hidden sm:inline">{step.label}</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Step Content */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6">
         {/* Step 1: Client Details */}
         {currentStep === 0 && (
           <div className="space-y-4">
@@ -418,7 +418,7 @@ function NewQuotePage() {
                 placeholder="Jan de Vries"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
                   E-mail
@@ -560,17 +560,17 @@ function NewQuotePage() {
             {hasQuote && (
               <div className="mt-4">
                 <QuoteDisplay quote={result} />
-                <div className="flex gap-3 mt-6">
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-6">
                   <button
                     onClick={handleSaveQuote}
-                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-5 py-2.5 rounded-lg transition"
+                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2.5 md:px-5 rounded-lg transition text-sm md:text-base"
                   >
                     <Check className="w-4 h-4" />
                     Offerte Opslaan als Concept
                   </button>
                   <button
                     onClick={handleRegenerate}
-                    className="flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 font-medium px-4 py-2.5 rounded-lg transition"
+                    className="flex items-center justify-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 font-medium px-4 py-2.5 rounded-lg transition text-sm md:text-base"
                   >
                     <Sparkles className="w-4 h-4" />
                     Opnieuw genereren
@@ -582,23 +582,23 @@ function NewQuotePage() {
         )}
 
         {/* Navigation */}
-        <div className="flex justify-between mt-8 pt-6 border-t border-slate-200">
+        <div className="flex flex-col-reverse sm:flex-row justify-between mt-6 pt-4 md:mt-8 md:pt-6 border-t border-slate-200 gap-3">
           <button
             onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
             disabled={currentStep === 0}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-slate-600 hover:bg-slate-100 transition disabled:opacity-30"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 transition disabled:opacity-30 text-sm md:text-base"
           >
             <ArrowLeft className="w-4 h-4" />
             Vorige
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {currentStep >= 1 && form.client_name && !hasQuote && (
               <button
                 onClick={handleSaveDraft}
-                className="flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 font-medium px-4 py-2 rounded-lg transition"
+                className="flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 font-medium px-3 py-2.5 md:px-4 rounded-lg transition text-sm md:text-base flex-1 sm:flex-none justify-center"
               >
                 <FileText className="w-4 h-4" />
-                Opslaan als concept
+                <span className="hidden sm:inline">Opslaan als</span> concept
               </button>
             )}
             {currentStep < steps.length - 1 && (
@@ -606,7 +606,7 @@ function NewQuotePage() {
                 onClick={() =>
                   setCurrentStep(Math.min(steps.length - 1, currentStep + 1))
                 }
-                className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2 rounded-lg transition"
+                className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2.5 rounded-lg transition text-sm md:text-base flex-1 sm:flex-none justify-center"
               >
                 Volgende
                 <ArrowRight className="w-4 h-4" />

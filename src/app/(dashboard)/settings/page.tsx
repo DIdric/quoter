@@ -128,10 +128,10 @@ export default function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Instellingen</h1>
+      <h1 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 md:mb-6">Instellingen</h1>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 max-w-2xl">
-        <div className="p-6 border-b border-slate-200">
+        <div className="p-4 md:p-6 border-b border-slate-200">
           <h2 className="text-lg font-semibold text-slate-800">
             Bedrijfsprofiel
           </h2>
@@ -140,7 +140,7 @@ export default function SettingsPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSave} className="p-6 space-y-5">
+        <form onSubmit={handleSave} className="p-4 md:p-6 space-y-5">
           {/* Logo Upload */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -210,7 +210,7 @@ export default function SettingsPage() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Uurtarief (&euro;)

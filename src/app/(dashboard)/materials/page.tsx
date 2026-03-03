@@ -162,14 +162,15 @@ export default function MaterialsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">
-          Materialen Bibliotheek
+      <div className="flex items-center justify-between mb-4 md:mb-6 gap-3">
+        <h1 className="text-xl md:text-2xl font-bold text-slate-800 shrink-0">
+          Materialen
         </h1>
-        <div className="flex gap-3">
-          <label className="flex items-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium px-4 py-2.5 rounded-lg transition cursor-pointer">
+        <div className="flex gap-2 md:gap-3">
+          <label className="flex items-center gap-1.5 md:gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition cursor-pointer text-sm md:text-base">
             <Upload className="w-4 h-4" />
-            CSV Uploaden
+            <span className="hidden sm:inline">CSV Uploaden</span>
+            <span className="sm:hidden">CSV</span>
             <input
               ref={fileInputRef}
               type="file"
@@ -184,16 +185,16 @@ export default function MaterialsPage() {
               setEditingId(null);
               setForm({ name: "", unit: "stuk", cost_price: "" });
             }}
-            className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2.5 rounded-lg transition"
+            className="flex items-center gap-1.5 md:gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition text-sm md:text-base"
           >
             <Plus className="w-4 h-4" />
-            Toevoegen
+            <span className="hidden sm:inline">Toevoegen</span>
           </button>
         </div>
       </div>
 
       {/* CSV Format Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-700">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4 mb-4 md:mb-6 text-xs md:text-sm text-blue-700">
         <strong>CSV formaat:</strong> naam;eenheid;kostprijs (bijv:{" "}
         <code className="bg-blue-100 px-1 rounded">
           Schroeven M8;doos;12,50
@@ -203,7 +204,7 @@ export default function MaterialsPage() {
 
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 mb-4 md:mb-6">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">
             {editingId ? "Materiaal Bewerken" : "Nieuw Materiaal"}
           </h2>
@@ -282,55 +283,57 @@ export default function MaterialsPage() {
       {/* Materials Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
         {materials.length > 0 ? (
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-200">
-                <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                  Naam
-                </th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-slate-500">
-                  Eenheid
-                </th>
-                <th className="text-right px-6 py-3 text-sm font-medium text-slate-500">
-                  Kostprijs
-                </th>
-                <th className="text-right px-6 py-3 text-sm font-medium text-slate-500">
-                  Acties
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {materials.map((material) => (
-                <tr key={material.id} className="hover:bg-slate-50 transition">
-                  <td className="px-6 py-4 font-medium text-slate-800">
-                    {material.name}
-                  </td>
-                  <td className="px-6 py-4 text-slate-600">{material.unit}</td>
-                  <td className="px-6 py-4 text-right text-slate-800">
-                    {new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(material.cost_price))}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleEdit(material)}
-                        className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(material.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[450px]">
+              <thead>
+                <tr className="border-b border-slate-200">
+                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
+                    Naam
+                  </th>
+                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
+                    Eenheid
+                  </th>
+                  <th className="text-right px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
+                    Kostprijs
+                  </th>
+                  <th className="text-right px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
+                    Acties
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {materials.map((material) => (
+                  <tr key={material.id} className="hover:bg-slate-50 transition">
+                    <td className="px-4 py-3 md:px-6 md:py-4 font-medium text-slate-800">
+                      {material.name}
+                    </td>
+                    <td className="px-4 py-3 md:px-6 md:py-4 text-slate-600">{material.unit}</td>
+                    <td className="px-4 py-3 md:px-6 md:py-4 text-right text-slate-800">
+                      {new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(material.cost_price))}
+                    </td>
+                    <td className="px-4 py-3 md:px-6 md:py-4 text-right">
+                      <div className="flex items-center justify-end gap-1 md:gap-2">
+                        <button
+                          onClick={() => handleEdit(material)}
+                          className="p-2 md:p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(material.id)}
+                          className="p-2 md:p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
-          <div className="px-6 py-12 text-center text-slate-500">
+          <div className="px-4 py-8 md:px-6 md:py-12 text-center text-slate-500">
             <Package className="w-12 h-12 mx-auto mb-3 text-slate-300" />
             <p>Nog geen materialen toegevoegd</p>
             <p className="text-sm mt-1">

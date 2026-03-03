@@ -86,18 +86,18 @@ export default async function QuoteDetailPage({
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-4 md:mb-6">
         <Link
           href="/projects"
-          className="p-2 rounded-lg hover:bg-slate-200 text-slate-600 transition"
+          className="p-2 rounded-lg hover:bg-slate-200 text-slate-600 transition shrink-0"
         >
           <ArrowLeft className="w-5 h-5" />
         </Link>
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-slate-800">
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg md:text-2xl font-bold text-slate-800 truncate">
             {result?.quote_title || form?.project_title || quote.client_name}
           </h1>
-          <p className="text-sm text-slate-500">
+          <p className="text-xs md:text-sm text-slate-500">
             Aangemaakt op{" "}
             {new Date(quote.created_at).toLocaleDateString("nl-NL", {
               day: "numeric",
@@ -107,7 +107,7 @@ export default async function QuoteDetailPage({
           </p>
         </div>
         <span
-          className={`px-3 py-1 rounded-full text-xs font-medium ${
+          className={`px-2 py-1 md:px-3 rounded-full text-xs font-medium shrink-0 ${
             quote.status === "final"
               ? "bg-green-100 text-green-700"
               : "bg-yellow-100 text-yellow-700"
@@ -118,8 +118,8 @@ export default async function QuoteDetailPage({
       </div>
 
       {/* Client & Project Info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-5">
           <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
             Klantgegevens
           </h2>
@@ -144,7 +144,7 @@ export default async function QuoteDetailPage({
         </div>
 
         {form && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-5">
             <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
               Projectdetails
             </h2>
@@ -209,7 +209,7 @@ export default async function QuoteDetailPage({
           />
         </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center text-slate-500">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8 text-center text-slate-500">
           <Clock className="w-12 h-12 mx-auto mb-3 text-slate-300" />
           <p className="font-medium text-slate-700">
             Nog geen offerte gegenereerd

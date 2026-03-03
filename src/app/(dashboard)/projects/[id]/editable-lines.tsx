@@ -247,8 +247,8 @@ export function EditableQuoteLines({
               )}
               {category}
             </h3>
-            <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="bg-white border border-slate-200 rounded-lg overflow-x-auto">
+              <table className="w-full text-sm min-w-[500px]">
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="text-left px-3 py-2 text-slate-600 font-medium">
