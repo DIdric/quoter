@@ -29,25 +29,25 @@ export default async function DashboardPage() {
       label: "Totaal Offertes",
       value: totalQuotes ?? 0,
       icon: FileText,
-      color: "bg-blue-500",
+      color: "bg-[#3B82F6]",
     },
     {
       label: "Concept Offertes",
       value: draftQuotes ?? 0,
       icon: Clock,
-      color: "bg-yellow-500",
+      color: "bg-[#EF4444]",
     },
     {
       label: "Materialen",
       value: totalMaterials ?? 0,
       icon: Package,
-      color: "bg-green-500",
+      color: "bg-[#F59E0B]",
     },
     {
       label: "Definitieve Offertes",
       value: (totalQuotes ?? 0) - (draftQuotes ?? 0),
       icon: Euro,
-      color: "bg-brand-500",
+      color: "bg-[#0EC541]",
     },
   ];
 
