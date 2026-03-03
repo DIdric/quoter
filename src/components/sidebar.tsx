@@ -34,10 +34,10 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="p-6 border-b border-slate-700">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
+          <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center">
             <HardHat className="w-5 h-5" />
           </div>
-          <span className="text-xl font-bold">Quoter</span>
+          <span className="text-xl font-bold text-brand-500">Quoter</span>
         </div>
       </div>
 
@@ -45,7 +45,7 @@ export default function Sidebar() {
       <div className="p-4">
         <Link
           href="/quotes/new"
-          className="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2.5 rounded-lg transition"
+          className="flex items-center justify-center gap-2 w-full bg-brand-500 hover:bg-brand-600 text-white font-medium py-2.5 rounded-lg transition"
         >
           <Plus className="w-4 h-4" />
           Nieuwe Offerte

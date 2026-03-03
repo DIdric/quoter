@@ -184,7 +184,7 @@ export default function MaterialsPage() {
               setEditingId(null);
               setForm({ name: "", unit: "stuk", cost_price: "" });
             }}
-            className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2.5 rounded-lg transition"
+            className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2.5 rounded-lg transition"
           >
             <Plus className="w-4 h-4" />
             Toevoegen
@@ -216,7 +216,7 @@ export default function MaterialsPage() {
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-slate-800"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
                 placeholder="bijv. Schroeven M8"
               />
             </div>
@@ -227,7 +227,7 @@ export default function MaterialsPage() {
               <select
                 value={form.unit}
                 onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-slate-800"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
               >
                 <option value="stuk">Stuk</option>
                 <option value="m">Meter</option>
@@ -251,7 +251,7 @@ export default function MaterialsPage() {
                 onChange={(e) =>
                   setForm({ ...form, cost_price: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-slate-800"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
                 placeholder="0.00"
               />
             </div>
@@ -260,7 +260,7 @@ export default function MaterialsPage() {
             <button
               onClick={handleSave}
               disabled={!form.name || !form.cost_price}
-              className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2 rounded-lg transition disabled:opacity-50"
+              className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2 rounded-lg transition disabled:opacity-50"
             >
               <Check className="w-4 h-4" />
               Opslaan

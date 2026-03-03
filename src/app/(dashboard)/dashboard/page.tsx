@@ -47,7 +47,7 @@ export default async function DashboardPage() {
       label: "Definitieve Offertes",
       value: (totalQuotes ?? 0) - (draftQuotes ?? 0),
       icon: Euro,
-      color: "bg-orange-500",
+      color: "bg-brand-500",
     },
   ];
 

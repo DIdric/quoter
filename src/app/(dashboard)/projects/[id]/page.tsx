@@ -174,10 +174,10 @@ export default async function QuoteDetailPage({
       {hasQuoteLines ? (
         <div className="space-y-6">
           {/* Summary */}
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="bg-brand-50 border border-brand-200 rounded-lg p-4">
             <p className="text-sm text-slate-600">{result.summary}</p>
             {result.estimated_days > 0 && (
-              <div className="flex items-center gap-1.5 mt-2 text-sm text-orange-700">
+              <div className="flex items-center gap-1.5 mt-2 text-sm text-brand-700">
                 <Clock className="w-4 h-4" />
                 Geschatte doorlooptijd: {result.estimated_days} werkdag
                 {result.estimated_days !== 1 ? "en" : ""}
@@ -219,7 +219,7 @@ export default async function QuoteDetailPage({
           </p>
           <Link
             href={`/quotes/new?project=${quote.id}`}
-            className="inline-flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-medium px-5 py-2.5 rounded-lg transition"
+            className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-5 py-2.5 rounded-lg transition"
           >
             <Sparkles className="w-4 h-4" />
             Offerte genereren

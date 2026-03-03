@@ -53,10 +53,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-orange-500 rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-brand-500 rounded-2xl mb-4">
             <HardHat className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white">Quoter</h1>
+          <h1 className="text-3xl font-bold text-brand-500">Quoter</h1>
           <p className="text-slate-400 mt-2">
             Professionele offertes voor aannemers
           </p>
@@ -79,7 +79,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition text-slate-800"
+                  className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-slate-800"
                   placeholder="naam@bedrijf.nl"
                   required
                 />
@@ -96,7 +96,7 @@ export default function LoginPage() {
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition text-slate-800"
+                  className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-slate-800"
                   placeholder="••••••••"
                   required
                   minLength={6}
@@ -111,7 +111,7 @@ export default function LoginPage() {
             )}
 
             {message && (
-              <div className="bg-green-50 text-green-600 text-sm p-3 rounded-lg">
+              <div className="bg-brand-50 text-brand-700 text-sm p-3 rounded-lg">
                 {message}
               </div>
             )}
@@ -119,7 +119,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2.5 rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full bg-brand-500 hover:bg-brand-600 text-white font-medium py-2.5 rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -139,7 +139,7 @@ export default function LoginPage() {
                 setError(null);
                 setMessage(null);
               }}
-              className="text-sm text-slate-600 hover:text-orange-500 transition"
+              className="text-sm text-slate-600 hover:text-brand-500 transition"
             >
               {isLogin
                 ? "Nog geen account? Registreer hier"

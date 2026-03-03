@@ -198,7 +198,7 @@ export function EditableQuoteLines({
           {!editing ? (
             <button
               onClick={() => setEditing(true)}
-              className="flex items-center gap-2 text-sm text-slate-600 hover:text-orange-600 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition"
+              className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition"
             >
               <Pencil className="w-4 h-4" />
               Regelitems bewerken
@@ -216,7 +216,7 @@ export function EditableQuoteLines({
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-2 text-sm bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-1.5 rounded-lg transition disabled:opacity-50"
+                className="flex items-center gap-2 text-sm bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-1.5 rounded-lg transition disabled:opacity-50"
               >
                 {saving ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -243,7 +243,7 @@ export function EditableQuoteLines({
               {categoryType === "materiaal" ? (
                 <Package className="w-4 h-4 text-blue-500" />
               ) : (
-                <Wrench className="w-4 h-4 text-orange-500" />
+                <Wrench className="w-4 h-4 text-brand-500" />
               )}
               {category}
             </h3>
@@ -282,7 +282,7 @@ export function EditableQuoteLines({
                             onChange={(e) =>
                               updateLine(line._index, "description", e.target.value)
                             }
-                            className="w-full px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-orange-400"
+                            className="w-full px-2 py-1 border border-slate-300 rounded text-sm focus:outline-none focus:ring-1 focus:ring-brand-400"
                           />
                         ) : (
                           line.description
@@ -293,7 +293,7 @@ export function EditableQuoteLines({
                           className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
                             line.type === "materiaal"
                               ? "bg-blue-100 text-blue-700"
-                              : "bg-orange-100 text-orange-700"
+                              : "bg-brand-100 text-brand-700"
                           }`}
                         >
                           {line.type === "materiaal" ? "Mat" : "Arbeid"}
@@ -314,7 +314,7 @@ export function EditableQuoteLines({
                                   parseFloat(e.target.value) || 0
                                 )
                               }
-                              className="w-16 px-2 py-1 border border-slate-300 rounded text-sm text-right focus:outline-none focus:ring-1 focus:ring-orange-400"
+                              className="w-16 px-2 py-1 border border-slate-300 rounded text-sm text-right focus:outline-none focus:ring-1 focus:ring-brand-400"
                             />
                             <span className="text-xs text-slate-400">
                               {line.unit}
@@ -342,7 +342,7 @@ export function EditableQuoteLines({
                                   parseFloat(e.target.value) || 0
                                 )
                               }
-                              className="w-20 px-2 py-1 border border-slate-300 rounded text-sm text-right focus:outline-none focus:ring-1 focus:ring-orange-400"
+                              className="w-20 px-2 py-1 border border-slate-300 rounded text-sm text-right focus:outline-none focus:ring-1 focus:ring-brand-400"
                             />
                           </div>
                         ) : (
@@ -371,7 +371,7 @@ export function EditableQuoteLines({
                 <div className="px-3 py-2 border-t border-slate-100">
                   <button
                     onClick={() => addLine(category, categoryType)}
-                    className="flex items-center gap-1 text-xs text-slate-500 hover:text-orange-600 transition"
+                    className="flex items-center gap-1 text-xs text-slate-500 hover:text-brand-600 transition"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Regel toevoegen
@@ -393,7 +393,7 @@ export function EditableQuoteLines({
         </div>
         <div className="flex justify-between text-sm text-slate-600">
           <span className="flex items-center gap-1.5">
-            <Wrench className="w-4 h-4 text-orange-500" /> Arbeid
+            <Wrench className="w-4 h-4 text-brand-500" /> Arbeid
           </span>
           <span>{formatCurrency(totals.subtotal_labor)}</span>
         </div>

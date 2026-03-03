@@ -62,13 +62,13 @@ function QuoteDisplay({ quote }: { quote: QuoteResult }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+      <div className="bg-brand-50 border border-brand-200 rounded-lg p-4">
         <h3 className="text-lg font-bold text-slate-800">
           {quote.quote_title}
         </h3>
         <p className="text-sm text-slate-600 mt-1">{quote.summary}</p>
         {quote.estimated_days > 0 && (
-          <div className="flex items-center gap-1.5 mt-2 text-sm text-orange-700">
+          <div className="flex items-center gap-1.5 mt-2 text-sm text-brand-700">
             <Clock className="w-4 h-4" />
             Geschatte doorlooptijd: {quote.estimated_days} werkdag
             {quote.estimated_days !== 1 ? "en" : ""}
@@ -87,7 +87,7 @@ function QuoteDisplay({ quote }: { quote: QuoteResult }) {
               {categoryLines[0]?.type === "materiaal" ? (
                 <Package className="w-4 h-4 text-blue-500" />
               ) : (
-                <Wrench className="w-4 h-4 text-orange-500" />
+                <Wrench className="w-4 h-4 text-brand-500" />
               )}
               {category}
             </h4>
@@ -123,7 +123,7 @@ function QuoteDisplay({ quote }: { quote: QuoteResult }) {
                           className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
                             line.type === "materiaal"
                               ? "bg-blue-100 text-blue-700"
-                              : "bg-orange-100 text-orange-700"
+                              : "bg-brand-100 text-brand-700"
                           }`}
                         >
                           {line.type === "materiaal" ? "Mat" : "Arbeid"}
@@ -157,7 +157,7 @@ function QuoteDisplay({ quote }: { quote: QuoteResult }) {
         </div>
         <div className="flex justify-between text-sm text-slate-600">
           <span className="flex items-center gap-1.5">
-            <Wrench className="w-4 h-4 text-orange-500" /> Arbeid
+            <Wrench className="w-4 h-4 text-brand-500" /> Arbeid
           </span>
           <span>{formatCurrency(quote.subtotal_labor)}</span>
         </div>
@@ -198,7 +198,7 @@ export default function NewQuotePageWrapper() {
     <Suspense
       fallback={
         <div className="max-w-3xl mx-auto flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+          <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
           <span className="ml-2 text-slate-600">Laden...</span>
         </div>
       }
@@ -347,7 +347,7 @@ function NewQuotePage() {
   if (loadingProject) {
     return (
       <div className="max-w-3xl mx-auto flex items-center justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+        <Loader2 className="w-6 h-6 animate-spin text-brand-500" />
         <span className="ml-2 text-slate-600">Project laden...</span>
       </div>
     );
@@ -381,7 +381,7 @@ function NewQuotePage() {
             <div
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium w-full justify-center transition ${
                 i === currentStep
-                  ? "bg-orange-500 text-white"
+                  ? "bg-brand-500 text-white"
                   : i < currentStep
                   ? "bg-green-100 text-green-700"
                   : "bg-slate-100 text-slate-400"
@@ -414,7 +414,7 @@ function NewQuotePage() {
                 type="text"
                 value={form.client_name}
                 onChange={(e) => updateForm("client_name", e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-slate-800"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
                 placeholder="Jan de Vries"
               />
             </div>
@@ -427,7 +427,7 @@ function NewQuotePage() {
                   type="email"
                   value={form.client_email}
                   onChange={(e) => updateForm("client_email", e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
                   placeholder="jan@voorbeeld.nl"
                 />
               </div>
@@ -439,7 +439,7 @@ function NewQuotePage() {
                   type="tel"
                   value={form.client_phone}
                   onChange={(e) => updateForm("client_phone", e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-slate-800"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
                   placeholder="06-12345678"
                 />
               </div>
@@ -461,7 +461,7 @@ function NewQuotePage() {
                 type="text"
                 value={form.project_title}
                 onChange={(e) => updateForm("project_title", e.target.value)}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-slate-800"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
                 placeholder="Badkamerrenovatie"
               />
             </div>
@@ -475,7 +475,7 @@ function NewQuotePage() {
                 onChange={(e) =>
                   updateForm("project_location", e.target.value)
                 }
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none text-slate-800"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
                 placeholder="Amsterdam"
               />
             </div>
@@ -489,7 +489,7 @@ function NewQuotePage() {
                   updateForm("project_description", e.target.value)
                 }
                 rows={4}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none resize-none text-slate-800"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none text-slate-800"
                 placeholder="Beschrijf het project..."
               />
             </div>
@@ -510,7 +510,7 @@ function NewQuotePage() {
                 value={form.ai_input}
                 onChange={(e) => updateForm("ai_input", e.target.value)}
                 rows={6}
-                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none resize-none text-slate-800"
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none text-slate-800"
                 placeholder="Bijv: Ik moet een badkamer van 3x4 meter volledig strippen en opnieuw betegelen. Inclusief nieuwe douche, toilet en wastafel. Vloerverwarming aanleggen."
               />
             </div>
@@ -519,7 +519,7 @@ function NewQuotePage() {
               <button
                 onClick={handleGenerate}
                 disabled={loading || !form.ai_input}
-                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-medium px-5 py-2.5 rounded-lg transition disabled:opacity-50"
+                className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-5 py-2.5 rounded-lg transition disabled:opacity-50"
               >
                 {loading ? (
                   <>
@@ -548,7 +548,7 @@ function NewQuotePage() {
                 </div>
                 <button
                   onClick={handleRegenerate}
-                  className="mt-3 flex items-center gap-2 text-orange-600 hover:text-orange-700 font-medium text-sm transition"
+                  className="mt-3 flex items-center gap-2 text-brand-600 hover:text-brand-700 font-medium text-sm transition"
                 >
                   <Sparkles className="w-4 h-4" />
                   Opnieuw proberen
@@ -606,7 +606,7 @@ function NewQuotePage() {
                 onClick={() =>
                   setCurrentStep(Math.min(steps.length - 1, currentStep + 1))
                 }
-                className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2 rounded-lg transition"
+                className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2 rounded-lg transition"
               >
                 Volgende
                 <ArrowRight className="w-4 h-4" />

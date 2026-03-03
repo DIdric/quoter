@@ -16,7 +16,7 @@ export default async function ProjectsPage() {
         <h1 className="text-2xl font-bold text-slate-800">Projecten</h1>
         <Link
           href="/quotes/new"
-          className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2.5 rounded-lg transition"
+          className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2.5 rounded-lg transition"
         >
           <Plus className="w-4 h-4" />
           Nieuwe Offerte

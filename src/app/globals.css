@@ -2,14 +2,49 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1E1E1E;
 }
 
 @theme inline {
+  /* Background & Foreground */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  /* Font */
+  --font-sans: 'Inter Variable', 'Inter', sans-serif;
+
+  /* Brand Color Scale */
+  --color-brand-50: #EEFCF2;
+  --color-brand-100: #D5F5DD;
+  --color-brand-200: #ABE9BA;
+  --color-brand-500: #0EC541;
+  --color-brand-600: #0BAF39;
+  --color-brand-700: #098A2C;
+
+  /* Neutral Scale (overriding slate) */
+  --color-slate-50: #F7F8F9;
+  --color-slate-100: #F0F2F3;
+  --color-slate-200: #E1E4E5;
+  --color-slate-300: #C3C8CB;
+  --color-slate-400: #A0A8AB;
+  --color-slate-500: #7D878B;
+  --color-slate-600: #5D696D;
+  --color-slate-700: #4E5F63;
+  --color-slate-800: #3A4649;
+  --color-slate-900: #252D2F;
+
+  /* Elevation / Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.10);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.16);
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
 }
 
 body {
