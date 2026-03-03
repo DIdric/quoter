@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { HardHat, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -53,10 +54,15 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-brand-500 rounded-2xl mb-4">
-            <HardHat className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center mb-4">
+            <Image
+              src="/Logo Quoter.svg"
+              alt="Quoter"
+              width={180}
+              height={52}
+              priority
+            />
           </div>
-          <h1 className="text-3xl font-bold text-brand-500">Quoter</h1>
           <p className="text-slate-400 mt-2">
             Professionele offertes voor aannemers
           </p>

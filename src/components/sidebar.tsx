@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -8,7 +9,6 @@ import {
   FolderOpen,
   Package,
   Settings,
-  HardHat,
   LogOut,
   Plus,
 } from "lucide-react";
@@ -33,12 +33,16 @@ export default function Sidebar() {
     <aside className="w-64 bg-slate-900 text-white flex flex-col min-h-screen">
       {/* Logo */}
       <div className="p-6 border-b border-slate-700">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center">
-            <HardHat className="w-5 h-5" />
-          </div>
+        <Link href="/dashboard" className="flex items-center gap-3">
+          <Image
+            src="/Bug Quoter.svg"
+            alt="Quoter"
+            width={40}
+            height={40}
+            className="rounded-xl"
+          />
           <span className="text-xl font-bold text-brand-500">Quoter</span>
-        </div>
+        </Link>
       </div>
 
       {/* New Quote Button */}
