@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { CONSTRUCTION_MODULES } from "@/lib/construction-modules";
@@ -9,17 +8,9 @@ Je output is ALTIJD valide JSON met exact deze structuur:
 {
   "quote_title": "Titel van de offerte",
   "summary": "Korte samenvatting van het project (1-2 zinnen)",
-  "technical_description": "Uitgebreide technische omschrijving van de werkzaamheden als inleidende tekst voor de offerte. Beschrijf per module/categorie wat er gedaan wordt, welke materialen gebruikt worden en welke specificaties gelden. Schrijf professioneel in de stijl van een bouwofferte.",
-  "modules": [
-    {
-      "name": "Naam van de module/categorie",
-      "intro": "Inleidende tekst die de werkzaamheden voor deze module beschrijft en onderbouwt",
-      "items": ["Opsomming van specifieke werkzaamheden binnen deze module"]
-    }
-  ],
   "lines": [
     {
-      "category": "Categorie (moet overeenkomen met module naam)",
+      "category": "Categorie",
       "description": "Beschrijving van de werkzaamheid of het materiaal",
       "type": "arbeid | materiaal",
       "quantity": 1,
@@ -46,37 +37,26 @@ Regels:
 - Pas de winstmarge toe op het subtotaal (materialen + arbeid)
 - BTW is 21% over het totaal inclusief marge
 - Geef realistische schattingen - liever iets ruimer dan te krap
-- Groepeer werkzaamheden logisch per categorie
-- Als er bouwmodules zijn geselecteerd, gebruik die als basis voor de categorieën en werkzaamheden. Genereer voor elke geselecteerde module de bijbehorende regels met realistische hoeveelheden en prijzen.
+- Als er bouwmodules zijn geselecteerd, gebruik de modulenamen als categorieën. Genereer 3-8 regels per module.
+- Wees beknopt in beschrijvingen
 - Geef alleen de JSON terug, geen andere tekst`;
 
 /**
  * Attempts to repair truncated JSON by closing open brackets/braces.
  */
 function repairTruncatedJson(json: string): string {
-  // Remove trailing incomplete key-value pairs (e.g., `"key": ` or `"key":`)
   let str = json.replace(/,\s*"[^"]*"\s*:\s*$/, "");
   str = str.replace(/,\s*$/, "");
 
-  // Count open brackets and braces
   let openBraces = 0;
   let openBrackets = 0;
   let inString = false;
   let escape = false;
 
   for (const ch of str) {
-    if (escape) {
-      escape = false;
-      continue;
-    }
-    if (ch === "\\") {
-      escape = true;
-      continue;
-    }
-    if (ch === '"') {
-      inString = !inString;
-      continue;
-    }
+    if (escape) { escape = false; continue; }
+    if (ch === "\\") { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
     if (inString) continue;
     if (ch === "{") openBraces++;
     if (ch === "}") openBraces--;
@@ -84,18 +64,9 @@ function repairTruncatedJson(json: string): string {
     if (ch === "]") openBrackets--;
   }
 
-  // If we're inside a string, close it
   if (inString) str += '"';
-
-  // Close arrays then objects
-  while (openBrackets > 0) {
-    str += "]";
-    openBrackets--;
-  }
-  while (openBraces > 0) {
-    str += "}";
-    openBraces--;
-  }
+  while (openBrackets > 0) { str += "]"; openBrackets--; }
+  while (openBraces > 0) { str += "}"; openBraces--; }
 
   return str;
 }
@@ -107,15 +78,14 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json(
+    return Response.json(
       {
         error: "AI-service niet geconfigureerd",
-        message:
-          "Configureer de ANTHROPIC_API_KEY omgevingsvariabele om de offerte-generatie te activeren.",
+        message: "Configureer de ANTHROPIC_API_KEY omgevingsvariabele.",
       },
       { status: 503 }
     );
@@ -148,86 +118,133 @@ export async function POST(request: Request) {
           .join("\n")
       : "Geen materialen in de bibliotheek. Schat marktconforme materiaalprijzen.";
 
-  // Build modules section if modules are selected
+  // Build compact modules section
   const selectedModuleIds: string[] = body.selectedModules || [];
   let modulesSection = "";
   if (selectedModuleIds.length > 0) {
-    const moduleDetails = selectedModuleIds
+    const moduleNames = selectedModuleIds
       .map((id: string) => {
         const mod = CONSTRUCTION_MODULES.find((m) => m.id === id);
-        if (!mod) return null;
-        return `## ${mod.name}\nInleiding: ${mod.intro}\nWerkzaamheden:\n${mod.items.map((item) => `  - ${item}`).join("\n")}`;
+        return mod ? mod.name : null;
       })
-      .filter(Boolean)
-      .join("\n\n");
-    modulesSection = `\n\nGeselecteerde bouwmodules (gebruik deze als categorieën, genereer per module een inleidende technische omschrijving en de bijbehorende offerteregels):\n\n${moduleDetails}`;
+      .filter(Boolean);
+    modulesSection = `\n\nGeselecteerde modules (gebruik als categorieën): ${moduleNames.join(", ")}`;
   }
 
-  const userMessage = `Genereer een offerte met de volgende gegevens:
+  const userMessage = `Genereer een offerte:
 
 Bedrijf: ${businessName}
 Uurtarief: €${hourlyRate}/uur
 Winstmarge: ${marginPct}%
-
 Klant: ${body.client_name}
 Project: ${body.project_title}
 Locatie: ${body.project_location || "Niet opgegeven"}
-Projectomschrijving: ${body.project_description || "Geen aanvullende omschrijving"}
+Omschrijving: ${body.project_description || "Geen"}
 ${modulesSection}
 
-Beschikbare materialen met prijzen:
+Materialen:
 ${materialsList}
 
-Opdracht van de aannemer:
+Opdracht:
 ${body.ai_input}`;
 
-  try {
-    const client = new Anthropic();
+  // Use streaming for faster perceived response
+  const encoder = new TextEncoder();
 
-    const message = await client.messages.create({
-      model: "claude-sonnet-4-5-20250929",
-      max_tokens: 16384,
-      messages: [{ role: "user", content: userMessage }],
-      system: SYSTEM_PROMPT,
-    });
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        const client = new Anthropic();
+        let fullText = "";
 
-    const textBlock = message.content.find((block) => block.type === "text");
-    if (!textBlock || textBlock.type !== "text") {
-      return NextResponse.json(
-        { error: "Geen antwoord ontvangen van AI" },
-        { status: 502 }
-      );
-    }
+        const streamResponse = client.messages.stream({
+          model: "claude-sonnet-4-5-20250929",
+          max_tokens: 8192,
+          messages: [{ role: "user", content: userMessage }],
+          system: SYSTEM_PROMPT,
+        });
 
-    const jsonMatch = textBlock.text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return NextResponse.json(
-        { error: "Ongeldig AI-antwoord", raw: textBlock.text },
-        { status: 502 }
-      );
-    }
+        // Send progress events as SSE
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: "progress", stage: "Offerte wordt opgesteld..." })}\n\n`)
+        );
 
-    let jsonStr = jsonMatch[0];
+        let linesFound = false;
 
-    // Attempt to repair truncated JSON if the response was cut off
-    if (message.stop_reason === "max_tokens") {
-      jsonStr = repairTruncatedJson(jsonStr);
-    }
+        streamResponse.on("text", (text) => {
+          fullText += text;
 
-    const quoteData = JSON.parse(jsonStr);
-    return NextResponse.json(quoteData);
-  } catch (error: unknown) {
-    const errMsg =
-      error instanceof Error ? error.message : "Onbekende fout";
-    const isJsonError = errMsg.includes("JSON") || errMsg.includes("position");
-    return NextResponse.json(
-      {
-        error: isJsonError
-          ? "AI-antwoord kon niet verwerkt worden. Probeer opnieuw met minder modules."
-          : "Fout bij het genereren van de offerte",
-        message: errMsg,
-      },
-      { status: 502 }
-    );
-  }
+          // Send progress updates at key milestones
+          if (!linesFound && fullText.includes('"lines"')) {
+            linesFound = true;
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: "progress", stage: "Regels berekenen..." })}\n\n`)
+            );
+          }
+        });
+
+        const finalMessage = await streamResponse.finalMessage();
+
+        // Process result
+        const jsonMatch = fullText.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: "error", error: "Ongeldig AI-antwoord" })}\n\n`)
+          );
+          controller.close();
+          return;
+        }
+
+        let jsonStr = jsonMatch[0];
+        if (finalMessage.stop_reason === "max_tokens") {
+          jsonStr = repairTruncatedJson(jsonStr);
+        }
+
+        const quoteData = JSON.parse(jsonStr);
+
+        // Merge module definitions from our own data (not AI-generated)
+        if (selectedModuleIds.length > 0) {
+          quoteData.modules = selectedModuleIds
+            .map((id: string) => {
+              const mod = CONSTRUCTION_MODULES.find((m) => m.id === id);
+              if (!mod) return null;
+              return {
+                name: mod.name,
+                intro: mod.intro,
+                items: mod.items,
+              };
+            })
+            .filter(Boolean);
+        }
+
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: "result", data: quoteData })}\n\n`)
+        );
+        controller.close();
+      } catch (error: unknown) {
+        const errMsg = error instanceof Error ? error.message : "Onbekende fout";
+        const isJsonError = errMsg.includes("JSON") || errMsg.includes("position");
+        controller.enqueue(
+          encoder.encode(
+            `data: ${JSON.stringify({
+              type: "error",
+              error: isJsonError
+                ? "AI-antwoord kon niet verwerkt worden. Probeer opnieuw."
+                : "Fout bij het genereren van de offerte",
+              message: errMsg,
+            })}\n\n`
+          )
+        );
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 }

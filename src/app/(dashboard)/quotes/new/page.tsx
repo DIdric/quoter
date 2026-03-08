@@ -283,6 +283,7 @@ export default function NewQuotePageWrapper() {
 function NewQuotePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState("");
   const [loadingProject, setLoadingProject] = useState(false);
   const [result, setResult] = useState<QuoteResult | null>(null);
   const [existingProjectId, setExistingProjectId] = useState<string | null>(null);
@@ -383,20 +384,54 @@ function NewQuotePage() {
 
   async function handleGenerate() {
     setLoading(true);
+    setLoadingStage("Verbinden met AI...");
     try {
       const response = await fetch("/api/generate-quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, selectedModules }),
       });
-      const data = await response.json();
-      setResult(data);
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No stream");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            if (event.type === "progress") {
+              setLoadingStage(event.stage);
+            } else if (event.type === "result") {
+              setResult(event.data);
+            } else if (event.type === "error") {
+              setResult({
+                error: event.error,
+                message: event.message,
+              } as unknown as QuoteResult);
+            }
+          } catch {
+            // Skip malformed events
+          }
+        }
+      }
     } catch {
       setResult({
         error: "Er is iets misgegaan bij het genereren.",
       } as unknown as QuoteResult);
     }
     setLoading(false);
+    setLoadingStage("");
   }
 
   async function handleSaveQuote() {
@@ -744,24 +779,31 @@ function NewQuotePage() {
               </p>
             </div>
 
-            {!result && (
+            {!result && !loading && (
               <button
                 onClick={handleGenerate}
-                disabled={loading || !form.ai_input}
+                disabled={!form.ai_input}
                 className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-5 py-2.5 rounded-lg transition disabled:opacity-50"
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Offerte wordt gegenereerd...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    Offerte Genereren
-                  </>
-                )}
+                <Sparkles className="w-4 h-4" />
+                Offerte Genereren
               </button>
+            )}
+
+            {loading && (
+              <div className="bg-brand-50 border border-brand-200 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 animate-spin text-brand-500 shrink-0" />
+                  <div>
+                    <p className="font-medium text-brand-700 text-sm">
+                      {loadingStage || "Offerte wordt gegenereerd..."}
+                    </p>
+                    <p className="text-xs text-brand-500 mt-0.5">
+                      Dit duurt meestal 15-30 seconden
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Error state */}
