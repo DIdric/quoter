@@ -50,6 +50,56 @@ Regels:
 - Als er bouwmodules zijn geselecteerd, gebruik die als basis voor de categorieën en werkzaamheden. Genereer voor elke geselecteerde module de bijbehorende regels met realistische hoeveelheden en prijzen.
 - Geef alleen de JSON terug, geen andere tekst`;
 
+/**
+ * Attempts to repair truncated JSON by closing open brackets/braces.
+ */
+function repairTruncatedJson(json: string): string {
+  // Remove trailing incomplete key-value pairs (e.g., `"key": ` or `"key":`)
+  let str = json.replace(/,\s*"[^"]*"\s*:\s*$/, "");
+  str = str.replace(/,\s*$/, "");
+
+  // Count open brackets and braces
+  let openBraces = 0;
+  let openBrackets = 0;
+  let inString = false;
+  let escape = false;
+
+  for (const ch of str) {
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (ch === "\\") {
+      escape = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (ch === "{") openBraces++;
+    if (ch === "}") openBraces--;
+    if (ch === "[") openBrackets++;
+    if (ch === "]") openBrackets--;
+  }
+
+  // If we're inside a string, close it
+  if (inString) str += '"';
+
+  // Close arrays then objects
+  while (openBrackets > 0) {
+    str += "]";
+    openBrackets--;
+  }
+  while (openBraces > 0) {
+    str += "}";
+    openBraces--;
+  }
+
+  return str;
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient();
   const {
@@ -136,7 +186,7 @@ ${body.ai_input}`;
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-5-20250929",
-      max_tokens: 4096,
+      max_tokens: 16384,
       messages: [{ role: "user", content: userMessage }],
       system: SYSTEM_PROMPT,
     });
@@ -157,15 +207,25 @@ ${body.ai_input}`;
       );
     }
 
-    const quoteData = JSON.parse(jsonMatch[0]);
+    let jsonStr = jsonMatch[0];
+
+    // Attempt to repair truncated JSON if the response was cut off
+    if (message.stop_reason === "max_tokens") {
+      jsonStr = repairTruncatedJson(jsonStr);
+    }
+
+    const quoteData = JSON.parse(jsonStr);
     return NextResponse.json(quoteData);
   } catch (error: unknown) {
-    const message =
+    const errMsg =
       error instanceof Error ? error.message : "Onbekende fout";
+    const isJsonError = errMsg.includes("JSON") || errMsg.includes("position");
     return NextResponse.json(
       {
-        error: "Fout bij het genereren van de offerte",
-        message,
+        error: isJsonError
+          ? "AI-antwoord kon niet verwerkt worden. Probeer opnieuw met minder modules."
+          : "Fout bij het genereren van de offerte",
+        message: errMsg,
       },
       { status: 502 }
     );
