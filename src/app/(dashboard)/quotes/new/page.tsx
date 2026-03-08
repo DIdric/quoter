@@ -15,14 +15,39 @@ import {
   Wrench,
   Clock,
   Euro,
+  Layers,
+  Shovel,
+  Hammer,
+  Zap,
+  Droplets,
+  DoorOpen,
+  ArrowUpFromLine,
+  BrickWall,
 } from "lucide-react";
 import { VoiceInput } from "@/components/voice-input";
+import { CONSTRUCTION_MODULES, type ConstructionModule } from "@/lib/construction-modules";
 
 const steps = [
   { label: "Klantgegevens", icon: User },
   { label: "Projectdetails", icon: FileText },
+  { label: "Modules", icon: Layers },
   { label: "AI Generatie", icon: Sparkles },
 ];
+
+const MODULE_ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
+  shovel: Shovel,
+  foundation: BrickWall,
+  layers: Layers,
+  beam: Hammer,
+  crane: ArrowUpFromLine,
+  demolition: Hammer,
+  wall: BrickWall,
+  facade: BrickWall,
+  roof: Layers,
+  door: DoorOpen,
+  zap: Zap,
+  droplets: Droplets,
+};
 
 interface QuoteLine {
   category: string;
@@ -34,9 +59,17 @@ interface QuoteLine {
   total: number;
 }
 
+interface QuoteModule {
+  name: string;
+  intro: string;
+  items: string[];
+}
+
 interface QuoteResult {
   quote_title: string;
   summary: string;
+  technical_description?: string;
+  modules?: QuoteModule[];
   lines: QuoteLine[];
   subtotal_materials: number;
   subtotal_labor: number;
@@ -76,6 +109,44 @@ function QuoteDisplay({ quote }: { quote: QuoteResult }) {
           </div>
         )}
       </div>
+
+      {/* Technical description */}
+      {quote.technical_description && (
+        <div className="bg-white border border-slate-200 rounded-lg p-4">
+          <h4 className="font-semibold text-slate-800 mb-2">
+            Omschrijving werkzaamheden
+          </h4>
+          <p className="text-sm text-slate-600 whitespace-pre-line">
+            {quote.technical_description}
+          </p>
+        </div>
+      )}
+
+      {/* Modules with intros */}
+      {quote.modules && quote.modules.length > 0 && (
+        <div className="space-y-4">
+          <h4 className="font-semibold text-slate-800">
+            Technische omschrijving per module
+          </h4>
+          {quote.modules.map((mod, i) => (
+            <div
+              key={i}
+              className="bg-slate-50 border border-slate-200 rounded-lg p-4"
+            >
+              <h5 className="font-medium text-slate-700 mb-1">{mod.name}</h5>
+              <p className="text-sm text-slate-600 mb-2">{mod.intro}</p>
+              <ul className="text-sm text-slate-500 space-y-0.5">
+                {mod.items.map((item, j) => (
+                  <li key={j} className="flex items-start gap-2">
+                    <span className="text-slate-400 mt-1 shrink-0">•</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Lines grouped by category */}
       {categories.map((category) => {
@@ -215,6 +286,7 @@ function NewQuotePage() {
   const [loadingProject, setLoadingProject] = useState(false);
   const [result, setResult] = useState<QuoteResult | null>(null);
   const [existingProjectId, setExistingProjectId] = useState<string | null>(null);
+  const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [form, setForm] = useState({
     client_name: "",
     client_email: "",
@@ -252,13 +324,16 @@ function NewQuotePage() {
               project_location: savedForm.project_location || "",
               ai_input: savedForm.ai_input || "",
             });
+            if (data.json_data?.selectedModules) {
+              setSelectedModules(data.json_data.selectedModules);
+            }
           } else {
             setForm((prev) => ({
               ...prev,
               client_name: data.client_name || "",
             }));
           }
-          setCurrentStep(2);
+          setCurrentStep(3);
         }
         setLoadingProject(false);
       });
@@ -268,13 +343,21 @@ function NewQuotePage() {
     setForm({ ...form, [field]: value });
   }
 
+  function toggleModule(moduleId: string) {
+    setSelectedModules((prev) =>
+      prev.includes(moduleId)
+        ? prev.filter((id) => id !== moduleId)
+        : [...prev, moduleId]
+    );
+  }
+
   async function handleGenerate() {
     setLoading(true);
     try {
       const response = await fetch("/api/generate-quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, selectedModules }),
       });
       const data = await response.json();
       setResult(data);
@@ -297,7 +380,7 @@ function NewQuotePage() {
         .from("quotes")
         .update({
           client_name: form.client_name,
-          json_data: { form, result },
+          json_data: { form, result, selectedModules },
         })
         .eq("id", existingProjectId);
       router.push(`/projects/${existingProjectId}`);
@@ -306,7 +389,7 @@ function NewQuotePage() {
         user_id: user.id,
         client_name: form.client_name,
         status: "draft",
-        json_data: { form, result },
+        json_data: { form, result, selectedModules },
       });
       router.push("/projects");
     }
@@ -323,7 +406,7 @@ function NewQuotePage() {
         .from("quotes")
         .update({
           client_name: form.client_name,
-          json_data: { form, result: null },
+          json_data: { form, result: null, selectedModules },
         })
         .eq("id", existingProjectId);
       router.push(`/projects/${existingProjectId}`);
@@ -332,7 +415,7 @@ function NewQuotePage() {
         user_id: user.id,
         client_name: form.client_name,
         status: "draft",
-        json_data: { form, result: null },
+        json_data: { form, result: null, selectedModules },
       });
       router.push("/projects");
     }
@@ -522,8 +605,73 @@ function NewQuotePage() {
           </div>
         )}
 
-        {/* Step 3: AI Generation */}
+        {/* Step 3: Module Selection */}
         {currentStep === 2 && (
+          <div className="space-y-4">
+            <h2 className="text-lg font-semibold text-slate-800 mb-1">
+              Bouwmodules
+            </h2>
+            <p className="text-sm text-slate-500 mb-4">
+              Selecteer de modules die van toepassing zijn op dit project. De AI
+              zal deze gebruiken om een gedetailleerde offerte te genereren.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {CONSTRUCTION_MODULES.map((mod: ConstructionModule) => {
+                const isSelected = selectedModules.includes(mod.id);
+                const IconComp = MODULE_ICONS[mod.icon] || Package;
+                return (
+                  <button
+                    key={mod.id}
+                    type="button"
+                    onClick={() => toggleModule(mod.id)}
+                    className={`text-left p-3 rounded-lg border-2 transition ${
+                      isSelected
+                        ? "border-brand-500 bg-brand-50"
+                        : "border-slate-200 hover:border-slate-300 bg-white"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={`p-2 rounded-lg shrink-0 ${
+                          isSelected
+                            ? "bg-brand-100 text-brand-600"
+                            : "bg-slate-100 text-slate-400"
+                        }`}
+                      >
+                        <IconComp className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`font-medium text-sm ${
+                              isSelected ? "text-brand-700" : "text-slate-700"
+                            }`}
+                          >
+                            {mod.name}
+                          </span>
+                          {isSelected && (
+                            <Check className="w-4 h-4 text-brand-500 shrink-0" />
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">
+                          {mod.description}
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            {selectedModules.length > 0 && (
+              <p className="text-sm text-brand-600 font-medium">
+                {selectedModules.length} module{selectedModules.length !== 1 ? "s" : ""} geselecteerd
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Step 4: AI Generation */}
+        {currentStep === 3 && (
           <div className="space-y-4">
             <h2 className="text-lg font-semibold text-slate-800 mb-4">
               AI Offerte Generatie

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { CONSTRUCTION_MODULES } from "@/lib/construction-modules";
 
 const SYSTEM_PROMPT = `Je bent een ervaren calculator/werkvoorbereider voor een Nederlands aannemersbedrijf. Je genereert gedetailleerde, professionele offertes op basis van projectbeschrijvingen.
 
@@ -8,9 +9,17 @@ Je output is ALTIJD valide JSON met exact deze structuur:
 {
   "quote_title": "Titel van de offerte",
   "summary": "Korte samenvatting van het project (1-2 zinnen)",
+  "technical_description": "Uitgebreide technische omschrijving van de werkzaamheden als inleidende tekst voor de offerte. Beschrijf per module/categorie wat er gedaan wordt, welke materialen gebruikt worden en welke specificaties gelden. Schrijf professioneel in de stijl van een bouwofferte.",
+  "modules": [
+    {
+      "name": "Naam van de module/categorie",
+      "intro": "Inleidende tekst die de werkzaamheden voor deze module beschrijft en onderbouwt",
+      "items": ["Opsomming van specifieke werkzaamheden binnen deze module"]
+    }
+  ],
   "lines": [
     {
-      "category": "Categorie (bijv. Sloopwerk, Tegelwerk, Sanitair, Elektra, Loodgieterswerk, Timmerwerk, Schilderwerk, Afwerking)",
+      "category": "Categorie (moet overeenkomen met module naam)",
       "description": "Beschrijving van de werkzaamheid of het materiaal",
       "type": "arbeid | materiaal",
       "quantity": 1,
@@ -38,6 +47,7 @@ Regels:
 - BTW is 21% over het totaal inclusief marge
 - Geef realistische schattingen - liever iets ruimer dan te krap
 - Groepeer werkzaamheden logisch per categorie
+- Als er bouwmodules zijn geselecteerd, gebruik die als basis voor de categorieën en werkzaamheden. Genereer voor elke geselecteerde module de bijbehorende regels met realistische hoeveelheden en prijzen.
 - Geef alleen de JSON terug, geen andere tekst`;
 
 export async function POST(request: Request) {
@@ -88,6 +98,21 @@ export async function POST(request: Request) {
           .join("\n")
       : "Geen materialen in de bibliotheek. Schat marktconforme materiaalprijzen.";
 
+  // Build modules section if modules are selected
+  const selectedModuleIds: string[] = body.selectedModules || [];
+  let modulesSection = "";
+  if (selectedModuleIds.length > 0) {
+    const moduleDetails = selectedModuleIds
+      .map((id: string) => {
+        const mod = CONSTRUCTION_MODULES.find((m) => m.id === id);
+        if (!mod) return null;
+        return `## ${mod.name}\nInleiding: ${mod.intro}\nWerkzaamheden:\n${mod.items.map((item) => `  - ${item}`).join("\n")}`;
+      })
+      .filter(Boolean)
+      .join("\n\n");
+    modulesSection = `\n\nGeselecteerde bouwmodules (gebruik deze als categorieën, genereer per module een inleidende technische omschrijving en de bijbehorende offerteregels):\n\n${moduleDetails}`;
+  }
+
   const userMessage = `Genereer een offerte met de volgende gegevens:
 
 Bedrijf: ${businessName}
@@ -98,6 +123,7 @@ Klant: ${body.client_name}
 Project: ${body.project_title}
 Locatie: ${body.project_location || "Niet opgegeven"}
 Projectomschrijving: ${body.project_description || "Geen aanvullende omschrijving"}
+${modulesSection}
 
 Beschikbare materialen met prijzen:
 ${materialsList}

@@ -16,9 +16,17 @@ interface QuoteLine {
   total: number;
 }
 
+interface QuoteModuleDescription {
+  name: string;
+  intro: string;
+  items: string[];
+}
+
 interface QuoteResult {
   quote_title: string;
   summary: string;
+  technical_description?: string;
+  modules?: QuoteModuleDescription[];
   lines: QuoteLine[];
   subtotal_materials: number;
   subtotal_labor: number;
@@ -198,6 +206,62 @@ export async function GET(
   });
 
   y = Math.max(y, projectY) + 6;
+
+  // -- Technical description per module --
+  if (result.modules && result.modules.length > 0) {
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(30, 41, 59);
+    doc.text("Technische omschrijving werkzaamheden", margin, y);
+    y += 7;
+
+    result.modules.forEach((mod) => {
+      // Check if we need a new page
+      if (y > 250) {
+        doc.addPage();
+        y = 20;
+      }
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(51, 65, 85);
+      doc.text(mod.name, margin, y);
+      y += 5;
+
+      doc.setFontSize(8.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(71, 85, 105);
+      const introLines = doc.splitTextToSize(
+        mod.intro,
+        pageWidth - margin * 2
+      );
+      doc.text(introLines, margin, y);
+      y += introLines.length * 4 + 2;
+
+      // Bullet items
+      mod.items.forEach((item) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        const itemLines = doc.splitTextToSize(
+          `•  ${item}`,
+          pageWidth - margin * 2 - 5
+        );
+        doc.text(itemLines, margin + 3, y);
+        y += itemLines.length * 3.5 + 1;
+      });
+
+      y += 4;
+    });
+
+    // Separator before price table
+    y += 2;
+    doc.setDrawColor(226, 232, 240);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 8;
+  }
 
   // -- Quote lines table --
   const categories = [...new Set(result.lines.map((l) => l.category))];
