@@ -194,42 +194,41 @@ export function EditableQuoteLines({
   return (
     <div className="space-y-6">
       {/* Edit toggle */}
-      {isDraft && (
-        <div className="flex justify-end">
-          {!editing ? (
+      {/* Edit toggle */}
+      <div className="flex justify-end">
+        {!editing ? (
+          <button
+            onClick={() => setEditing(true)}
+            className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition"
+          >
+            <Pencil className="w-4 h-4" />
+            Regelitems bewerken
+          </button>
+        ) : (
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setEditing(true)}
-              className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition"
+              onClick={handleCancel}
+              disabled={saving}
+              className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-100 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
             >
-              <Pencil className="w-4 h-4" />
-              Regelitems bewerken
+              <X className="w-4 h-4" />
+              Annuleren
             </button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleCancel}
-                disabled={saving}
-                className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-100 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
-              >
-                <X className="w-4 h-4" />
-                Annuleren
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="flex items-center gap-2 text-sm bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-1.5 rounded-lg transition disabled:opacity-50"
-              >
-                {saving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                Opslaan
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 text-sm bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-1.5 rounded-lg transition disabled:opacity-50"
+            >
+              {saving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              Opslaan
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Lines grouped by category */}
       {categories.map((category) => {

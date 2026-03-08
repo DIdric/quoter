@@ -287,6 +287,8 @@ function NewQuotePage() {
   const [result, setResult] = useState<QuoteResult | null>(null);
   const [existingProjectId, setExistingProjectId] = useState<string | null>(null);
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
+  const [suggestingModules, setSuggestingModules] = useState(false);
+  const [modulesSuggested, setModulesSuggested] = useState(false);
   const [form, setForm] = useState({
     client_name: "",
     client_email: "",
@@ -338,6 +340,34 @@ function NewQuotePage() {
         setLoadingProject(false);
       });
   }, [searchParams, supabase]);
+
+  // Auto-suggest modules when arriving at step 3
+  useEffect(() => {
+    if (currentStep !== 2 || modulesSuggested || selectedModules.length > 0) return;
+    const desc = [form.project_title, form.project_description].filter(Boolean).join(". ");
+    if (!desc.trim()) return;
+
+    setSuggestingModules(true);
+    fetch("/api/suggest-modules", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        project_title: form.project_title,
+        project_description: form.project_description,
+      }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.suggested?.length > 0) {
+          setSelectedModules(data.suggested);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        setSuggestingModules(false);
+        setModulesSuggested(true);
+      });
+  }, [currentStep, form.project_title, form.project_description, modulesSuggested, selectedModules.length]);
 
   function updateForm(field: string, value: string) {
     setForm({ ...form, [field]: value });
@@ -611,10 +641,21 @@ function NewQuotePage() {
             <h2 className="text-lg font-semibold text-slate-800 mb-1">
               Bouwmodules
             </h2>
-            <p className="text-sm text-slate-500 mb-4">
-              Selecteer de modules die van toepassing zijn op dit project. De AI
-              zal deze gebruiken om een gedetailleerde offerte te genereren.
-            </p>
+            {suggestingModules ? (
+              <div className="flex items-center gap-2 text-sm text-brand-600 mb-4">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                AI analyseert je project en selecteert modules...
+              </div>
+            ) : modulesSuggested && selectedModules.length > 0 ? (
+              <p className="text-sm text-brand-600 mb-4">
+                AI heeft {selectedModules.length} modules voorgesteld op basis van je projectomschrijving. Je kunt deze aanpassen.
+              </p>
+            ) : (
+              <p className="text-sm text-slate-500 mb-4">
+                Selecteer de modules die van toepassing zijn op dit project. De AI
+                zal deze gebruiken om een gedetailleerde offerte te genereren.
+              </p>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {CONSTRUCTION_MODULES.map((mod: ConstructionModule) => {
                 const isSelected = selectedModules.includes(mod.id);
