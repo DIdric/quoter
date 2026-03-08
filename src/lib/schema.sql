@@ -9,8 +9,17 @@ create table public.profiles (
   id uuid references auth.users on delete cascade primary key,
   business_name text,
   logo_url text,
+  business_address text,
+  business_postal_code text,
+  business_city text,
+  business_phone text,
+  business_email text,
+  kvk_number text,
+  btw_number text,
+  iban text,
   hourly_rate numeric(10,2) default 45.00,
   margin_percentage numeric(5,2) default 15.00,
+  quote_validity_days integer default 30,
   created_at timestamptz default now()
 );
 

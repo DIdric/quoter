@@ -8,8 +8,17 @@ import { Save, Loader2, Upload, X, Image as ImageIcon } from "lucide-react";
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Partial<Profile>>({
     business_name: "",
+    business_address: "",
+    business_postal_code: "",
+    business_city: "",
+    business_phone: "",
+    business_email: "",
+    kvk_number: "",
+    btw_number: "",
+    iban: "",
     hourly_rate: 45,
     margin_percentage: 15,
+    quote_validity_days: 30,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -108,8 +117,17 @@ export default function SettingsPage() {
       .from("profiles")
       .update({
         business_name: profile.business_name,
+        business_address: profile.business_address,
+        business_postal_code: profile.business_postal_code,
+        business_city: profile.business_city,
+        business_phone: profile.business_phone,
+        business_email: profile.business_email,
+        kvk_number: profile.kvk_number,
+        btw_number: profile.btw_number,
+        iban: profile.iban,
         hourly_rate: profile.hourly_rate,
         margin_percentage: profile.margin_percentage,
+        quote_validity_days: profile.quote_validity_days,
       })
       .eq("id", user.id);
 
@@ -210,7 +228,137 @@ export default function SettingsPage() {
             />
           </div>
 
+          {/* Address */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Adres
+            </label>
+            <input
+              type="text"
+              value={profile.business_address ?? ""}
+              onChange={(e) =>
+                setProfile({ ...profile, business_address: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+              placeholder="Kaasjeskruidstraat 13"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Postcode
+              </label>
+              <input
+                type="text"
+                value={profile.business_postal_code ?? ""}
+                onChange={(e) =>
+                  setProfile({ ...profile, business_postal_code: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                placeholder="1032LS"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Plaats
+              </label>
+              <input
+                type="text"
+                value={profile.business_city ?? ""}
+                onChange={(e) =>
+                  setProfile({ ...profile, business_city: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                placeholder="Amsterdam"
+              />
+            </div>
+          </div>
+
+          {/* Contact */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Telefoon
+              </label>
+              <input
+                type="tel"
+                value={profile.business_phone ?? ""}
+                onChange={(e) =>
+                  setProfile({ ...profile, business_phone: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                placeholder="020-1234567"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                E-mail
+              </label>
+              <input
+                type="email"
+                value={profile.business_email ?? ""}
+                onChange={(e) =>
+                  setProfile({ ...profile, business_email: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                placeholder="info@jouwbedrijf.nl"
+              />
+            </div>
+          </div>
+
+          {/* Registration numbers */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                KvK-nummer
+              </label>
+              <input
+                type="text"
+                value={profile.kvk_number ?? ""}
+                onChange={(e) =>
+                  setProfile({ ...profile, kvk_number: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                placeholder="12345678"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                BTW-nummer
+              </label>
+              <input
+                type="text"
+                value={profile.btw_number ?? ""}
+                onChange={(e) =>
+                  setProfile({ ...profile, btw_number: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                placeholder="NL001234567B01"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              IBAN
+            </label>
+            <input
+              type="text"
+              value={profile.iban ?? ""}
+              onChange={(e) =>
+                setProfile({ ...profile, iban: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+              placeholder="NL32 ABNA 0464 9587 17"
+            />
+          </div>
+
+          {/* Pricing & Quote settings */}
+          <div className="border-t border-slate-200 pt-5">
+            <h3 className="text-sm font-semibold text-slate-700 mb-3">Offerte-instellingen</h3>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Uurtarief (&euro;)
@@ -243,6 +391,24 @@ export default function SettingsPage() {
                   setProfile({
                     ...profile,
                     margin_percentage: parseFloat(e.target.value),
+                  })
+                }
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">
+                Geldigheid (dagen)
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="365"
+                value={profile.quote_validity_days ?? 30}
+                onChange={(e) =>
+                  setProfile({
+                    ...profile,
+                    quote_validity_days: parseInt(e.target.value) || 30,
                   })
                 }
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
