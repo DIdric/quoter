@@ -62,46 +62,25 @@ export default function SettingsPage() {
     setUploading(true);
     setUploadError(null);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      setUploading(false);
-      return;
-    }
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
 
-    const fileExt = file.name.split(".").pop()?.toLowerCase() || "png";
-    const filePath = `${user.id}/logo.${fileExt}`;
-
-    const { error } = await supabase.storage
-      .from("logos")
-      .upload(filePath, file, {
-        upsert: true,
-        contentType: file.type,
+      const res = await fetch("/api/upload-logo", {
+        method: "POST",
+        body: formData,
       });
 
-    if (error) {
-      console.error("Logo upload error:", error);
-      setUploadError(
-        error.message === "The resource already exists"
-          ? "Bestand bestaat al. Probeer opnieuw."
-          : error.message.includes("Bucket not found") || error.statusCode === "404"
-          ? "De storage bucket 'logos' bestaat nog niet. Voer het schema.sql script uit in de Supabase SQL Editor."
-          : `Upload mislukt: ${error.message}`
-      );
-    } else {
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("logos").getPublicUrl(filePath);
+      const data = await res.json();
 
-      const logoUrl = `${publicUrl}?t=${Date.now()}`;
-      setLogoPreview(logoUrl);
-      setProfile({ ...profile, logo_url: logoUrl });
-
-      await supabase
-        .from("profiles")
-        .update({ logo_url: logoUrl })
-        .eq("id", user.id);
+      if (!res.ok) {
+        setUploadError(data.error || "Upload mislukt");
+      } else {
+        setLogoPreview(data.logoUrl);
+        setProfile({ ...profile, logo_url: data.logoUrl });
+      }
+    } catch {
+      setUploadError("Upload mislukt. Probeer opnieuw.");
     }
 
     setUploading(false);
@@ -109,18 +88,10 @@ export default function SettingsPage() {
   }
 
   async function handleRemoveLogo() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
     setLogoPreview(null);
     setProfile({ ...profile, logo_url: null });
 
-    await supabase
-      .from("profiles")
-      .update({ logo_url: null })
-      .eq("id", user.id);
+    await fetch("/api/upload-logo", { method: "DELETE" });
   }
 
   async function handleSave(e: React.FormEvent) {
