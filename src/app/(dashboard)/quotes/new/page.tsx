@@ -90,8 +90,24 @@ function formatCurrency(amount: number) {
   }).format(amount);
 }
 
+function recalcTotalsFromLines(lines: QuoteLine[], marginPct: number) {
+  const subtotal_materials = lines
+    .filter((l) => l.type === "materiaal")
+    .reduce((sum, l) => sum + l.quantity * l.unit_price, 0);
+  const subtotal_labor = lines
+    .filter((l) => l.type === "arbeid")
+    .reduce((sum, l) => sum + l.quantity * l.unit_price, 0);
+  const base = subtotal_materials + subtotal_labor;
+  const margin_amount = Math.round(base * (marginPct / 100) * 100) / 100;
+  const total_excl_btw = Math.round((base + margin_amount) * 100) / 100;
+  const btw_amount = Math.round(total_excl_btw * 0.21 * 100) / 100;
+  const total_incl_btw = Math.round((total_excl_btw + btw_amount) * 100) / 100;
+  return { subtotal_materials, subtotal_labor, margin_amount, total_excl_btw, btw_amount, total_incl_btw };
+}
+
 function QuoteDisplay({ quote }: { quote: QuoteResult }) {
   const categories = [...new Set(quote.lines.map((l) => l.category))];
+  const totals = recalcTotalsFromLines(quote.lines, 15);
 
   return (
     <div className="space-y-6">
@@ -208,7 +224,7 @@ function QuoteDisplay({ quote }: { quote: QuoteResult }) {
                         {formatCurrency(line.unit_price)}
                       </td>
                       <td className="px-3 py-2 text-right font-medium text-slate-800">
-                        {formatCurrency(line.total)}
+                        {formatCurrency(Math.round(line.quantity * line.unit_price * 100) / 100)}
                       </td>
                     </tr>
                   ))}
@@ -225,32 +241,32 @@ function QuoteDisplay({ quote }: { quote: QuoteResult }) {
           <span className="flex items-center gap-1.5">
             <Package className="w-4 h-4 text-blue-500" /> Materialen
           </span>
-          <span>{formatCurrency(quote.subtotal_materials)}</span>
+          <span>{formatCurrency(totals.subtotal_materials)}</span>
         </div>
         <div className="flex justify-between text-sm text-slate-600">
           <span className="flex items-center gap-1.5">
             <Wrench className="w-4 h-4 text-brand-500" /> Arbeid
           </span>
-          <span>{formatCurrency(quote.subtotal_labor)}</span>
+          <span>{formatCurrency(totals.subtotal_labor)}</span>
         </div>
         <div className="flex justify-between text-sm text-slate-600">
           <span>Winstmarge</span>
-          <span>{formatCurrency(quote.margin_amount)}</span>
+          <span>{formatCurrency(totals.margin_amount)}</span>
         </div>
         <div className="border-t border-slate-300 pt-2 flex justify-between text-sm font-medium text-slate-700">
           <span>Totaal excl. BTW</span>
-          <span>{formatCurrency(quote.total_excl_btw)}</span>
+          <span>{formatCurrency(totals.total_excl_btw)}</span>
         </div>
         <div className="flex justify-between text-sm text-slate-600">
           <span>BTW (21%)</span>
-          <span>{formatCurrency(quote.btw_amount)}</span>
+          <span>{formatCurrency(totals.btw_amount)}</span>
         </div>
         <div className="border-t border-slate-300 pt-2 flex justify-between text-lg font-bold text-slate-800">
           <span className="flex items-center gap-1.5">
             <Euro className="w-5 h-5 text-green-600" /> Totaal incl. BTW
           </span>
           <span className="text-green-700">
-            {formatCurrency(quote.total_incl_btw)}
+            {formatCurrency(totals.total_incl_btw)}
           </span>
         </div>
       </div>

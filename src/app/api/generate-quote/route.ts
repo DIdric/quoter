@@ -202,6 +202,32 @@ ${body.ai_input}`;
 
         const quoteData = JSON.parse(jsonStr);
 
+        // Recalculate line totals and summary from lines to avoid AI math errors
+        if (Array.isArray(quoteData.lines)) {
+          quoteData.lines = quoteData.lines.map((line: { quantity: number; unit_price: number; total: number; type: string }) => ({
+            ...line,
+            total: Math.round(line.quantity * line.unit_price * 100) / 100,
+          }));
+          const subtotalMaterials = quoteData.lines
+            .filter((l: { type: string }) => l.type === "materiaal")
+            .reduce((sum: number, l: { total: number }) => sum + l.total, 0);
+          const subtotalLabor = quoteData.lines
+            .filter((l: { type: string }) => l.type === "arbeid")
+            .reduce((sum: number, l: { total: number }) => sum + l.total, 0);
+          const base = subtotalMaterials + subtotalLabor;
+          const marginAmount = Math.round(base * (marginPct / 100) * 100) / 100;
+          const totalExclBtw = Math.round((base + marginAmount) * 100) / 100;
+          const btwAmount = Math.round(totalExclBtw * 0.21 * 100) / 100;
+          const totalInclBtw = Math.round((totalExclBtw + btwAmount) * 100) / 100;
+
+          quoteData.subtotal_materials = subtotalMaterials;
+          quoteData.subtotal_labor = subtotalLabor;
+          quoteData.margin_amount = marginAmount;
+          quoteData.total_excl_btw = totalExclBtw;
+          quoteData.btw_amount = btwAmount;
+          quoteData.total_incl_btw = totalInclBtw;
+        }
+
         // Merge module definitions from our own data (not AI-generated)
         if (selectedModuleIds.length > 0) {
           quoteData.modules = selectedModuleIds
