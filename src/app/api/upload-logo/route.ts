@@ -11,7 +11,8 @@ function getServiceClient() {
   return createServiceClient(url, serviceKey);
 }
 
-async function ensureBucketExists(admin: ReturnType<typeof createServiceClient>) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function ensureBucketExists(admin: ReturnType<typeof getServiceClient>) {
   const { data } = await admin.storage.getBucket("logos");
   if (!data) {
     await admin.storage.createBucket("logos", { public: true });
