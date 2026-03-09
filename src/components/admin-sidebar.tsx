@@ -4,45 +4,26 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
-  FolderOpen,
+  Users,
+  Activity,
   Package,
-  Settings,
-  LogOut,
-  Plus,
+  ArrowLeft,
   Menu,
   X,
-  Shield,
 } from "lucide-react";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/projects", label: "Projecten", icon: FolderOpen },
-  { href: "/materials", label: "Materialen", icon: Package },
-  { href: "/settings", label: "Instellingen", icon: Settings },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/users", label: "Gebruikers", icon: Users },
+  { href: "/admin/usage", label: "API Gebruik", icon: Activity },
+  { href: "/admin/materials", label: "Standaard Materialen", icon: Package },
 ];
 
-export default function Sidebar() {
+export default function AdminSidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const pathname = usePathname();
-  const supabase = createClient();
-
-  useState(() => {
-    // Check admin status on mount
-    fetch("/api/admin?action=dashboard")
-      .then((r) => {
-        if (r.ok) setIsAdmin(true);
-      })
-      .catch(() => {});
-  });
-
-  async function handleLogout() {
-    await supabase.auth.signOut();
-    window.location.href = "/login";
-  }
 
   return (
     <>
@@ -55,25 +36,7 @@ export default function Sidebar() {
         >
           <Menu className="w-6 h-6" />
         </button>
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <Image
-            src="/Bug Quoter.svg"
-            alt="Quoter"
-            width={28}
-            height={28}
-            className="rounded-lg"
-          />
-          <span className="text-lg font-bold text-brand-500">Quoter</span>
-        </Link>
-        <div className="ml-auto">
-          <Link
-            href="/quotes/new"
-            className="flex items-center justify-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Nieuwe Offerte</span>
-          </Link>
-        </div>
+        <span className="text-lg font-bold text-red-400">Admin Panel</span>
       </div>
 
       {/* Backdrop */}
@@ -93,7 +56,7 @@ export default function Sidebar() {
         {/* Logo */}
         <div className="p-6 border-b border-slate-700 flex items-center justify-between">
           <Link
-            href="/dashboard"
+            href="/admin"
             className="flex items-center gap-3"
             onClick={() => setMobileOpen(false)}
           >
@@ -104,7 +67,10 @@ export default function Sidebar() {
               height={40}
               className="rounded-xl"
             />
-            <span className="text-xl font-bold text-brand-500">Quoter</span>
+            <div>
+              <span className="text-xl font-bold text-brand-500">Quoter</span>
+              <span className="block text-xs text-red-400 font-medium">Admin</span>
+            </div>
           </Link>
           <button
             onClick={() => setMobileOpen(false)}
@@ -115,22 +81,13 @@ export default function Sidebar() {
           </button>
         </div>
 
-        {/* New Quote Button */}
-        <div className="p-4">
-          <Link
-            href="/quotes/new"
-            onClick={() => setMobileOpen(false)}
-            className="flex items-center justify-center gap-2 w-full bg-brand-500 hover:bg-brand-600 text-white font-medium py-2.5 rounded-lg transition"
-          >
-            <Plus className="w-4 h-4" />
-            Nieuwe Offerte
-          </Link>
-        </div>
-
         {/* Navigation */}
-        <nav className="flex-1 px-3 space-y-1">
+        <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive =
+              item.href === "/admin"
+                ? pathname === "/admin"
+                : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
@@ -149,29 +106,15 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Admin link */}
-        {isAdmin && (
-          <div className="px-3 mt-4">
-            <Link
-              href="/admin"
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-slate-800 transition"
-            >
-              <Shield className="w-5 h-5" />
-              Admin Panel
-            </Link>
-          </div>
-        )}
-
-        {/* Logout */}
+        {/* Back to app */}
         <div className="p-4 border-t border-slate-700">
-          <button
-            onClick={handleLogout}
+          <Link
+            href="/dashboard"
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition w-full"
           >
-            <LogOut className="w-5 h-5" />
-            Uitloggen
-          </button>
+            <ArrowLeft className="w-5 h-5" />
+            Terug naar app
+          </Link>
         </div>
       </aside>
     </>

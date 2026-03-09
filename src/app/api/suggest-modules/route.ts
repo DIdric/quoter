@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { CONSTRUCTION_MODULES } from "@/lib/construction-modules";
+import { trackTokenUsage } from "@/lib/track-usage";
 
 const moduleIds = CONSTRUCTION_MODULES.map((m) => m.id);
 const moduleList = CONSTRUCTION_MODULES.map(
@@ -51,6 +52,15 @@ Geen uitleg, alleen de JSON array.`,
         },
       ],
     });
+
+    // Track token usage
+    trackTokenUsage({
+      userId: user.id,
+      endpoint: "suggest-modules",
+      model: "claude-sonnet-4-5-20250929",
+      inputTokens: message.usage.input_tokens,
+      outputTokens: message.usage.output_tokens,
+    }).catch(() => {});
 
     const textBlock = message.content.find((block) => block.type === "text");
     if (!textBlock || textBlock.type !== "text") {

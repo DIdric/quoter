@@ -33,3 +33,28 @@ export interface Quote {
   pdf_url: string | null;
   created_at: string;
 }
+
+export interface TokenUsage {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  cost_estimate: number;
+  created_at: string;
+}
+
+export interface DefaultMaterial {
+  id: string;
+  name: string;
+  category: string;
+  unit: string;
+  cost_price: number;
+  source: string | null;
+  source_url: string | null;
+  article_number: string | null;
+  updated_at: string;
+  created_at: string;
+}

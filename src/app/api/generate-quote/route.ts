@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { CONSTRUCTION_MODULES } from "@/lib/construction-modules";
+import { trackTokenUsage } from "@/lib/track-usage";
 
 const SYSTEM_PROMPT = `Je bent een ervaren calculator/werkvoorbereider voor een Nederlands aannemersbedrijf. Je genereert gedetailleerde, professionele offertes op basis van projectbeschrijvingen.
 
@@ -102,13 +103,18 @@ export async function POST(request: Request) {
     .select("*")
     .eq("user_id", user.id);
 
+  // Also fetch default materials for reference pricing
+  const { data: defaultMaterials } = await supabase
+    .from("default_materials")
+    .select("name, unit, cost_price");
+
   const body = await request.json();
 
   const hourlyRate = profile?.hourly_rate ?? 45;
   const marginPct = profile?.margin_percentage ?? 15;
   const businessName = profile?.business_name ?? "Mijn Bedrijf";
 
-  const materialsList =
+  const userMaterialsList =
     materials && materials.length > 0
       ? materials
           .map(
@@ -116,7 +122,23 @@ export async function POST(request: Request) {
               `- ${m.name}: €${m.cost_price} per ${m.unit}`
           )
           .join("\n")
-      : "Geen materialen in de bibliotheek. Schat marktconforme materiaalprijzen.";
+      : "";
+
+  const defaultMaterialsList =
+    defaultMaterials && defaultMaterials.length > 0
+      ? defaultMaterials
+          .map(
+            (m: { name: string; unit: string; cost_price: number }) =>
+              `- ${m.name}: €${m.cost_price} per ${m.unit}`
+          )
+          .join("\n")
+      : "";
+
+  const materialsList = userMaterialsList
+    ? `Eigen materialen (prioriteit):\n${userMaterialsList}${defaultMaterialsList ? `\n\nReferentieprijzen:\n${defaultMaterialsList}` : ""}`
+    : defaultMaterialsList
+      ? `Referentieprijzen:\n${defaultMaterialsList}`
+      : "Geen materialen beschikbaar. Schat marktconforme materiaalprijzen.";
 
   // Build compact modules section
   const selectedModuleIds: string[] = body.selectedModules || [];
@@ -184,6 +206,15 @@ ${body.ai_input}`;
         });
 
         const finalMessage = await streamResponse.finalMessage();
+
+        // Track token usage
+        trackTokenUsage({
+          userId: user.id,
+          endpoint: "generate-quote",
+          model: "claude-sonnet-4-5-20250929",
+          inputTokens: finalMessage.usage.input_tokens,
+          outputTokens: finalMessage.usage.output_tokens,
+        }).catch(() => {}); // Fire and forget
 
         // Process result
         const jsonMatch = fullText.match(/\{[\s\S]*\}/);
