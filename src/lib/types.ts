@@ -2,8 +2,17 @@ export interface Profile {
   id: string;
   business_name: string | null;
   logo_url: string | null;
+  business_address: string | null;
+  business_postal_code: string | null;
+  business_city: string | null;
+  business_phone: string | null;
+  business_email: string | null;
+  kvk_number: string | null;
+  btw_number: string | null;
+  iban: string | null;
   hourly_rate: number;
   margin_percentage: number;
+  quote_validity_days: number;
 }
 
 export interface Material {

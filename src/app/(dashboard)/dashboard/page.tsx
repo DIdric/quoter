@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
 import { FileText, Package, Clock, Euro } from "lucide-react";
 
 export default async function DashboardPage() {
@@ -28,50 +29,50 @@ export default async function DashboardPage() {
       label: "Totaal Offertes",
       value: totalQuotes ?? 0,
       icon: FileText,
-      color: "bg-blue-500",
+      color: "bg-[#3B82F6]",
     },
     {
       label: "Concept Offertes",
       value: draftQuotes ?? 0,
       icon: Clock,
-      color: "bg-yellow-500",
+      color: "bg-[#EF4444]",
     },
     {
       label: "Materialen",
       value: totalMaterials ?? 0,
       icon: Package,
-      color: "bg-green-500",
+      color: "bg-[#F59E0B]",
     },
     {
       label: "Definitieve Offertes",
       value: (totalQuotes ?? 0) - (draftQuotes ?? 0),
       icon: Euro,
-      color: "bg-orange-500",
+      color: "bg-[#0EC541]",
     },
   ];
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-slate-800 mb-6">Dashboard</h1>
+      <h1 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 md:mb-6">Dashboard</h1>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="bg-white rounded-xl p-6 shadow-sm border border-slate-200"
+            className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-slate-200"
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
               <div
-                className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center`}
+                className={`w-10 h-10 md:w-12 md:h-12 ${stat.color} rounded-lg flex items-center justify-center shrink-0`}
               >
-                <stat.icon className="w-6 h-6 text-white" />
+                <stat.icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
               </div>
-              <div>
-                <p className="text-2xl font-bold text-slate-800">
+              <div className="min-w-0">
+                <p className="text-xl md:text-2xl font-bold text-slate-800">
                   {stat.value}
                 </p>
-                <p className="text-sm text-slate-500">{stat.label}</p>
+                <p className="text-xs md:text-sm text-slate-500 truncate">{stat.label}</p>
               </div>
             </div>
           </div>
@@ -80,7 +81,7 @@ export default async function DashboardPage() {
 
       {/* Recent Quotes */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-        <div className="p-6 border-b border-slate-200">
+        <div className="px-4 py-4 md:p-6 border-b border-slate-200">
           <h2 className="text-lg font-semibold text-slate-800">
             Recente Offertes
           </h2>
@@ -88,9 +89,10 @@ export default async function DashboardPage() {
         <div className="divide-y divide-slate-200">
           {quotes && quotes.length > 0 ? (
             quotes.map((quote) => (
-              <div
+              <Link
                 key={quote.id}
-                className="px-6 py-4 flex items-center justify-between"
+                href={`/projects/${quote.id}`}
+                className="px-4 py-3 md:px-6 md:py-4 flex items-center justify-between hover:bg-slate-50 transition block"
               >
                 <div>
                   <p className="font-medium text-slate-800">
@@ -109,10 +111,10 @@ export default async function DashboardPage() {
                 >
                   {quote.status === "final" ? "Definitief" : "Concept"}
                 </span>
-              </div>
+              </Link>
             ))
           ) : (
-            <div className="px-6 py-12 text-center text-slate-500">
+            <div className="px-4 py-8 md:px-6 md:py-12 text-center text-slate-500">
               <FileText className="w-12 h-12 mx-auto mb-3 text-slate-300" />
               <p>Nog geen offertes aangemaakt</p>
               <p className="text-sm mt-1">
