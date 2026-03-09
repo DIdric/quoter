@@ -207,14 +207,14 @@ ${body.ai_input}`;
 
         const finalMessage = await streamResponse.finalMessage();
 
-        // Track token usage
-        trackTokenUsage({
+        // Track token usage (await to ensure it completes before stream closes)
+        await trackTokenUsage({
           userId: user.id,
           endpoint: "generate-quote",
           model: "claude-sonnet-4-5-20250929",
           inputTokens: finalMessage.usage.input_tokens,
           outputTokens: finalMessage.usage.output_tokens,
-        }).catch(() => {}); // Fire and forget
+        }).catch((e) => console.error("[generate-quote] Token tracking failed:", e));
 
         // Process result
         const jsonMatch = fullText.match(/\{[\s\S]*\}/);

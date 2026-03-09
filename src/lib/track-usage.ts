@@ -24,7 +24,7 @@ export async function trackTokenUsage(params: {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  await supabase.from("token_usage").insert({
+  const { error } = await supabase.from("token_usage").insert({
     user_id: params.userId,
     endpoint: params.endpoint,
     model: params.model,
@@ -33,4 +33,12 @@ export async function trackTokenUsage(params: {
     total_tokens: params.inputTokens + params.outputTokens,
     cost_estimate: costEstimate,
   });
+
+  if (error) {
+    console.error("[track-usage] Failed to insert token usage:", error.message);
+  } else {
+    console.log(
+      `[track-usage] Logged ${params.inputTokens + params.outputTokens} tokens for ${params.endpoint}`
+    );
+  }
 }

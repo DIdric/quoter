@@ -54,13 +54,13 @@ Geen uitleg, alleen de JSON array.`,
     });
 
     // Track token usage
-    trackTokenUsage({
+    await trackTokenUsage({
       userId: user.id,
       endpoint: "suggest-modules",
       model: "claude-sonnet-4-5-20250929",
       inputTokens: message.usage.input_tokens,
       outputTokens: message.usage.output_tokens,
-    }).catch(() => {});
+    }).catch((e) => console.error("[suggest-modules] Token tracking failed:", e));
 
     const textBlock = message.content.find((block) => block.type === "text");
     if (!textBlock || textBlock.type !== "text") {
