@@ -53,24 +53,43 @@ export default function SettingsPage() {
     setLoading(false);
   }
 
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setUploading(true);
+    setUploadError(null);
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      setUploading(false);
+      return;
+    }
 
-    const fileExt = file.name.split(".").pop();
+    const fileExt = file.name.split(".").pop()?.toLowerCase() || "png";
     const filePath = `${user.id}/logo.${fileExt}`;
 
     const { error } = await supabase.storage
       .from("logos")
-      .upload(filePath, file, { upsert: true });
+      .upload(filePath, file, {
+        upsert: true,
+        contentType: file.type,
+      });
 
-    if (!error) {
+    if (error) {
+      console.error("Logo upload error:", error);
+      setUploadError(
+        error.message === "The resource already exists"
+          ? "Bestand bestaat al. Probeer opnieuw."
+          : error.message.includes("Bucket not found") || error.statusCode === "404"
+          ? "De storage bucket 'logos' bestaat nog niet. Voer het schema.sql script uit in de Supabase SQL Editor."
+          : `Upload mislukt: ${error.message}`
+      );
+    } else {
       const {
         data: { publicUrl },
       } = supabase.storage.from("logos").getPublicUrl(filePath);
@@ -209,6 +228,9 @@ export default function SettingsPage() {
                 <p className="text-xs text-slate-400 mt-1">
                   PNG, JPG of SVG. Wordt getoond op je offertes.
                 </p>
+                {uploadError && (
+                  <p className="text-xs text-red-600 mt-1">{uploadError}</p>
+                )}
               </div>
             </div>
           </div>

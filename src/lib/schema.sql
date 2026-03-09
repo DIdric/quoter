@@ -95,3 +95,42 @@ create trigger on_auth_user_created
 create index idx_materials_user_id on public.materials(user_id);
 create index idx_quotes_user_id on public.quotes(user_id);
 create index idx_quotes_status on public.quotes(status);
+
+-- ============================================================
+-- Storage bucket for logos
+-- ============================================================
+insert into storage.buckets (id, name, public)
+values ('logos', 'logos', true)
+on conflict (id) do nothing;
+
+-- Allow authenticated users to upload to their own folder
+create policy "Users can upload own logo"
+  on storage.objects for insert
+  with check (
+    bucket_id = 'logos'
+    and auth.role() = 'authenticated'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- Allow authenticated users to update/overwrite their own logo
+create policy "Users can update own logo"
+  on storage.objects for update
+  using (
+    bucket_id = 'logos'
+    and auth.role() = 'authenticated'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- Allow authenticated users to delete their own logo
+create policy "Users can delete own logo"
+  on storage.objects for delete
+  using (
+    bucket_id = 'logos'
+    and auth.role() = 'authenticated'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+-- Allow public read access to logos (for PDF generation)
+create policy "Public read access for logos"
+  on storage.objects for select
+  using (bucket_id = 'logos');
