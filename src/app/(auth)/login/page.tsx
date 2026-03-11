@@ -3,12 +3,14 @@
 import { useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
-import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { Mail, Lock, ArrowRight, Loader2, Building2, MapPin } from "lucide-react";
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [businessCity, setBusinessCity] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -32,16 +34,34 @@ export default function LoginPage() {
         window.location.href = "/dashboard";
       }
     } else {
-      const { error } = await supabase.auth.signUp({
+      if (!businessName.trim()) {
+        setError("Bedrijfsnaam is verplicht.");
+        setLoading(false);
+        return;
+      }
+
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            business_name: businessName.trim(),
+            business_city: businessCity.trim() || null,
+          },
         },
       });
       if (error) {
         setError(error.message);
       } else {
+        // Update profile with business name if user was created
+        if (signUpData.user) {
+          await supabase.from("profiles").upsert({
+            id: signUpData.user.id,
+            business_name: businessName.trim(),
+            business_city: businessCity.trim() || null,
+          });
+        }
         setMessage("Controleer je e-mail voor een bevestigingslink.");
       }
     }
@@ -109,6 +129,43 @@ export default function LoginPage() {
                 />
               </div>
             </div>
+
+            {!isLogin && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Bedrijfsnaam <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                      type="text"
+                      value={businessName}
+                      onChange={(e) => setBusinessName(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-slate-800"
+                      placeholder="Jouw Bedrijf B.V."
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Plaats <span className="text-slate-400 font-normal">(optioneel)</span>
+                  </label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                      type="text"
+                      value={businessCity}
+                      onChange={(e) => setBusinessCity(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-slate-800"
+                      placeholder="Amsterdam"
+                    />
+                  </div>
+                </div>
+              </>
+            )}
 
             {error && (
               <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">
