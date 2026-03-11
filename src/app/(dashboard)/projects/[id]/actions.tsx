@@ -12,6 +12,9 @@ import {
   Copy,
   Trash2,
   Loader2,
+  Share2,
+  Link,
+  CheckCircle,
 } from "lucide-react";
 
 export function QuoteActions({
@@ -19,16 +22,21 @@ export function QuoteActions({
   status,
   clientName,
   clientEmail,
+  shareToken: initialShareToken,
 }: {
   quoteId: string;
   status: string;
   clientName?: string;
   clientEmail?: string;
+  shareToken?: string | null;
 }) {
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [shareToken, setShareToken] = useState(initialShareToken ?? null);
+  const [copied, setCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(status);
   const router = useRouter();
@@ -104,6 +112,47 @@ export function QuoteActions({
     setDuplicating(false);
   }
 
+  function getShareUrl(token: string) {
+    return `${window.location.origin}/share/${token}`;
+  }
+
+  async function handleShare() {
+    if (shareToken) {
+      // Token exists, just copy the link
+      await navigator.clipboard.writeText(getShareUrl(shareToken));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      return;
+    }
+
+    setSharing(true);
+    try {
+      const token = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+      const { error } = await supabase
+        .from("quotes")
+        .update({ share_token: token })
+        .eq("id", quoteId);
+
+      if (error) throw error;
+
+      setShareToken(token);
+      await navigator.clipboard.writeText(getShareUrl(token));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Share failed:", err);
+    }
+    setSharing(false);
+  }
+
+  async function handleRemoveShare() {
+    await supabase
+      .from("quotes")
+      .update({ share_token: null })
+      .eq("id", quoteId);
+    setShareToken(null);
+  }
+
   async function handleDelete() {
     setDeleting(true);
     await supabase.from("quotes").delete().eq("id", quoteId);
@@ -114,8 +163,9 @@ export function QuoteActions({
     const subject = encodeURIComponent(
       `Offerte${clientName ? ` - ${clientName}` : ""}`
     );
+    const shareLink = shareToken ? `\n\nBekijk de offerte online: ${getShareUrl(shareToken)}` : "";
     const body = encodeURIComponent(
-      `Beste${clientName ? ` ${clientName}` : ""},\n\nBijgaand vindt u de offerte.\n\nMet vriendelijke groet`
+      `Beste${clientName ? ` ${clientName}` : ""},\n\nBijgaand vindt u de offerte.${shareLink}\n\nMet vriendelijke groet`
     );
     const mailto = `mailto:${clientEmail || ""}?subject=${subject}&body=${body}`;
     window.open(mailto, "_blank");
@@ -199,6 +249,53 @@ export function QuoteActions({
           </div>
         </div>
       )}
+
+      {/* Share section */}
+      <div className="bg-white border border-slate-200 rounded-lg p-3 md:p-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-2 sm:mr-auto">
+            <Share2 className="w-4 h-4 text-slate-400" />
+            <span className="text-sm font-medium text-slate-600">
+              {shareToken ? "Deellink actief" : "Deel deze offerte"}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleShare}
+              disabled={sharing}
+              className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-3 py-1.5 rounded-lg transition text-sm disabled:opacity-50"
+            >
+              {sharing ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : copied ? (
+                <CheckCircle className="w-4 h-4" />
+              ) : (
+                <Link className="w-4 h-4" />
+              )}
+              {copied ? "Gekopieerd!" : shareToken ? "Kopieer link" : "Maak deellink"}
+            </button>
+            {shareToken && (
+              <button
+                onClick={handleRemoveShare}
+                className="text-xs text-slate-400 hover:text-red-500 transition"
+              >
+                Verwijder link
+              </button>
+            )}
+          </div>
+        </div>
+        {shareToken && (
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              type="text"
+              readOnly
+              value={getShareUrl(shareToken)}
+              className="flex-1 text-xs bg-slate-50 border border-slate-200 rounded px-2 py-1 text-slate-500 truncate"
+              onClick={(e) => (e.target as HTMLInputElement).select()}
+            />
+          </div>
+        )}
+      </div>
 
       <div className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 md:p-4 rounded-lg ${currentStatus === "final" ? "bg-green-50 border border-green-200" : "bg-slate-50 border border-slate-200"}`}>
         <span className={`text-sm font-medium sm:mr-auto ${currentStatus === "final" ? "text-green-700" : "text-slate-600"}`}>

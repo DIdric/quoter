@@ -41,6 +41,7 @@ create table public.quotes (
   status text not null default 'draft' check (status in ('draft', 'final')),
   json_data jsonb,
   pdf_url text,
+  share_token text unique,
   created_at timestamptz default now()
 );
 
@@ -49,9 +50,17 @@ alter table public.profiles enable row level security;
 alter table public.materials enable row level security;
 alter table public.quotes enable row level security;
 
--- Profiles: users can only access their own profile
+-- Profiles: users can only access their own profile (or public business info for shared quotes)
 create policy "Users can view own profile"
   on public.profiles for select using (auth.uid() = id);
+create policy "Public can view business info for shared quotes"
+  on public.profiles for select using (
+    exists (
+      select 1 from public.quotes
+      where quotes.user_id = profiles.id
+      and quotes.share_token is not null
+    )
+  );
 create policy "Users can update own profile"
   on public.profiles for update using (auth.uid() = id);
 create policy "Users can insert own profile"
@@ -76,6 +85,10 @@ create policy "Users can update own quotes"
   on public.quotes for update using (auth.uid() = user_id);
 create policy "Users can delete own quotes"
   on public.quotes for delete using (auth.uid() = user_id);
+
+-- Public access to shared quotes via share_token
+create policy "Anyone can view shared quotes"
+  on public.quotes for select using (share_token is not null);
 
 -- Auto-create profile on signup
 create or replace function public.handle_new_user()
@@ -128,6 +141,7 @@ create table public.admin_users (
 create index idx_materials_user_id on public.materials(user_id);
 create index idx_quotes_user_id on public.quotes(user_id);
 create index idx_quotes_status on public.quotes(status);
+create index idx_quotes_share_token on public.quotes(share_token);
 create index idx_token_usage_user_id on public.token_usage(user_id);
 create index idx_token_usage_created_at on public.token_usage(created_at);
 create index idx_default_materials_category on public.default_materials(category);

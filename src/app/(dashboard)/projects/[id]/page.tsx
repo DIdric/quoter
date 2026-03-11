@@ -206,6 +206,7 @@ export default async function QuoteDetailPage({
             status={quote.status}
             clientName={form?.client_name}
             clientEmail={form?.client_email}
+            shareToken={quote.share_token}
           />
         </div>
       ) : (

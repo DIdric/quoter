@@ -69,26 +69,42 @@ function formatDateNL(date: Date): string {
 type ProfileData = Record<string, any>;
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
     const supabase = await createClient();
+    const url = new URL(request.url);
+    const shareToken = url.searchParams.get("token");
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    let quote;
+
+    if (shareToken) {
+      // Public access via share token
+      const { data } = await supabase
+        .from("quotes")
+        .select("*")
+        .eq("id", id)
+        .eq("share_token", shareToken)
+        .single();
+      quote = data;
+    } else {
+      // Authenticated access
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      const { data } = await supabase
+        .from("quotes")
+        .select("*")
+        .eq("id", id)
+        .eq("user_id", user.id)
+        .single();
+      quote = data;
     }
-
-    const { data: quote } = await supabase
-      .from("quotes")
-      .select("*")
-      .eq("id", id)
-      .eq("user_id", user.id)
-      .single();
 
     if (!quote) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -97,7 +113,7 @@ export async function GET(
     const { data: profile } = await supabase
       .from("profiles")
       .select("*")
-      .eq("id", user.id)
+      .eq("id", quote.user_id)
       .single();
 
     const p = (profile || {}) as ProfileData;
