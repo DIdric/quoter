@@ -1,62 +1,89 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { FileText, Package, Clock, Euro } from "lucide-react";
+import { FileText, Package, Clock, Euro, TrendingUp, Plus } from "lucide-react";
+
+interface QuoteJsonData {
+  form?: {
+    project_title?: string;
+  };
+  result?: {
+    quote_title?: string;
+    total_incl_btw?: number;
+  };
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const { data: quotes } = await supabase
+  // Fetch all quotes for stats (we need json_data for revenue)
+  const { data: allQuotes } = await supabase
     .from("quotes")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(5);
-
-  const { count: totalQuotes } = await supabase
-    .from("quotes")
-    .select("*", { count: "exact", head: true });
-
-  const { count: draftQuotes } = await supabase
-    .from("quotes")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "draft");
+    .select("id, client_name, status, created_at, json_data")
+    .order("created_at", { ascending: false });
 
   const { count: totalMaterials } = await supabase
     .from("materials")
     .select("*", { count: "exact", head: true });
 
+  const quotes = allQuotes ?? [];
+  const recentQuotes = quotes.slice(0, 5);
+  const totalQuotes = quotes.length;
+  const draftQuotes = quotes.filter((q) => q.status === "draft").length;
+  const finalQuotes = totalQuotes - draftQuotes;
+
+  // Calculate total revenue from final quotes
+  const totalRevenue = quotes
+    .filter((q) => q.status === "final")
+    .reduce((sum, q) => {
+      const data = q.json_data as QuoteJsonData | null;
+      return sum + (data?.result?.total_incl_btw ?? 0);
+    }, 0);
+
   const stats = [
     {
       label: "Totaal Offertes",
-      value: totalQuotes ?? 0,
+      value: totalQuotes.toString(),
       icon: FileText,
       color: "bg-[#3B82F6]",
     },
     {
-      label: "Concept Offertes",
-      value: draftQuotes ?? 0,
+      label: "Concept",
+      value: draftQuotes.toString(),
       icon: Clock,
       color: "bg-[#EF4444]",
     },
     {
-      label: "Materialen",
-      value: totalMaterials ?? 0,
-      icon: Package,
-      color: "bg-[#F59E0B]",
-    },
-    {
-      label: "Definitieve Offertes",
-      value: (totalQuotes ?? 0) - (draftQuotes ?? 0),
+      label: "Definitief",
+      value: finalQuotes.toString(),
       icon: Euro,
       color: "bg-[#0EC541]",
+    },
+    {
+      label: "Totale Omzet",
+      value: `€${totalRevenue.toLocaleString("nl-NL", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+      icon: TrendingUp,
+      color: "bg-[#8B5CF6]",
     },
   ];
 
   return (
     <div>
-      <h1 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 md:mb-6">Dashboard</h1>
+      <div className="flex items-center justify-between mb-4 md:mb-6">
+        <h1 className="text-xl md:text-2xl font-bold text-slate-800">
+          Dashboard
+        </h1>
+        <Link
+          href="/quotes/new"
+          className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition text-sm md:text-base"
+        >
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">Nieuwe Offerte</span>
+          <span className="sm:hidden">Nieuw</span>
+        </Link>
+      </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
         {stats.map((stat) => (
           <div
             key={stat.label}
@@ -69,10 +96,12 @@ export default async function DashboardPage() {
                 <stat.icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
               </div>
               <div className="min-w-0">
-                <p className="text-xl md:text-2xl font-bold text-slate-800">
+                <p className="text-xl md:text-2xl font-bold text-slate-800 truncate">
                   {stat.value}
                 </p>
-                <p className="text-xs md:text-sm text-slate-500 truncate">{stat.label}</p>
+                <p className="text-xs md:text-sm text-slate-500 truncate">
+                  {stat.label}
+                </p>
               </div>
             </div>
           </div>
@@ -81,38 +110,66 @@ export default async function DashboardPage() {
 
       {/* Recent Quotes */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-        <div className="px-4 py-4 md:p-6 border-b border-slate-200">
+        <div className="px-4 py-4 md:p-6 border-b border-slate-200 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-800">
             Recente Offertes
           </h2>
+          {totalQuotes > 5 && (
+            <Link
+              href="/projects"
+              className="text-sm text-brand-500 hover:text-brand-600 font-medium transition"
+            >
+              Alle bekijken
+            </Link>
+          )}
         </div>
         <div className="divide-y divide-slate-200">
-          {quotes && quotes.length > 0 ? (
-            quotes.map((quote) => (
-              <Link
-                key={quote.id}
-                href={`/projects/${quote.id}`}
-                className="px-4 py-3 md:px-6 md:py-4 flex items-center justify-between hover:bg-slate-50 transition block"
-              >
-                <div>
-                  <p className="font-medium text-slate-800">
-                    {quote.client_name}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    {new Date(quote.created_at).toLocaleDateString("nl-NL")}
-                  </p>
-                </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    quote.status === "final"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-yellow-100 text-yellow-700"
-                  }`}
+          {recentQuotes.length > 0 ? (
+            recentQuotes.map((quote) => {
+              const data = quote.json_data as QuoteJsonData | null;
+              const title =
+                data?.result?.quote_title || data?.form?.project_title;
+              const total = data?.result?.total_incl_btw;
+
+              return (
+                <Link
+                  key={quote.id}
+                  href={`/projects/${quote.id}`}
+                  className="px-4 py-3 md:px-6 md:py-4 flex items-center justify-between hover:bg-slate-50 transition block"
                 >
-                  {quote.status === "final" ? "Definitief" : "Concept"}
-                </span>
-              </Link>
-            ))
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-slate-800 truncate">
+                      {quote.client_name}
+                    </p>
+                    {title && (
+                      <p className="text-sm text-slate-500 truncate">{title}</p>
+                    )}
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {new Date(quote.created_at).toLocaleDateString("nl-NL")}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 ml-3 shrink-0">
+                    {total != null && (
+                      <span className="text-sm font-medium text-slate-700 hidden sm:block">
+                        €
+                        {total.toLocaleString("nl-NL", {
+                          minimumFractionDigits: 2,
+                        })}
+                      </span>
+                    )}
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        quote.status === "final"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-yellow-100 text-yellow-700"
+                      }`}
+                    >
+                      {quote.status === "final" ? "Definitief" : "Concept"}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })
           ) : (
             <div className="px-4 py-8 md:px-6 md:py-12 text-center text-slate-500">
               <FileText className="w-12 h-12 mx-auto mb-3 text-slate-300" />

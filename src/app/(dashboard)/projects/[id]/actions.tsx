@@ -10,6 +10,7 @@ import {
   Download,
   Mail,
   Copy,
+  Trash2,
   Loader2,
 } from "lucide-react";
 
@@ -27,6 +28,8 @@ export function QuoteActions({
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(status);
   const router = useRouter();
   const supabase = createClient();
@@ -101,6 +104,12 @@ export function QuoteActions({
     setDuplicating(false);
   }
 
+  async function handleDelete() {
+    setDeleting(true);
+    await supabase.from("quotes").delete().eq("id", quoteId);
+    router.push("/projects");
+  }
+
   function handleSendEmail() {
     const subject = encodeURIComponent(
       `Offerte${clientName ? ` - ${clientName}` : ""}`
@@ -153,7 +162,43 @@ export function QuoteActions({
           )}
           Dupliceren
         </button>
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="flex items-center gap-2 text-red-500 hover:text-red-700 hover:bg-red-50 font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition text-sm md:text-base"
+        >
+          <Trash2 className="w-4 h-4" />
+          Verwijderen
+        </button>
       </div>
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <p className="text-sm text-red-700 sm:mr-auto">
+            Weet je zeker dat je deze offerte wilt verwijderen? Dit kan niet ongedaan worden gemaakt.
+          </p>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowDeleteConfirm(false)}
+              className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-white rounded-lg transition"
+            >
+              Annuleren
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white font-medium px-3 py-1.5 rounded-lg transition text-sm disabled:opacity-50"
+            >
+              {deleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+              Verwijderen
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 md:p-4 rounded-lg ${currentStatus === "final" ? "bg-green-50 border border-green-200" : "bg-slate-50 border border-slate-200"}`}>
         <span className={`text-sm font-medium sm:mr-auto ${currentStatus === "final" ? "text-green-700" : "text-slate-600"}`}>
