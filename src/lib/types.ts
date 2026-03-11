@@ -13,6 +13,7 @@ export interface Profile {
   hourly_rate: number;
   margin_percentage: number;
   quote_validity_days: number;
+  quote_number_prefix: string | null;
 }
 
 export interface Material {
@@ -29,6 +30,7 @@ export interface Quote {
   user_id: string;
   client_name: string;
   status: "draft" | "final";
+  quote_number: string | null;
   json_data: Record<string, unknown> | null;
   pdf_url: string | null;
   created_at: string;

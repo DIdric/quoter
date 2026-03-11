@@ -9,6 +9,7 @@ interface QuoteRow {
   id: string;
   client_name: string;
   status: string;
+  quote_number: string | null;
   created_at: string;
   json_data: {
     form?: {
@@ -31,7 +32,7 @@ export default function ProjectsPage() {
   useEffect(() => {
     supabase
       .from("quotes")
-      .select("id, client_name, status, created_at, json_data")
+      .select("id, client_name, status, quote_number, created_at, json_data")
       .order("created_at", { ascending: false })
       .then(({ data }) => {
         setQuotes((data as QuoteRow[]) ?? []);
@@ -48,10 +49,12 @@ export default function ProjectsPage() {
         quote.json_data?.form?.project_title ||
         "";
       const location = quote.json_data?.form?.project_location || "";
+      const quoteNum = quote.quote_number || "";
       return (
         quote.client_name.toLowerCase().includes(q) ||
         title.toLowerCase().includes(q) ||
-        location.toLowerCase().includes(q)
+        location.toLowerCase().includes(q) ||
+        quoteNum.toLowerCase().includes(q)
       );
     });
   }, [quotes, search]);
@@ -119,6 +122,9 @@ export default function ProjectsPage() {
                       </p>
                     )}
                     <p className="text-xs text-slate-400 mt-0.5">
+                      {quote.quote_number && (
+                        <span className="text-slate-500 font-medium mr-2">{quote.quote_number}</span>
+                      )}
                       {new Date(quote.created_at).toLocaleDateString("nl-NL")}
                     </p>
                   </div>

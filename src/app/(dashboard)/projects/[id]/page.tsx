@@ -98,6 +98,9 @@ export default async function QuoteDetailPage({
             {result?.quote_title || form?.project_title || quote.client_name}
           </h1>
           <p className="text-xs md:text-sm text-slate-500">
+            {quote.quote_number && (
+              <span className="font-medium text-slate-600 mr-2">{quote.quote_number}</span>
+            )}
             Aangemaakt op{" "}
             {new Date(quote.created_at).toLocaleDateString("nl-NL", {
               day: "numeric",

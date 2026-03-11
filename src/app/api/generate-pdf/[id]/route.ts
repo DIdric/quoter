@@ -226,8 +226,8 @@ export async function GET(
     const expiryDate = new Date(quoteDate);
     expiryDate.setDate(expiryDate.getDate() + validityDays);
 
-    // Generate quote number from date + ID
-    const quoteNumber = `${quoteDate.getFullYear()}-${String(quoteDate.getMonth() + 1).padStart(2, "0")}${id.substring(0, 3).toUpperCase()}`;
+    // Use stored quote number, or fallback to generated one
+    const quoteNumber = quote.quote_number || `${quoteDate.getFullYear()}-${String(quoteDate.getMonth() + 1).padStart(2, "0")}${id.substring(0, 3).toUpperCase()}`;
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");

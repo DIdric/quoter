@@ -19,6 +19,7 @@ export default function SettingsPage() {
     hourly_rate: 45,
     margin_percentage: 15,
     quote_validity_days: 30,
+    quote_number_prefix: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -118,6 +119,7 @@ export default function SettingsPage() {
         hourly_rate: profile.hourly_rate,
         margin_percentage: profile.margin_percentage,
         quote_validity_days: profile.quote_validity_days,
+        quote_number_prefix: profile.quote_number_prefix,
       })
       .eq("id", user.id);
 
@@ -349,6 +351,24 @@ export default function SettingsPage() {
           {/* Pricing & Quote settings */}
           <div className="border-t border-slate-200 pt-5">
             <h3 className="text-sm font-semibold text-slate-700 mb-3">Offerte-instellingen</h3>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              Offertenummer prefix
+            </label>
+            <input
+              type="text"
+              value={profile.quote_number_prefix ?? ""}
+              onChange={(e) =>
+                setProfile({ ...profile, quote_number_prefix: e.target.value })
+              }
+              className="w-full max-w-xs px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+              placeholder="bijv. OFF-"
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              Optioneel. Voorbeeld: OFF-2026-001. Laat leeg voor 2026-001.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

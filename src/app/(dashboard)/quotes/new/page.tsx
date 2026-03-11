@@ -451,55 +451,33 @@ function NewQuotePage() {
   }
 
   async function handleSaveQuote() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    if (existingProjectId) {
-      await supabase
-        .from("quotes")
-        .update({
-          client_name: form.client_name,
-          json_data: { form, result, selectedModules },
-        })
-        .eq("id", existingProjectId);
-      router.push(`/projects/${existingProjectId}`);
-    } else {
-      await supabase.from("quotes").insert({
-        user_id: user.id,
+    const res = await fetch("/api/save-quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         client_name: form.client_name,
         status: "draft",
         json_data: { form, result, selectedModules },
-      });
-      router.push("/projects");
-    }
+        existing_project_id: existingProjectId,
+      }),
+    });
+    const data = await res.json();
+    router.push(existingProjectId ? `/projects/${existingProjectId}` : `/projects/${data.id}`);
   }
 
   async function handleSaveDraft() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    if (existingProjectId) {
-      await supabase
-        .from("quotes")
-        .update({
-          client_name: form.client_name,
-          json_data: { form, result: null, selectedModules },
-        })
-        .eq("id", existingProjectId);
-      router.push(`/projects/${existingProjectId}`);
-    } else {
-      await supabase.from("quotes").insert({
-        user_id: user.id,
+    const res = await fetch("/api/save-quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         client_name: form.client_name,
         status: "draft",
         json_data: { form, result: null, selectedModules },
-      });
-      router.push("/projects");
-    }
+        existing_project_id: existingProjectId,
+      }),
+    });
+    const data = await res.json();
+    router.push(existingProjectId ? `/projects/${existingProjectId}` : `/projects/${data.id}`);
   }
 
   function handleRegenerate() {
