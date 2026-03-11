@@ -7,6 +7,10 @@ import {
   Phone,
   MapPin,
   Download,
+  Calendar,
+  FileText,
+  Package,
+  Wrench,
 } from "lucide-react";
 
 interface QuoteLine {
@@ -19,9 +23,17 @@ interface QuoteLine {
   total: number;
 }
 
+interface QuoteModuleDescription {
+  name: string;
+  intro: string;
+  items: string[];
+}
+
 interface QuoteResult {
   quote_title: string;
   summary: string;
+  technical_description?: string;
+  modules?: QuoteModuleDescription[];
   lines: QuoteLine[];
   subtotal_materials: number;
   subtotal_labor: number;
@@ -52,6 +64,14 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+function formatDateNL(date: Date): string {
+  return date.toLocaleDateString("nl-NL", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export default async function SharedQuotePage({
   params,
 }: {
@@ -73,7 +93,7 @@ export default async function SharedQuotePage({
   // Fetch business profile of the quote owner
   const { data: profile } = await supabase
     .from("profiles")
-    .select("business_name, business_email, business_phone, business_address, business_postal_code, business_city")
+    .select("business_name, business_email, business_phone, business_address, business_postal_code, business_city, kvk_number, btw_number, iban, quote_validity_days")
     .eq("id", quote.user_id)
     .single();
 
@@ -86,6 +106,11 @@ export default async function SharedQuotePage({
   }
 
   const categories = [...new Set(result.lines.map((l) => l.category))];
+
+  const quoteDate = new Date(quote.created_at);
+  const validityDays = profile?.quote_validity_days || 30;
+  const expiryDate = new Date(quoteDate);
+  expiryDate.setDate(expiryDate.getDate() + validityDays);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -111,19 +136,33 @@ export default async function SharedQuotePage({
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 md:py-8">
-        {/* Title */}
+        {/* Title & Quote metadata */}
         <div className="mb-6">
           <h1 className="text-xl md:text-2xl font-bold text-slate-800">
             {result.quote_title || form?.project_title || quote.client_name}
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Aangemaakt op{" "}
-            {new Date(quote.created_at).toLocaleDateString("nl-NL", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm text-slate-500">
+            {quote.quote_number && (
+              <div className="flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5" />
+                <span className="font-medium text-slate-600">{quote.quote_number}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" />
+              Offertedatum: {formatDateNL(quoteDate)}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" />
+              Geldig tot: {formatDateNL(expiryDate)}
+            </div>
+            {result.estimated_days > 0 && (
+              <div className="flex items-center gap-1.5 text-brand-700">
+                <Clock className="w-3.5 h-3.5" />
+                Doorlooptijd: {result.estimated_days} werkdag{result.estimated_days !== 1 ? "en" : ""}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Client & Project Info */}
@@ -179,17 +218,42 @@ export default async function SharedQuotePage({
           )}
         </div>
 
-        {/* Summary */}
+        {/* Intro text */}
         <div className="bg-brand-50 border border-brand-200 rounded-lg p-4 mb-6">
-          <p className="text-sm text-slate-600">{result.summary}</p>
-          {result.estimated_days > 0 && (
-            <div className="flex items-center gap-1.5 mt-2 text-sm text-brand-700">
-              <Clock className="w-4 h-4" />
-              Geschatte doorlooptijd: {result.estimated_days} werkdag
-              {result.estimated_days !== 1 ? "en" : ""}
-            </div>
+          <p className="text-sm text-slate-700">
+            {form?.client_name ? `Beste ${form.client_name},` : "Geachte heer/mevrouw,"}
+          </p>
+          <p className="text-sm text-slate-600 mt-2">
+            Hierbij ontvangt u onze vrijblijvende offerte ten behoeve van{" "}
+            {(result.quote_title || "de werkzaamheden").toLowerCase()}
+            {form?.project_location ? ` te ${form.project_location}` : ""}.
+          </p>
+          {result.summary && (
+            <p className="text-sm text-slate-600 mt-2">{result.summary}</p>
           )}
         </div>
+
+        {/* Technical Description per Module */}
+        {result.modules && result.modules.length > 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 mb-6">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">
+              Technische omschrijving werkzaamheden
+            </h2>
+            <div className="space-y-5">
+              {result.modules.map((mod, idx) => (
+                <div key={idx}>
+                  <h3 className="font-semibold text-slate-700 mb-1">{mod.name}</h3>
+                  <p className="text-sm text-slate-600 mb-2">{mod.intro}</p>
+                  <ul className="list-disc list-inside text-sm text-slate-600 space-y-1 ml-1">
+                    {mod.items.map((item, i) => (
+                      <li key={i}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Quote Lines Table */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
@@ -260,12 +324,20 @@ export default async function SharedQuotePage({
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 mb-6">
           <div className="max-w-xs ml-auto space-y-2 text-sm">
             <div className="flex justify-between text-slate-600">
-              <span>Materialen</span>
+              <span className="flex items-center gap-1.5">
+                <Package className="w-4 h-4 text-blue-500" /> Materialen
+              </span>
               <span>{formatCurrency(result.subtotal_materials)}</span>
             </div>
             <div className="flex justify-between text-slate-600">
-              <span>Arbeid</span>
+              <span className="flex items-center gap-1.5">
+                <Wrench className="w-4 h-4 text-brand-500" /> Arbeid
+              </span>
               <span>{formatCurrency(result.subtotal_labor)}</span>
+            </div>
+            <div className="flex justify-between text-slate-600">
+              <span>Winstmarge</span>
+              <span>{formatCurrency(result.margin_amount)}</span>
             </div>
             <div className="border-t border-slate-200 pt-2 flex justify-between font-medium text-slate-700">
               <span>Totaal excl. BTW</span>
@@ -289,10 +361,24 @@ export default async function SharedQuotePage({
           </div>
         )}
 
+        {/* Closing text */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 mb-6">
+          <p className="text-sm text-slate-600">
+            Deze offerte is geldig tot <span className="font-medium text-slate-700">{formatDateNL(expiryDate)}</span>.
+          </p>
+          <p className="text-sm text-slate-600 mt-2">
+            Wij vertrouwen erop u hiermee een passende aanbieding te hebben gedaan.
+          </p>
+          <p className="text-sm text-slate-600 mt-2">Met vriendelijke groet,</p>
+          <p className="text-sm font-semibold text-slate-700 mt-1">
+            {profile?.business_name}
+          </p>
+        </div>
+
         {/* Footer */}
         {profile && (
-          <div className="text-center text-xs text-slate-400 pt-4 border-t border-slate-200">
-            <p>{profile.business_name}</p>
+          <div className="text-center text-xs text-slate-400 pt-4 border-t border-slate-200 space-y-1">
+            <p className="font-medium">{profile.business_name}</p>
             {(profile.business_address || profile.business_city) && (
               <p>
                 {[profile.business_address, profile.business_postal_code, profile.business_city]
@@ -300,6 +386,11 @@ export default async function SharedQuotePage({
                   .join(", ")}
               </p>
             )}
+            <p className="flex flex-wrap justify-center gap-x-3">
+              {profile.kvk_number && <span>KvK: {profile.kvk_number}</span>}
+              {profile.btw_number && <span>BTW: {profile.btw_number}</span>}
+              {profile.iban && <span>IBAN: {profile.iban}</span>}
+            </p>
           </div>
         )}
       </div>
