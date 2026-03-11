@@ -8,6 +8,7 @@ interface UserData {
   business_name: string | null;
   business_email: string | null;
   business_city: string | null;
+  auth_email: string | null;
   created_at: string;
   quote_count: number;
   total_tokens: number;
@@ -44,7 +45,7 @@ export default function AdminUsersPage() {
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
         {users.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[700px]">
+            <table className="w-full min-w-[650px]">
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
@@ -52,9 +53,6 @@ export default function AdminUsersPage() {
                   </th>
                   <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
                     E-mail
-                  </th>
-                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
-                    Plaats
                   </th>
                   <th className="text-right px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
                     Offertes
@@ -73,14 +71,25 @@ export default function AdminUsersPage() {
               <tbody className="divide-y divide-slate-200">
                 {users.map((user) => (
                   <tr key={user.id} className="hover:bg-slate-50 transition">
-                    <td className="px-4 py-3 md:px-6 md:py-4 font-medium text-slate-800">
-                      {user.business_name || "—"}
+                    <td className="px-4 py-3 md:px-6 md:py-4">
+                      <div className="font-medium text-slate-800">
+                        {user.business_name || "—"}
+                      </div>
+                      {user.business_city && (
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          {user.business_city}
+                        </div>
+                      )}
                     </td>
-                    <td className="px-4 py-3 md:px-6 md:py-4 text-slate-600">
-                      {user.business_email || "—"}
-                    </td>
-                    <td className="px-4 py-3 md:px-6 md:py-4 text-slate-600">
-                      {user.business_city || "—"}
+                    <td className="px-4 py-3 md:px-6 md:py-4">
+                      <div className="text-slate-800">
+                        {user.auth_email || "—"}
+                      </div>
+                      {user.business_email && user.business_email !== user.auth_email && (
+                        <div className="text-xs text-slate-400 mt-0.5">
+                          Zakelijk: {user.business_email}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3 md:px-6 md:py-4 text-right text-slate-800">
                       {user.quote_count}
