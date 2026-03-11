@@ -38,7 +38,7 @@ create table public.quotes (
   id uuid default uuid_generate_v4() primary key,
   user_id uuid references auth.users on delete cascade not null,
   client_name text not null,
-  status text not null default 'draft' check (status in ('draft', 'final')),
+  status text not null default 'draft' check (status in ('draft', 'final', 'completed')),
   json_data jsonb,
   pdf_url text,
   share_token text unique,
@@ -203,3 +203,10 @@ create policy "Service can manage default materials"
 alter table public.admin_users enable row level security;
 create policy "Admins can read admin_users"
   on public.admin_users for select using (auth.uid() = user_id);
+
+-- ============================================================
+-- Migration: Add 'completed' status to quotes
+-- Run this if you already have the tables created:
+-- ALTER TABLE public.quotes DROP CONSTRAINT IF EXISTS quotes_status_check;
+-- ALTER TABLE public.quotes ADD CONSTRAINT quotes_status_check CHECK (status IN ('draft', 'final', 'completed'));
+-- ============================================================

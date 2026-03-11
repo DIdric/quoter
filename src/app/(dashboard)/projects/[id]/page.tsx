@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { QuoteActions } from "./actions";
 import { EditableQuoteLines } from "./editable-lines";
+import { ActualCostsPanel } from "./actual-costs";
 
 interface QuoteLine {
   category: string;
@@ -111,12 +112,14 @@ export default async function QuoteDetailPage({
         </div>
         <span
           className={`px-2 py-1 md:px-3 rounded-full text-xs font-medium shrink-0 ${
-            quote.status === "final"
+            quote.status === "completed"
+              ? "bg-blue-100 text-blue-700"
+              : quote.status === "final"
               ? "bg-green-100 text-green-700"
               : "bg-yellow-100 text-yellow-700"
           }`}
         >
-          {quote.status === "final" ? "Definitief" : "Concept"}
+          {quote.status === "completed" ? "Afgerond" : quote.status === "final" ? "Definitief" : "Concept"}
         </span>
       </div>
 
@@ -201,6 +204,15 @@ export default async function QuoteDetailPage({
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
               <strong>Opmerkingen:</strong> {result.notes}
             </div>
+          )}
+
+          {/* Actual Costs Comparison */}
+          {(quote.status === "final" || quote.status === "completed") && (
+            <ActualCostsPanel
+              quoteId={quote.id}
+              result={result}
+              status={quote.status}
+            />
           )}
 
           {/* Actions */}

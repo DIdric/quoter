@@ -42,7 +42,7 @@ export function QuoteActions({
   const router = useRouter();
   const supabase = createClient();
 
-  async function updateStatus(newStatus: "draft" | "final") {
+  async function updateStatus(newStatus: "draft" | "final" | "completed") {
     setLoading(true);
     await supabase
       .from("quotes")
@@ -183,6 +183,15 @@ export function QuoteActions({
             <Check className="w-4 h-4" />
             Markeer als definitief
           </button>
+        ) : currentStatus === "completed" ? (
+          <button
+            onClick={() => updateStatus("final")}
+            disabled={loading}
+            className="flex items-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white font-medium px-4 py-2 md:px-5 md:py-2.5 rounded-lg transition disabled:opacity-50 text-sm md:text-base"
+          >
+            <Undo2 className="w-4 h-4" />
+            Terugzetten naar definitief
+          </button>
         ) : (
           <button
             onClick={() => updateStatus("draft")}
@@ -297,15 +306,15 @@ export function QuoteActions({
         )}
       </div>
 
-      <div className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 md:p-4 rounded-lg ${currentStatus === "final" ? "bg-green-50 border border-green-200" : "bg-slate-50 border border-slate-200"}`}>
-        <span className={`text-sm font-medium sm:mr-auto ${currentStatus === "final" ? "text-green-700" : "text-slate-600"}`}>
-          {currentStatus === "final" ? "Offerte is definitief" : "Concept offerte"}
+      <div className={`flex flex-col sm:flex-row sm:items-center gap-3 p-3 md:p-4 rounded-lg ${currentStatus === "completed" ? "bg-blue-50 border border-blue-200" : currentStatus === "final" ? "bg-green-50 border border-green-200" : "bg-slate-50 border border-slate-200"}`}>
+        <span className={`text-sm font-medium sm:mr-auto ${currentStatus === "completed" ? "text-blue-700" : currentStatus === "final" ? "text-green-700" : "text-slate-600"}`}>
+          {currentStatus === "completed" ? "Project afgerond" : currentStatus === "final" ? "Offerte is definitief" : "Concept offerte"}
         </span>
         <div className="flex items-center gap-2 md:gap-3">
           <button
             onClick={handleDownloadPdf}
             disabled={downloading}
-            className={`flex items-center gap-2 bg-white border font-medium px-3 py-2 md:px-4 rounded-lg transition text-sm disabled:opacity-50 ${currentStatus === "final" ? "border-green-300 hover:bg-green-50 text-green-700" : "border-slate-300 hover:bg-slate-100 text-slate-700"}`}
+            className={`flex items-center gap-2 bg-white border font-medium px-3 py-2 md:px-4 rounded-lg transition text-sm disabled:opacity-50 ${currentStatus === "completed" ? "border-blue-300 hover:bg-blue-50 text-blue-700" : currentStatus === "final" ? "border-green-300 hover:bg-green-50 text-green-700" : "border-slate-300 hover:bg-slate-100 text-slate-700"}`}
           >
             {downloading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -314,7 +323,7 @@ export function QuoteActions({
             )}
             <span className="hidden sm:inline">Download</span> PDF
           </button>
-          {currentStatus === "final" && (
+          {(currentStatus === "final" || currentStatus === "completed") && (
             <button
               onClick={() => {
                 handleDownloadPdf().then(() => {
