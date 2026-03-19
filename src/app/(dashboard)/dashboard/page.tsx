@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { FileText, Package, Clock, Euro, TrendingUp, Plus } from "lucide-react";
+import { FileText, Package, Clock, Euro, TrendingUp, Plus, Zap } from "lucide-react";
+import { TIER_LIMITS, type SubscriptionTier } from "@/lib/usage-limits";
 
 interface QuoteJsonData {
   form?: {
@@ -27,7 +28,28 @@ export default async function DashboardPage() {
 
   const { count: totalMaterials } = await supabase
     .from("materials")
-    .select("*", { count: "exact", head: true });
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user!.id);
+
+  // Get subscription tier
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("subscription_tier")
+    .eq("id", user!.id)
+    .single();
+
+  const tier: SubscriptionTier = profile?.subscription_tier ?? "free";
+  const tierLimits = TIER_LIMITS[tier];
+
+  // Count AI quotes generated this month
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const { count: quotesThisMonth } = await supabase
+    .from("token_usage")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user!.id)
+    .eq("endpoint", "generate-quote")
+    .gte("created_at", monthStart);
 
   const quotes = allQuotes ?? [];
   const recentQuotes = quotes.slice(0, 5);
@@ -110,6 +132,46 @@ export default async function DashboardPage() {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Usage Quota */}
+      <div className="bg-white rounded-xl p-4 md:p-6 shadow-sm border border-slate-200 mb-6 md:mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-brand-500" />
+            <h2 className="font-semibold text-slate-800">AI Gebruik</h2>
+            <span className="px-2 py-0.5 bg-brand-50 text-brand-700 text-xs font-medium rounded-full">
+              {tierLimits.label}
+            </span>
+          </div>
+          {tierLimits.quotesPerMonth > 0 && (
+            <span className="text-sm text-slate-500">
+              {quotesThisMonth ?? 0} / {tierLimits.quotesPerMonth} offertes deze maand
+            </span>
+          )}
+          {tierLimits.quotesPerMonth === -1 && (
+            <span className="text-sm text-slate-500">Onbeperkt</span>
+          )}
+        </div>
+        {tierLimits.quotesPerMonth > 0 && (
+          <div className="w-full bg-slate-100 rounded-full h-2.5">
+            <div
+              className={`h-2.5 rounded-full transition-all ${
+                (quotesThisMonth ?? 0) >= tierLimits.quotesPerMonth
+                  ? "bg-red-500"
+                  : (quotesThisMonth ?? 0) >= tierLimits.quotesPerMonth * 0.8
+                  ? "bg-yellow-500"
+                  : "bg-brand-500"
+              }`}
+              style={{
+                width: `${Math.min(
+                  100,
+                  ((quotesThisMonth ?? 0) / tierLimits.quotesPerMonth) * 100
+                )}%`,
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {/* Recent Quotes */}

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { CONSTRUCTION_MODULES } from "@/lib/construction-modules";
 import { trackTokenUsage } from "@/lib/track-usage";
+import { checkUsageQuota } from "@/lib/usage-limits";
 
 const SYSTEM_PROMPT = `Je bent een ervaren calculator/werkvoorbereider voor een Nederlands aannemersbedrijf. Je genereert gedetailleerde, professionele offertes op basis van projectbeschrijvingen.
 
@@ -80,6 +81,23 @@ export async function POST(request: Request) {
 
   if (!user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Check usage quota
+  const quota = await checkUsageQuota(user.id);
+  if (!quota.allowed) {
+    return Response.json(
+      {
+        error: "Limiet bereikt",
+        message: quota.reason,
+        quota: {
+          tier: quota.tier,
+          quotesUsed: quota.quotesUsed,
+          quotesLimit: quota.limits.quotesPerMonth,
+        },
+      },
+      { status: 429 }
+    );
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {

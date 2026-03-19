@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { CONSTRUCTION_MODULES } from "@/lib/construction-modules";
 import { trackTokenUsage } from "@/lib/track-usage";
+import { checkUsageQuota } from "@/lib/usage-limits";
 
 const moduleIds = CONSTRUCTION_MODULES.map((m) => m.id);
 const moduleList = CONSTRUCTION_MODULES.map(
@@ -17,6 +18,12 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Check usage quota (shared with generate-quote)
+  const quota = await checkUsageQuota(user.id);
+  if (!quota.allowed) {
+    return NextResponse.json({ suggested: [], quota: { tier: quota.tier, reason: quota.reason } });
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {

@@ -14,6 +14,7 @@ export interface Profile {
   margin_percentage: number;
   quote_validity_days: number;
   quote_number_prefix: string | null;
+  subscription_tier: "free" | "pro" | "business";
 }
 
 export interface Material {

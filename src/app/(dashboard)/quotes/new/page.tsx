@@ -408,6 +408,17 @@ function NewQuotePage() {
         body: JSON.stringify({ ...form, selectedModules }),
       });
 
+      // Handle quota limit (non-streaming JSON response)
+      if (response.status === 429) {
+        const err = await response.json();
+        setResult({
+          error: err.message || "Limiet bereikt",
+        } as unknown as QuoteResult);
+        setLoading(false);
+        setLoadingStage("");
+        return;
+      }
+
       const reader = response.body?.getReader();
       if (!reader) throw new Error("No stream");
 
