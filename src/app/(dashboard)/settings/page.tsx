@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
-import { Save, Loader2, Upload, X, Image as ImageIcon } from "lucide-react";
+import { Save, Loader2, Upload, X, Image as ImageIcon, Zap, Check, ExternalLink } from "lucide-react";
+import { TIER_LIMITS, type SubscriptionTier } from "@/lib/usage-limits";
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Partial<Profile>>({
@@ -26,6 +27,9 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [quotesUsed, setQuotesUsed] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
@@ -51,6 +55,18 @@ export default function SettingsPage() {
         setLogoPreview(data.logo_url);
       }
     }
+
+    // Load quotes used this month
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const { count } = await supabase
+      .from("token_usage")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("endpoint", "generate-quote")
+      .gte("created_at", monthStart);
+    setQuotesUsed(count ?? 0);
+
     setLoading(false);
   }
 
@@ -93,6 +109,38 @@ export default function SettingsPage() {
     setProfile({ ...profile, logo_url: null });
 
     await fetch("/api/upload-logo", { method: "DELETE" });
+  }
+
+  async function handleCheckout(planId: string) {
+    setCheckoutLoading(planId);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      // Ignore — user can retry
+    }
+    setCheckoutLoading(null);
+  }
+
+  async function handlePortal() {
+    setPortalLoading(true);
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      // Ignore
+    }
+    setPortalLoading(false);
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -450,6 +498,183 @@ export default function SettingsPage() {
           </div>
         </form>
       </div>
+
+      {/* Subscription */}
+      <SubscriptionCard
+        tier={(profile.subscription_tier as SubscriptionTier) ?? "free"}
+        quotesUsed={quotesUsed}
+        checkoutLoading={checkoutLoading}
+        portalLoading={portalLoading}
+        onCheckout={handleCheckout}
+        onPortal={handlePortal}
+      />
+    </div>
+  );
+}
+
+const PLAN_FEATURES: Record<string, { price: number; features: string[] }> = {
+  free: {
+    price: 0,
+    features: ["10 AI-offertes per maand", "PDF export", "Eigen materialen"],
+  },
+  pro: {
+    price: 19,
+    features: [
+      "50 AI-offertes per maand",
+      "PDF export",
+      "Eigen materialen",
+      "E-mail support",
+    ],
+  },
+  business: {
+    price: 49,
+    features: [
+      "Onbeperkt AI-offertes",
+      "Alles van Pro",
+      "Prioriteit support",
+      "Meerdere gebruikers (binnenkort)",
+    ],
+  },
+};
+
+function SubscriptionCard({
+  tier,
+  quotesUsed,
+  checkoutLoading,
+  portalLoading,
+  onCheckout,
+  onPortal,
+}: {
+  tier: SubscriptionTier;
+  quotesUsed: number;
+  checkoutLoading: string | null;
+  portalLoading: boolean;
+  onCheckout: (planId: string) => void;
+  onPortal: () => void;
+}) {
+  const limits = TIER_LIMITS[tier];
+  const plans = ["free", "pro", "business"] as const;
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 max-w-2xl mt-6">
+      <div className="p-4 md:p-6 border-b border-slate-200">
+        <div className="flex items-center gap-2">
+          <Zap className="w-5 h-5 text-brand-500" />
+          <h2 className="text-lg font-semibold text-slate-800">Abonnement</h2>
+          <span className="px-2 py-0.5 bg-brand-50 text-brand-700 text-xs font-medium rounded-full">
+            {limits.label}
+          </span>
+        </div>
+        <p className="text-sm text-slate-500 mt-1">
+          {limits.quotesPerMonth > 0
+            ? `${quotesUsed} / ${limits.quotesPerMonth} offertes gebruikt deze maand`
+            : "Onbeperkt gebruik"}
+        </p>
+        {limits.quotesPerMonth > 0 && (
+          <div className="w-full bg-slate-100 rounded-full h-2 mt-2">
+            <div
+              className={`h-2 rounded-full transition-all ${
+                quotesUsed >= limits.quotesPerMonth
+                  ? "bg-red-500"
+                  : quotesUsed >= limits.quotesPerMonth * 0.8
+                  ? "bg-yellow-500"
+                  : "bg-brand-500"
+              }`}
+              style={{
+                width: `${Math.min(100, (quotesUsed / limits.quotesPerMonth) * 100)}%`,
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 md:p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {plans.map((planId) => {
+          const plan = PLAN_FEATURES[planId];
+          const isCurrent = planId === tier;
+          const isUpgrade =
+            plans.indexOf(planId) > plans.indexOf(tier);
+
+          return (
+            <div
+              key={planId}
+              className={`rounded-lg border-2 p-4 ${
+                isCurrent
+                  ? "border-brand-500 bg-brand-50/50"
+                  : "border-slate-200"
+              }`}
+            >
+              <div className="text-sm font-semibold text-slate-800 mb-1">
+                {TIER_LIMITS[planId].label}
+              </div>
+              <div className="text-2xl font-bold text-slate-800">
+                {plan.price === 0 ? (
+                  "Gratis"
+                ) : (
+                  <>
+                    &euro;{plan.price}
+                    <span className="text-sm font-normal text-slate-500">
+                      /maand
+                    </span>
+                  </>
+                )}
+              </div>
+              <ul className="mt-3 space-y-1.5">
+                {plan.features.map((f) => (
+                  <li
+                    key={f}
+                    className="flex items-start gap-1.5 text-xs text-slate-600"
+                  >
+                    <Check className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" />
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-4">
+                {isCurrent ? (
+                  <span className="block text-center text-xs font-medium text-brand-600 py-2">
+                    Huidig plan
+                  </span>
+                ) : isUpgrade ? (
+                  <button
+                    onClick={() => onCheckout(planId)}
+                    disabled={!!checkoutLoading}
+                    className="w-full flex items-center justify-center gap-1.5 bg-brand-500 hover:bg-brand-600 text-white text-sm font-medium py-2 rounded-lg transition disabled:opacity-50"
+                  >
+                    {checkoutLoading === planId ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Zap className="w-3.5 h-3.5" />
+                    )}
+                    Upgraden
+                  </button>
+                ) : (
+                  <span className="block text-center text-xs text-slate-400 py-2">
+                    &mdash;
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {tier !== "free" && (
+        <div className="px-4 md:px-6 pb-4 md:pb-6">
+          <button
+            onClick={onPortal}
+            disabled={portalLoading}
+            className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-800 transition disabled:opacity-50"
+          >
+            {portalLoading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <ExternalLink className="w-3.5 h-3.5" />
+            )}
+            Abonnement beheren via Stripe
+          </button>
+        </div>
+      )}
     </div>
   );
 }

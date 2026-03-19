@@ -15,6 +15,7 @@ export interface Profile {
   quote_validity_days: number;
   quote_number_prefix: string | null;
   subscription_tier: "free" | "pro" | "business";
+  stripe_customer_id: string | null;
 }
 
 export interface Material {

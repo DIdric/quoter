@@ -21,6 +21,7 @@ create table public.profiles (
   margin_percentage numeric(5,2) default 15.00,
   quote_validity_days integer default 30,
   subscription_tier text not null default 'free' check (subscription_tier in ('free', 'pro', 'business')),
+  stripe_customer_id text,
   created_at timestamptz default now()
 );
 
@@ -209,9 +210,10 @@ create policy "Admins can read admin_users"
   on public.admin_users for select using (auth.uid() = user_id);
 
 -- ============================================================
--- Migration: Add subscription_tier to profiles
+-- Migration: Add subscription_tier and stripe_customer_id to profiles
 -- Run this if you already have the tables created:
 -- ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS subscription_tier text NOT NULL DEFAULT 'free' CHECK (subscription_tier IN ('free', 'pro', 'business'));
+-- ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS stripe_customer_id text;
 -- ============================================================
 
 -- ============================================================
