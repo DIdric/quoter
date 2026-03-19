@@ -59,23 +59,30 @@ export default async function QuoteDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    notFound();
+  }
+
   const { data: quote } = await supabase
     .from("quotes")
     .select("*")
     .eq("id", id)
+    .eq("user_id", user.id)
     .single();
 
   if (!quote) {
     notFound();
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { data: profile } = user
-    ? await supabase.from("profiles").select("margin_percentage").eq("id", user.id).single()
-    : { data: null };
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("margin_percentage")
+    .eq("id", user.id)
+    .single();
 
   const marginPercentage = profile?.margin_percentage ?? 15;
 
@@ -197,6 +204,7 @@ export default async function QuoteDetailPage({
             result={result}
             isDraft={quote.status === "draft"}
             marginPercentage={marginPercentage}
+            userId={user.id}
           />
 
           {/* Notes */}
@@ -212,6 +220,7 @@ export default async function QuoteDetailPage({
               quoteId={quote.id}
               result={result}
               status={quote.status}
+              userId={user.id}
             />
           )}
 
@@ -222,6 +231,7 @@ export default async function QuoteDetailPage({
             clientName={form?.client_name}
             clientEmail={form?.client_email}
             shareToken={quote.share_token}
+            userId={user.id}
           />
         </div>
       ) : (

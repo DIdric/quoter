@@ -28,9 +28,12 @@ export default function MaterialsPage() {
   }, []);
 
   async function loadMaterials() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { data } = await supabase
       .from("materials")
       .select("*")
+      .eq("user_id", user.id)
       .order("name");
     setMaterials(data ?? []);
     setLoading(false);
@@ -48,7 +51,7 @@ export default function MaterialsPage() {
     };
 
     if (editingId) {
-      await supabase.from("materials").update(payload).eq("id", editingId);
+      await supabase.from("materials").update(payload).eq("id", editingId).eq("user_id", user.id);
     } else {
       await supabase.from("materials").insert(payload);
     }
@@ -61,7 +64,9 @@ export default function MaterialsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Weet je zeker dat je dit materiaal wilt verwijderen?")) return;
-    await supabase.from("materials").delete().eq("id", id);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("materials").delete().eq("id", id).eq("user_id", user.id);
     loadMaterials();
   }
 
@@ -137,7 +142,8 @@ export default function MaterialsPage() {
         await supabase
           .from("materials")
           .update({ unit: item.unit, cost_price: item.cost_price })
-          .eq("id", item.id);
+          .eq("id", item.id)
+          .eq("user_id", user.id);
       }
 
       // Insert new materials

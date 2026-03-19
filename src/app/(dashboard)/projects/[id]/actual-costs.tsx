@@ -82,10 +82,12 @@ export function ActualCostsPanel({
   quoteId,
   result,
   status,
+  userId,
 }: {
   quoteId: string;
   result: QuoteResult;
   status: string;
+  userId: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [expanded, setExpanded] = useState(status === "completed");
@@ -114,9 +116,12 @@ export function ActualCostsPanel({
         .from("quotes")
         .select("json_data")
         .eq("id", quoteId)
+        .eq("user_id", userId)
         .single();
 
-      const jsonData = (quote?.json_data as Record<string, unknown>) || {};
+      if (!quote) throw new Error("Quote not found");
+
+      const jsonData = (quote.json_data as Record<string, unknown>) || {};
       const existingResult = (jsonData.result as Record<string, unknown>) || {};
 
       await supabase
@@ -128,7 +133,8 @@ export function ActualCostsPanel({
             result: { ...existingResult, lines: updatedLines },
           },
         })
-        .eq("id", quoteId);
+        .eq("id", quoteId)
+        .eq("user_id", userId);
 
       setEditing(false);
       router.refresh();

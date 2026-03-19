@@ -23,12 +23,14 @@ export function QuoteActions({
   clientName,
   clientEmail,
   shareToken: initialShareToken,
+  userId,
 }: {
   quoteId: string;
   status: string;
   clientName?: string;
   clientEmail?: string;
   shareToken?: string | null;
+  userId: string;
 }) {
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -47,7 +49,8 @@ export function QuoteActions({
     await supabase
       .from("quotes")
       .update({ status: newStatus })
-      .eq("id", quoteId);
+      .eq("id", quoteId)
+      .eq("user_id", userId);
     setCurrentStatus(newStatus);
     setLoading(false);
     router.refresh();
@@ -83,19 +86,15 @@ export function QuoteActions({
         .from("quotes")
         .select("client_name, json_data")
         .eq("id", quoteId)
+        .eq("user_id", userId)
         .single();
 
       if (!original) throw new Error("Quote not found");
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
       const { data: newQuote } = await supabase
         .from("quotes")
         .insert({
-          user_id: user.id,
+          user_id: userId,
           client_name: original.client_name,
           status: "draft",
           json_data: original.json_data,
@@ -131,7 +130,8 @@ export function QuoteActions({
       const { error } = await supabase
         .from("quotes")
         .update({ share_token: token })
-        .eq("id", quoteId);
+        .eq("id", quoteId)
+        .eq("user_id", userId);
 
       if (error) throw error;
 
@@ -149,13 +149,14 @@ export function QuoteActions({
     await supabase
       .from("quotes")
       .update({ share_token: null })
-      .eq("id", quoteId);
+      .eq("id", quoteId)
+      .eq("user_id", userId);
     setShareToken(null);
   }
 
   async function handleDelete() {
     setDeleting(true);
-    await supabase.from("quotes").delete().eq("id", quoteId);
+    await supabase.from("quotes").delete().eq("id", quoteId).eq("user_id", userId);
     router.push("/projects");
   }
 

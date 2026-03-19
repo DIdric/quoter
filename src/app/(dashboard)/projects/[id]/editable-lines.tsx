@@ -85,11 +85,13 @@ export function EditableQuoteLines({
   result,
   isDraft,
   marginPercentage,
+  userId,
 }: {
   quoteId: string;
   result: QuoteResult;
   isDraft: boolean;
   marginPercentage: number;
+  userId: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -166,16 +168,20 @@ export function EditableQuoteLines({
         .from("quotes")
         .select("json_data")
         .eq("id", quoteId)
+        .eq("user_id", userId)
         .single();
 
-      const jsonData = (quote?.json_data as Record<string, unknown>) || {};
+      if (!quote) throw new Error("Quote not found");
+
+      const jsonData = (quote.json_data as Record<string, unknown>) || {};
 
       await supabase
         .from("quotes")
         .update({
           json_data: { ...jsonData, result: updatedResult },
         })
-        .eq("id", quoteId);
+        .eq("id", quoteId)
+        .eq("user_id", userId);
 
       setEditing(false);
       router.refresh();
