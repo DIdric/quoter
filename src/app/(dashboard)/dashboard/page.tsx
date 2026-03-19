@@ -14,11 +14,15 @@ interface QuoteJsonData {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Fetch all quotes for stats (we need json_data for revenue)
   const { data: allQuotes } = await supabase
     .from("quotes")
     .select("id, client_name, status, created_at, json_data")
+    .eq("user_id", user!.id)
     .order("created_at", { ascending: false });
 
   const { count: totalMaterials } = await supabase
@@ -29,11 +33,11 @@ export default async function DashboardPage() {
   const recentQuotes = quotes.slice(0, 5);
   const totalQuotes = quotes.length;
   const draftQuotes = quotes.filter((q) => q.status === "draft").length;
-  const finalQuotes = totalQuotes - draftQuotes;
+  const finalQuotes = quotes.filter((q) => q.status === "final" || q.status === "completed").length;
 
-  // Calculate total revenue from final quotes
+  // Calculate total revenue from final/completed quotes
   const totalRevenue = quotes
-    .filter((q) => q.status === "final")
+    .filter((q) => q.status === "final" || q.status === "completed")
     .reduce((sum, q) => {
       const data = q.json_data as QuoteJsonData | null;
       return sum + (data?.result?.total_incl_btw ?? 0);
@@ -159,12 +163,14 @@ export default async function DashboardPage() {
                     )}
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        quote.status === "final"
+                        quote.status === "completed"
+                          ? "bg-blue-100 text-blue-700"
+                          : quote.status === "final"
                           ? "bg-green-100 text-green-700"
                           : "bg-yellow-100 text-yellow-700"
                       }`}
                     >
-                      {quote.status === "final" ? "Definitief" : "Concept"}
+                      {quote.status === "completed" ? "Afgerond" : quote.status === "final" ? "Definitief" : "Concept"}
                     </span>
                   </div>
                 </Link>

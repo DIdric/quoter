@@ -86,9 +86,12 @@ create policy "Users can update own quotes"
 create policy "Users can delete own quotes"
   on public.quotes for delete using (auth.uid() = user_id);
 
--- Public access to shared quotes via share_token
+-- Public access to shared quotes via share_token (only for unauthenticated users or own quotes)
 create policy "Anyone can view shared quotes"
-  on public.quotes for select using (share_token is not null);
+  on public.quotes for select using (
+    share_token is not null
+    AND (auth.uid() IS NULL OR auth.uid() = user_id)
+  );
 
 -- Auto-create profile on signup
 create or replace function public.handle_new_user()

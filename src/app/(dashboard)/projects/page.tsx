@@ -30,14 +30,18 @@ export default function ProjectsPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    supabase
-      .from("quotes")
-      .select("id, client_name, status, quote_number, created_at, json_data")
-      .order("created_at", { ascending: false })
-      .then(({ data }) => {
-        setQuotes((data as QuoteRow[]) ?? []);
-        setLoading(false);
-      });
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("quotes")
+        .select("id, client_name, status, quote_number, created_at, json_data")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .then(({ data }) => {
+          setQuotes((data as QuoteRow[]) ?? []);
+          setLoading(false);
+        });
+    });
   }, []);
 
   const filtered = useMemo(() => {

@@ -233,12 +233,17 @@ ${body.ai_input}`;
 
         const quoteData = JSON.parse(jsonStr);
 
-        // Recalculate line totals and summary from lines to avoid AI math errors
+        // Recalculate line totals and enforce hourly rate from profile
         if (Array.isArray(quoteData.lines)) {
-          quoteData.lines = quoteData.lines.map((line: { quantity: number; unit_price: number; total: number; type: string }) => ({
-            ...line,
-            total: Math.round(line.quantity * line.unit_price * 100) / 100,
-          }));
+          quoteData.lines = quoteData.lines.map((line: { quantity: number; unit_price: number; total: number; type: string }) => {
+            // Enforce the user's hourly rate on all labor lines
+            const unitPrice = line.type === "arbeid" ? hourlyRate : line.unit_price;
+            return {
+              ...line,
+              unit_price: unitPrice,
+              total: Math.round(line.quantity * unitPrice * 100) / 100,
+            };
+          });
           const subtotalMaterials = quoteData.lines
             .filter((l: { type: string }) => l.type === "materiaal")
             .reduce((sum: number, l: { total: number }) => sum + l.total, 0);
