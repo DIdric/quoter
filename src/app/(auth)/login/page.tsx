@@ -7,6 +7,7 @@ import { Mail, Lock, ArrowRight, Loader2, Building2, MapPin } from "lucide-react
 
 export default function LoginPage() {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [businessName, setBusinessName] = useState("");
@@ -16,6 +17,25 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null);
 
   const supabase = createClient();
+
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setMessage(null);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset-password`,
+    });
+
+    if (error) {
+      setError(error.message);
+    } else {
+      setMessage("Controleer je e-mail voor een link om je wachtwoord te resetten.");
+    }
+
+    setLoading(false);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -91,10 +111,10 @@ export default function LoginPage() {
         {/* Form Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <h2 className="text-xl font-semibold text-slate-800 mb-6">
-            {isLogin ? "Inloggen" : "Account aanmaken"}
+            {isForgotPassword ? "Wachtwoord resetten" : isLogin ? "Inloggen" : "Account aanmaken"}
           </h2>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={isForgotPassword ? handleForgotPassword : handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 E-mailadres
@@ -112,6 +132,7 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {!isForgotPassword && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Wachtwoord
@@ -128,7 +149,21 @@ export default function LoginPage() {
                   minLength={6}
                 />
               </div>
+              {isLogin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotPassword(true);
+                    setError(null);
+                    setMessage(null);
+                  }}
+                  className="text-xs text-slate-500 hover:text-brand-500 transition mt-1"
+                >
+                  Wachtwoord vergeten?
+                </button>
+              )}
             </div>
+            )}
 
             {!isLogin && (
               <>
@@ -188,26 +223,39 @@ export default function LoginPage() {
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
                 <>
-                  {isLogin ? "Inloggen" : "Registreren"}
+                  {isForgotPassword ? "Reset link versturen" : isLogin ? "Inloggen" : "Registreren"}
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError(null);
-                setMessage(null);
-              }}
-              className="text-sm text-slate-600 hover:text-brand-500 transition"
-            >
-              {isLogin
-                ? "Nog geen account? Registreer hier"
-                : "Al een account? Log hier in"}
-            </button>
+          <div className="mt-6 text-center space-y-2">
+            {isForgotPassword ? (
+              <button
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setError(null);
+                  setMessage(null);
+                }}
+                className="text-sm text-slate-600 hover:text-brand-500 transition"
+              >
+                Terug naar inloggen
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setIsLogin(!isLogin);
+                  setError(null);
+                  setMessage(null);
+                }}
+                className="text-sm text-slate-600 hover:text-brand-500 transition"
+              >
+                {isLogin
+                  ? "Nog geen account? Registreer hier"
+                  : "Al een account? Log hier in"}
+              </button>
+            )}
           </div>
         </div>
       </div>

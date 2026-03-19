@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
-import { Save, Loader2, Upload, X, Image as ImageIcon, Zap, Check, ExternalLink } from "lucide-react";
+import { Save, Loader2, Upload, X, Image as ImageIcon, Zap, Check, ExternalLink, Lock } from "lucide-react";
 import { TIER_LIMITS, type SubscriptionTier } from "@/lib/usage-limits";
 
 export default function SettingsPage() {
@@ -499,6 +499,9 @@ export default function SettingsPage() {
         </form>
       </div>
 
+      {/* Password Change */}
+      <PasswordChangeCard />
+
       {/* Subscription */}
       <SubscriptionCard
         tier={(profile.subscription_tier as SubscriptionTier) ?? "free"}
@@ -508,6 +511,148 @@ export default function SettingsPage() {
         onCheckout={handleCheckout}
         onPortal={handlePortal}
       />
+    </div>
+  );
+}
+
+function PasswordChangeCard() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const supabase = createClient();
+
+  async function handlePasswordChange(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSuccess(false);
+
+    if (newPassword !== confirmPassword) {
+      setError("Wachtwoorden komen niet overeen.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError("Wachtwoord moet minimaal 6 tekens bevatten.");
+      return;
+    }
+
+    setSaving(true);
+
+    // Verify current password by attempting sign-in
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.email) {
+      setError("Kan gebruiker niet verifiëren.");
+      setSaving(false);
+      return;
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    });
+
+    if (signInError) {
+      setError("Huidig wachtwoord is onjuist.");
+      setSaving(false);
+      return;
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (updateError) {
+      setError(updateError.message);
+    } else {
+      setSuccess(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setSuccess(false), 3000);
+    }
+
+    setSaving(false);
+  }
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 max-w-2xl mt-6">
+      <div className="p-4 md:p-6 border-b border-slate-200">
+        <div className="flex items-center gap-2">
+          <Lock className="w-5 h-5 text-slate-600" />
+          <h2 className="text-lg font-semibold text-slate-800">Wachtwoord wijzigen</h2>
+        </div>
+      </div>
+
+      <form onSubmit={handlePasswordChange} className="p-4 md:p-6 space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Huidig wachtwoord
+          </label>
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            className="w-full max-w-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Nieuw wachtwoord
+          </label>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            className="w-full max-w-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+            placeholder="Minimaal 6 tekens"
+            required
+            minLength={6}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Bevestig nieuw wachtwoord
+          </label>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="w-full max-w-sm px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+            required
+            minLength={6}
+          />
+        </div>
+
+        {error && (
+          <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg max-w-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-5 py-2.5 rounded-lg transition disabled:opacity-50"
+          >
+            {saving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Lock className="w-4 h-4" />
+            )}
+            Wachtwoord wijzigen
+          </button>
+          {success && (
+            <span className="text-sm text-green-600 font-medium">
+              Wachtwoord gewijzigd!
+            </span>
+          )}
+        </div>
+      </form>
     </div>
   );
 }
