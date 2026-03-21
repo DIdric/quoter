@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile } from "@/lib/types";
+import type { Profile, DisplayMode } from "@/lib/types";
 import { Save, Loader2, Upload, X, Image as ImageIcon, Zap, Check, ExternalLink, Lock } from "lucide-react";
 import { TIER_LIMITS, type SubscriptionTier } from "@/lib/usage-limits";
 
@@ -21,6 +21,7 @@ export default function SettingsPage() {
     margin_percentage: 15,
     quote_validity_days: 30,
     quote_number_prefix: "",
+    default_display_mode: "open" as DisplayMode,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -168,6 +169,7 @@ export default function SettingsPage() {
         margin_percentage: profile.margin_percentage,
         quote_validity_days: profile.quote_validity_days,
         quote_number_prefix: profile.quote_number_prefix,
+        default_display_mode: profile.default_display_mode,
       })
       .eq("id", user.id);
 
@@ -417,6 +419,62 @@ export default function SettingsPage() {
             <p className="text-xs text-slate-400 mt-1">
               Optioneel. Voorbeeld: OFF-2026-001. Laat leeg voor 2026-001.
             </p>
+          </div>
+
+          {/* Default display mode */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Standaard offerte-smaak
+            </label>
+            <p className="text-xs text-slate-400 mb-2">
+              Bepaalt hoeveel detail de klant standaard ziet in de PDF. Je kunt
+              dit per offerte aanpassen.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {(
+                [
+                  {
+                    value: "open",
+                    label: "Open begroting",
+                    description: "Alle regels zichtbaar",
+                  },
+                  {
+                    value: "module",
+                    label: "Per module",
+                    description: "Totaalprijs per module",
+                  },
+                  {
+                    value: "hoogover",
+                    label: "Hoog-over",
+                    description: "Één eindtotaal",
+                  },
+                ] as { value: DisplayMode; label: string; description: string }[]
+              ).map((m) => (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() =>
+                    setProfile({ ...profile, default_display_mode: m.value })
+                  }
+                  className={`flex flex-col items-start gap-1 p-3 rounded-lg border-2 text-left transition ${
+                    profile.default_display_mode === m.value
+                      ? "border-brand-500 bg-brand-50"
+                      : "border-slate-200 hover:border-slate-300"
+                  }`}
+                >
+                  <span
+                    className={`text-sm font-medium ${
+                      profile.default_display_mode === m.value
+                        ? "text-brand-700"
+                        : "text-slate-700"
+                    }`}
+                  >
+                    {m.label}
+                  </span>
+                  <span className="text-xs text-slate-500">{m.description}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

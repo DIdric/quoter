@@ -14,6 +14,8 @@ import { QuoteActions } from "./actions";
 import { EditableQuoteLines } from "./editable-lines";
 import { EditableModuleDescriptions } from "./editable-module-descriptions";
 import { ActualCostsPanel } from "./actual-costs";
+import { DisplayModePicker } from "./display-mode-picker";
+import type { DisplayMode } from "@/lib/types";
 
 interface QuoteLine {
   category: string;
@@ -88,15 +90,19 @@ export default async function QuoteDetailPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("margin_percentage")
+    .select("margin_percentage, default_display_mode")
     .eq("id", user.id)
     .single();
 
   const marginPercentage = profile?.margin_percentage ?? 15;
 
-  const jsonData = quote.json_data as QuoteJsonData | null;
+  const jsonData = quote.json_data as QuoteJsonData & { display_mode?: DisplayMode } | null;
   const form = jsonData?.form;
   const result = jsonData?.result;
+  const displayMode: DisplayMode =
+    jsonData?.display_mode ??
+    (profile?.default_display_mode as DisplayMode | undefined) ??
+    "open";
   const hasQuoteLines = result && result.lines && result.lines.length > 0;
 
   return (
@@ -240,6 +246,13 @@ export default async function QuoteDetailPage({
               userId={user.id}
             />
           )}
+
+          {/* Display mode picker */}
+          <DisplayModePicker
+            quoteId={quote.id}
+            currentMode={displayMode}
+            userId={user.id}
+          />
 
           {/* Actions */}
           <QuoteActions

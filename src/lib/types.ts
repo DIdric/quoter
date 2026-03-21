@@ -1,3 +1,5 @@
+export type DisplayMode = "open" | "module" | "hoogover";
+
 export interface Profile {
   id: string;
   business_name: string | null;
@@ -14,6 +16,7 @@ export interface Profile {
   margin_percentage: number;
   quote_validity_days: number;
   quote_number_prefix: string | null;
+  default_display_mode: DisplayMode;
   subscription_tier: "free" | "pro" | "business";
   stripe_customer_id: string | null;
 }

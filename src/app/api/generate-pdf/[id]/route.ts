@@ -38,6 +38,8 @@ interface QuoteResult {
   notes: string;
 }
 
+type DisplayMode = "open" | "module" | "hoogover";
+
 interface QuoteJsonData {
   form?: {
     client_name?: string;
@@ -48,6 +50,7 @@ interface QuoteJsonData {
     project_location?: string;
   };
   result?: QuoteResult;
+  display_mode?: DisplayMode;
 }
 
 function formatCurrency(amount: number): string {
@@ -120,6 +123,8 @@ export async function GET(
     const jsonData = quote.json_data as QuoteJsonData | null;
     const form = jsonData?.form;
     const result = jsonData?.result;
+    const displayMode: DisplayMode =
+      jsonData?.display_mode ?? p.default_display_mode ?? "open";
 
     if (!result) {
       return NextResponse.json(
@@ -295,7 +300,7 @@ export async function GET(
     y += introWrapped.length * 4 + 8;
 
     // ============================================================
-    // TECHNICAL DESCRIPTION PER MODULE
+    // MODULE DESCRIPTIONS (all modes; hoogover skips bullet items)
     // ============================================================
     if (result.modules && result.modules.length > 0) {
       if (y > 230) {
@@ -333,26 +338,28 @@ export async function GET(
         doc.text(introLines, margin, y);
         y += introLines.length * 3.5 + 2;
 
-        // Bullet items
-        mod.items.forEach((item) => {
-          if (y > 270) {
-            doc.addPage();
-            y = 20;
-          }
-          const itemWrapped = doc.splitTextToSize(
-            `•  ${item}`,
-            pageWidth - margin * 2 - 5
-          );
-          doc.text(itemWrapped, margin + 3, y);
-          y += itemWrapped.length * 3.5 + 0.5;
-        });
+        // Bullet items — skipped for hoogover mode
+        if (displayMode !== "hoogover") {
+          mod.items.forEach((item) => {
+            if (y > 270) {
+              doc.addPage();
+              y = 20;
+            }
+            const itemWrapped = doc.splitTextToSize(
+              `•  ${item}`,
+              pageWidth - margin * 2 - 5
+            );
+            doc.text(itemWrapped, margin + 3, y);
+            y += itemWrapped.length * 3.5 + 0.5;
+          });
+        }
 
         y += 5;
       });
     }
 
     // ============================================================
-    // PRICE TABLE
+    // PRICE TABLE — rendered based on displayMode
     // ============================================================
     if (y > 200) {
       doc.addPage();
@@ -360,70 +367,110 @@ export async function GET(
     }
 
     const categories = [...new Set(result.lines.map((l) => l.category))];
-    const tableBody: (
-      | string
-      | { content: string; styles?: Record<string, unknown> }
-    )[][] = [];
 
-    categories.forEach((category) => {
-      tableBody.push([
-        {
-          content: category,
-          styles: {
-            fontStyle: "bold",
-            fillColor: [248, 250, 252],
-            textColor: [51, 65, 85],
+    if (displayMode === "open") {
+      // ── Smaak 1: Open begroting — alle regels zichtbaar ──────────
+      const tableBody: (
+        | string
+        | { content: string; styles?: Record<string, unknown> }
+      )[][] = [];
+
+      categories.forEach((category) => {
+        tableBody.push([
+          {
+            content: category,
+            styles: {
+              fontStyle: "bold",
+              fillColor: [248, 250, 252],
+              textColor: [51, 65, 85],
+            },
           },
+          { content: "", styles: { fillColor: [248, 250, 252] } },
+          { content: "", styles: { fillColor: [248, 250, 252] } },
+          { content: "", styles: { fillColor: [248, 250, 252] } },
+          { content: "", styles: { fillColor: [248, 250, 252] } },
+        ]);
+
+        result.lines
+          .filter((l) => l.category === category)
+          .forEach((line) => {
+            tableBody.push([
+              line.description,
+              line.type === "materiaal" ? "Materiaal" : "Arbeid",
+              `${line.quantity} ${line.unit}`,
+              formatCurrency(line.unit_price),
+              formatCurrency(line.total),
+            ]);
+          });
+      });
+
+      autoTable(doc, {
+        startY: y,
+        head: [["Omschrijving", "Type", "Aantal", "Prijs", "Totaal"]],
+        body: tableBody,
+        theme: "striped",
+        headStyles: {
+          fillColor: [249, 115, 22],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 9,
         },
-        { content: "", styles: { fillColor: [248, 250, 252] } },
-        { content: "", styles: { fillColor: [248, 250, 252] } },
-        { content: "", styles: { fillColor: [248, 250, 252] } },
-        { content: "", styles: { fillColor: [248, 250, 252] } },
-      ]);
+        bodyStyles: { fontSize: 8.5, textColor: [51, 65, 85] },
+        columnStyles: {
+          0: { cellWidth: "auto" },
+          1: { cellWidth: 22, halign: "center" },
+          2: { cellWidth: 25, halign: "right" },
+          3: { cellWidth: 28, halign: "right" },
+          4: { cellWidth: 28, halign: "right" },
+        },
+        margin: { left: margin, right: margin },
+      });
 
-      result.lines
-        .filter((l) => l.category === category)
-        .forEach((line) => {
-          tableBody.push([
-            line.description,
-            line.type === "materiaal" ? "Materiaal" : "Arbeid",
-            `${line.quantity} ${line.unit}`,
-            formatCurrency(line.unit_price),
-            formatCurrency(line.total),
-          ]);
-        });
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      y = (doc as any).lastAutoTable.finalY + 10;
+    } else if (displayMode === "module") {
+      // ── Smaak 2: Per module — totaalprijs per module ──────────────
+      // Distribute margin proportionally across modules
+      const totalLinesSum =
+        result.subtotal_materials + result.subtotal_labor;
 
-    autoTable(doc, {
-      startY: y,
-      head: [["Omschrijving", "Type", "Aantal", "Prijs", "Totaal"]],
-      body: tableBody,
-      theme: "striped",
-      headStyles: {
-        fillColor: [249, 115, 22],
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-        fontSize: 9,
-      },
-      bodyStyles: {
-        fontSize: 8.5,
-        textColor: [51, 65, 85],
-      },
-      columnStyles: {
-        0: { cellWidth: "auto" },
-        1: { cellWidth: 22, halign: "center" },
-        2: { cellWidth: 25, halign: "right" },
-        3: { cellWidth: 28, halign: "right" },
-        4: { cellWidth: 28, halign: "right" },
-      },
-      margin: { left: margin, right: margin },
-    });
+      const moduleTableBody = categories.map((cat) => {
+        const catSum = result.lines
+          .filter((l) => l.category === cat)
+          .reduce((s, l) => s + l.total, 0);
+        const moduleTotal =
+          totalLinesSum > 0
+            ? (catSum / totalLinesSum) * result.total_excl_btw
+            : catSum;
+        return [cat, formatCurrency(moduleTotal)];
+      });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    y = (doc as any).lastAutoTable.finalY + 10;
+      autoTable(doc, {
+        startY: y,
+        head: [["Module", "Prijs excl. BTW"]],
+        body: moduleTableBody,
+        theme: "striped",
+        headStyles: {
+          fillColor: [249, 115, 22],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 9,
+        },
+        bodyStyles: { fontSize: 8.5, textColor: [51, 65, 85] },
+        columnStyles: {
+          0: { cellWidth: "auto" },
+          1: { cellWidth: 40, halign: "right" },
+        },
+        margin: { left: margin, right: margin },
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      y = (doc as any).lastAutoTable.finalY + 10;
+    }
+    // displayMode === "hoogover": no price table — only module descriptions + grand total
 
     // ============================================================
-    // TOTALS
+    // TOTALS — architecture rule: NEVER show margin amount
     // ============================================================
     if (y > 235) {
       doc.addPage();
@@ -433,43 +480,28 @@ export async function GET(
     const totalsX = pageWidth - margin - 70;
     const valuesX = rightCol;
 
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(71, 85, 105);
+    if (displayMode !== "hoogover") {
+      // Smaak 1 & 2: show excl. BTW + BTW + incl. BTW
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(71, 85, 105);
 
-    const totalsRows = [
-      ["Materialen", formatCurrency(result.subtotal_materials)],
-      ["Arbeid", formatCurrency(result.subtotal_labor)],
-      ["Winstmarge", formatCurrency(result.margin_amount)],
-    ];
-
-    totalsRows.forEach(([label, value]) => {
-      doc.text(label, totalsX, y);
-      doc.text(value, valuesX, y, { align: "right" });
+      doc.text("Totaal excl. BTW", totalsX, y);
+      doc.text(formatCurrency(result.total_excl_btw), valuesX, y, {
+        align: "right",
+      });
       y += 5;
-    });
 
-    doc.setDrawColor(203, 213, 225);
-    doc.line(totalsX, y, valuesX, y);
-    y += 5;
+      doc.text("BTW (21%)", totalsX, y);
+      doc.text(formatCurrency(result.btw_amount), valuesX, y, {
+        align: "right",
+      });
+      y += 5;
 
-    doc.setFont("helvetica", "bold");
-    doc.text("Totaal excl. BTW", totalsX, y);
-    doc.text(formatCurrency(result.total_excl_btw), valuesX, y, {
-      align: "right",
-    });
-    y += 5;
-
-    doc.setFont("helvetica", "normal");
-    doc.text("BTW (21%)", totalsX, y);
-    doc.text(formatCurrency(result.btw_amount), valuesX, y, {
-      align: "right",
-    });
-    y += 5;
-
-    doc.setDrawColor(203, 213, 225);
-    doc.line(totalsX, y, valuesX, y);
-    y += 6;
+      doc.setDrawColor(203, 213, 225);
+      doc.line(totalsX, y, valuesX, y);
+      y += 6;
+    }
 
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
