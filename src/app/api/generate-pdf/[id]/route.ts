@@ -138,8 +138,9 @@ export async function GET(
     // PAGE 1: COVER / HEADER
     // ============================================================
 
-    // -- Logo (top-right or top-left) --
+    // -- Logo (top-right, max 45×15 mm bounding box, aspect ratio preserved) --
     let logoLoaded = false;
+    let logoRenderH = 0;
     if (p.logo_url) {
       try {
         const logoRes = await fetch(p.logo_url);
@@ -149,7 +150,17 @@ export async function GET(
           const contentType =
             logoRes.headers.get("content-type") || "image/png";
           const imgData = `data:${contentType};base64,${base64}`;
-          doc.addImage(imgData, "PNG", rightCol - 40, y, 40, 20);
+
+          // Max bounding box: 45 × 15 mm (≈ 180 × 60 px at 96 dpi)
+          const maxW = 45;
+          const maxH = 15;
+          const imgProps = doc.getImageProperties(imgData);
+          const scale = Math.min(maxW / imgProps.width, maxH / imgProps.height);
+          const logoW = Math.round(imgProps.width * scale * 10) / 10;
+          const logoH = Math.round(imgProps.height * scale * 10) / 10;
+
+          doc.addImage(imgData, "PNG", rightCol - logoW, y, logoW, logoH);
+          logoRenderH = logoH;
           logoLoaded = true;
         }
       } catch {
@@ -158,7 +169,7 @@ export async function GET(
     }
 
     // -- Business info (top-right, below logo) --
-    const bizY = logoLoaded ? y + 24 : y;
+    const bizY = logoLoaded ? y + logoRenderH + 4 : y;
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(30, 41, 59);
