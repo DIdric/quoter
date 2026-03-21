@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { QuoteActions } from "./actions";
 import { EditableQuoteLines } from "./editable-lines";
+import { EditableModuleDescriptions } from "./editable-module-descriptions";
 import { ActualCostsPanel } from "./actual-costs";
 
 interface QuoteLine {
@@ -24,9 +25,16 @@ interface QuoteLine {
   total: number;
 }
 
+interface QuoteModule {
+  name: string;
+  intro: string;
+  items: string[];
+}
+
 interface QuoteResult {
   quote_title: string;
   summary: string;
+  modules?: QuoteModule[];
   lines: QuoteLine[];
   subtotal_materials: number;
   subtotal_labor: number;
@@ -197,6 +205,15 @@ export default async function QuoteDetailPage({
               </div>
             )}
           </div>
+
+          {/* Module descriptions (editable) */}
+          {result.modules && result.modules.length > 0 && (
+            <EditableModuleDescriptions
+              quoteId={quote.id}
+              modules={result.modules}
+              userId={user.id}
+            />
+          )}
 
           {/* Editable Lines & Totals */}
           <EditableQuoteLines
