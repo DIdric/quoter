@@ -23,6 +23,7 @@ import {
   DoorOpen,
   ArrowUpFromLine,
   BrickWall,
+  AlertTriangle,
 } from "lucide-react";
 import { VoiceInput } from "@/components/voice-input";
 import { CONSTRUCTION_MODULES, type ConstructionModule } from "@/lib/construction-modules";
@@ -79,6 +80,7 @@ interface QuoteResult {
   total_incl_btw: number;
   estimated_days: number;
   notes: string;
+  validation_warnings?: string[];
   error?: string;
   message?: string;
 }
@@ -125,6 +127,28 @@ function QuoteDisplay({ quote }: { quote: QuoteResult }) {
           </div>
         )}
       </div>
+
+      {/* Validation warnings */}
+      {quote.validation_warnings && quote.validation_warnings.length > 0 && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-800 text-sm mb-1">
+                Let op: niet alle werkzaamheden hebben een prijsregel
+              </p>
+              <ul className="space-y-0.5">
+                {quote.validation_warnings.map((w, i) => (
+                  <li key={i} className="text-sm text-amber-700">• {w}</li>
+                ))}
+              </ul>
+              <p className="text-xs text-amber-600 mt-2">
+                Je kunt de offerte alsnog opslaan. Controleer of de ontbrekende posten verwerkt zijn in andere categorieën.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Technical description */}
       {quote.technical_description && (

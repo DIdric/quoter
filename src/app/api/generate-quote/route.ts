@@ -297,6 +297,21 @@ ${body.ai_input}`;
             .filter(Boolean);
         }
 
+        // Validate: each selected module should have at least one corresponding line
+        if (Array.isArray(quoteData.modules) && quoteData.modules.length > 0 && Array.isArray(quoteData.lines)) {
+          const lineCategories = new Set(
+            quoteData.lines.map((l: { category: string }) => l.category.toLowerCase().trim())
+          );
+          const missingModules: string[] = quoteData.modules
+            .filter((mod: { name: string }) => !lineCategories.has(mod.name.toLowerCase().trim()))
+            .map((mod: { name: string }) => mod.name);
+          if (missingModules.length > 0) {
+            quoteData.validation_warnings = missingModules.map(
+              (name: string) => `"${name}" staat in de werkbeschrijving maar heeft geen corresponderende regel in de prijstabel`
+            );
+          }
+        }
+
         controller.enqueue(
           encoder.encode(`data: ${JSON.stringify({ type: "result", data: quoteData })}\n\n`)
         );
