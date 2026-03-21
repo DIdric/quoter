@@ -570,12 +570,85 @@ export async function GET(
     doc.text(p.business_name || "", margin, y);
 
     // ============================================================
+    // KEURMERK IMAGES — pre-process before footer loop
+    // ============================================================
+    interface KeurmerkRender {
+      name: string;
+      imgData: string | null;
+      w: number; // mm
+      h: number; // mm
+    }
+    const keurmerkRenders: KeurmerkRender[] = [];
+    const rawKeurmerken = (p.keurmerken ?? []) as Array<{
+      id: string;
+      name: string;
+      logo_url: string | null;
+    }>;
+    const kH = 8; // max logo height in mm
+
+    for (const k of rawKeurmerken) {
+      if (k.logo_url) {
+        try {
+          const kRes = await fetch(k.logo_url);
+          if (kRes.ok) {
+            const kBuf = await kRes.arrayBuffer();
+            const kB64 = Buffer.from(kBuf).toString("base64");
+            const kCT = kRes.headers.get("content-type") || "image/png";
+            const kImgData = `data:${kCT};base64,${kB64}`;
+            const kProps = doc.getImageProperties(kImgData);
+            const scale = kH / kProps.height;
+            keurmerkRenders.push({
+              name: k.name,
+              imgData: kImgData,
+              w: Math.round(kProps.width * scale * 10) / 10,
+              h: kH,
+            });
+          } else {
+            keurmerkRenders.push({ name: k.name, imgData: null, w: 0, h: kH });
+          }
+        } catch {
+          keurmerkRenders.push({ name: k.name, imgData: null, w: 0, h: kH });
+        }
+      } else {
+        keurmerkRenders.push({ name: k.name, imgData: null, w: 0, h: kH });
+      }
+    }
+
+    // ============================================================
     // FOOTER on every page
     // ============================================================
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       const pageH = doc.internal.pageSize.getHeight();
+
+      // Keurmerk logos/badges — right-aligned, above footer line
+      if (keurmerkRenders.length > 0) {
+        const kLogoY = pageH - 24; // 8mm logos + 1mm gap above footer line
+        let kLogoX = rightCol;
+
+        for (let ki = keurmerkRenders.length - 1; ki >= 0; ki--) {
+          const k = keurmerkRenders[ki];
+          if (k.imgData) {
+            kLogoX -= k.w;
+            doc.addImage(k.imgData, "PNG", kLogoX, kLogoY, k.w, k.h);
+            kLogoX -= 2;
+          } else {
+            // Text badge for presets without uploaded logo
+            doc.setFontSize(5.5);
+            doc.setFont("helvetica", "normal");
+            const textW = doc.getTextWidth(k.name);
+            const badgeW = textW + 3;
+            kLogoX -= badgeW;
+            doc.setDrawColor(203, 213, 225);
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(kLogoX, kLogoY, badgeW, kH, 1, 1, "FD");
+            doc.setTextColor(71, 85, 105);
+            doc.text(k.name, kLogoX + 1.5, kLogoY + 5.5);
+            kLogoX -= 2;
+          }
+        }
+      }
 
       // Footer line
       doc.setDrawColor(220, 220, 220);

@@ -1,5 +1,12 @@
 export type DisplayMode = "open" | "module" | "hoogover";
 
+export interface Keurmerk {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  type: "preset" | "custom";
+}
+
 export interface Profile {
   id: string;
   business_name: string | null;
@@ -17,6 +24,7 @@ export interface Profile {
   quote_validity_days: number;
   quote_number_prefix: string | null;
   default_display_mode: DisplayMode;
+  keurmerken: Keurmerk[];
   subscription_tier: "free" | "pro" | "business";
   stripe_customer_id: string | null;
 }

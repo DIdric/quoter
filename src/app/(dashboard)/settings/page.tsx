@@ -2,8 +2,18 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile, DisplayMode } from "@/lib/types";
-import { Save, Loader2, Upload, X, Image as ImageIcon, Zap, Check, ExternalLink, Lock } from "lucide-react";
+import type { Profile, DisplayMode, Keurmerk } from "@/lib/types";
+import { Save, Loader2, Upload, X, Image as ImageIcon, Zap, Check, ExternalLink, Lock, Award } from "lucide-react";
+
+const PRESET_KEURMERKEN = [
+  "Bouwend Nederland",
+  "VBW",
+  "Erkend Renovatiebedrijf",
+  "KOMO",
+  "SKH",
+  "Vakdiploma Dakdekker",
+  "Uneto-VNI",
+];
 import { TIER_LIMITS, type SubscriptionTier } from "@/lib/usage-limits";
 
 export default function SettingsPage() {
@@ -28,6 +38,9 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [keurmerken, setKeurmerken] = useState<Keurmerk[]>([]);
+  const [uploadingKeurmerk, setUploadingKeurmerk] = useState(false);
+  const keurmerkInputRef = useRef<HTMLInputElement>(null);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [quotesUsed, setQuotesUsed] = useState(0);
@@ -55,6 +68,7 @@ export default function SettingsPage() {
       if (data.logo_url) {
         setLogoPreview(data.logo_url);
       }
+      setKeurmerken((data.keurmerken as Keurmerk[] | null) ?? []);
     }
 
     // Load quotes used this month
@@ -72,6 +86,64 @@ export default function SettingsPage() {
   }
 
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  function togglePreset(name: string) {
+    const existing = keurmerken.find(
+      (k) => k.name === name && k.type === "preset"
+    );
+    if (existing) {
+      setKeurmerken(keurmerken.filter((k) => k.id !== existing.id));
+    } else if (keurmerken.length < 4) {
+      setKeurmerken([
+        ...keurmerken,
+        {
+          id: crypto.randomUUID(),
+          name,
+          logo_url: null,
+          type: "preset",
+        },
+      ]);
+    }
+  }
+
+  function removeKeurmerk(id: string) {
+    setKeurmerken(keurmerken.filter((k) => k.id !== id));
+  }
+
+  async function handleKeurmerkUpload(
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingKeurmerk(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload-keurmerk", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const name = file.name.replace(/\.[^.]+$/, "");
+        setKeurmerken([
+          ...keurmerken,
+          {
+            id: crypto.randomUUID(),
+            name,
+            logo_url: data.logoUrl,
+            type: "custom",
+          },
+        ]);
+      }
+    } catch {
+      // ignore — user can retry
+    }
+
+    setUploadingKeurmerk(false);
+    if (keurmerkInputRef.current) keurmerkInputRef.current.value = "";
+  }
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -170,6 +242,7 @@ export default function SettingsPage() {
         quote_validity_days: profile.quote_validity_days,
         quote_number_prefix: profile.quote_number_prefix,
         default_display_mode: profile.default_display_mode,
+        keurmerken: keurmerken,
       })
       .eq("id", user.id);
 
@@ -533,6 +606,103 @@ export default function SettingsPage() {
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
               />
             </div>
+          </div>
+
+          {/* Keurmerken & lidmaatschappen */}
+          <div className="border-t border-slate-200 pt-5">
+            <div className="flex items-center gap-2 mb-1">
+              <Award className="w-4 h-4 text-slate-500" />
+              <h3 className="text-sm font-semibold text-slate-700">
+                Keurmerken & lidmaatschappen
+              </h3>
+            </div>
+            <p className="text-xs text-slate-400 mb-3">
+              Verschijnen in de footer van je offertes. Maximaal 4.
+            </p>
+
+            {/* Preset pills */}
+            <p className="text-xs font-medium text-slate-600 mb-1.5">
+              Kies uit bekende organisaties:
+            </p>
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {PRESET_KEURMERKEN.map((name) => {
+                const isAdded = keurmerken.some(
+                  (k) => k.name === name && k.type === "preset"
+                );
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => togglePreset(name)}
+                    disabled={!isAdded && keurmerken.length >= 4}
+                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition disabled:opacity-40 ${
+                      isAdded
+                        ? "bg-brand-100 border-brand-400 text-brand-700"
+                        : "bg-white border-slate-300 text-slate-600 hover:border-brand-400 hover:bg-slate-50"
+                    }`}
+                  >
+                    {isAdded ? "✓ " : ""}
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom upload */}
+            <input
+              ref={keurmerkInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/svg+xml"
+              onChange={handleKeurmerkUpload}
+              className="hidden"
+            />
+            {keurmerken.length < 4 && (
+              <button
+                type="button"
+                onClick={() => keurmerkInputRef.current?.click()}
+                disabled={uploadingKeurmerk}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 border border-dashed border-slate-300 rounded-lg hover:bg-slate-50 transition disabled:opacity-50 mb-3"
+              >
+                {uploadingKeurmerk ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                {uploadingKeurmerk ? "Uploaden..." : "Eigen keurmerk-logo uploaden"}
+              </button>
+            )}
+
+            {/* Active keurmerken */}
+            {keurmerken.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {keurmerken.map((k) => (
+                  <div
+                    key={k.id}
+                    className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5"
+                  >
+                    {k.logo_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={k.logo_url}
+                        alt={k.name}
+                        className="h-5 object-contain"
+                      />
+                    )}
+                    <span className="text-xs text-slate-700">{k.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeKeurmerk(k.id)}
+                      className="text-slate-400 hover:text-red-500 transition"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+                <span className="text-xs text-slate-400 self-center">
+                  {keurmerken.length}/4
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3 pt-2">
