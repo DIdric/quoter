@@ -13,7 +13,6 @@ import {
   FileCode2,
 } from "lucide-react";
 import type { DefaultMaterial } from "@/lib/types";
-import { parseDicoXml } from "@/lib/parse-dico-xml";
 
 const CATEGORIES = [
   "Sanitair",
@@ -38,6 +37,7 @@ export default function AdminMaterialsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState("");
   const [dicoUploading, setDicoUploading] = useState(false);
+  const [dicoProgress, setDicoProgress] = useState<number | null>(null);
   const dicoInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name: "",
@@ -148,22 +148,48 @@ export default function AdminMaterialsPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  async function handleDicoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleDicoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setDicoUploading(true);
+    setDicoProgress(0);
 
-    try {
-      const text = await file.text();
+    const worker = new Worker(
+      new URL("@/lib/dico-parser.worker.ts", import.meta.url)
+    );
 
+    file.text().then((text) => {
       if (!text.trim().startsWith("<")) {
         alert("Bestand lijkt geen geldig XML te zijn");
+        worker.terminate();
+        setDicoUploading(false);
+        setDicoProgress(null);
+        if (dicoInputRef.current) dicoInputRef.current.value = "";
+        return;
+      }
+      worker.postMessage(text);
+    });
+
+    worker.onmessage = async (ev) => {
+      const data = ev.data;
+
+      // Progress update
+      if (data?.progress !== undefined) {
+        setDicoProgress(data.progress);
         return;
       }
 
-      const parseData = parseDicoXml(text);
+      worker.terminate();
+      setDicoProgress(null);
+      setDicoUploading(false);
+      if (dicoInputRef.current) dicoInputRef.current.value = "";
 
-      if (parseData.products.length === 0) {
+      if (data?.error) {
+        alert("Fout bij verwerken XML: " + data.error);
+        return;
+      }
+
+      if (data.products.length === 0) {
         alert("Geen artikelen gevonden in het XML-bestand. Controleer of het een DICO-exportbestand is (SALES_V005).");
         return;
       }
@@ -173,22 +199,27 @@ export default function AdminMaterialsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "import-materials-dico",
-          products: parseData.products,
-          supplier_name: parseData.supplier_name,
+          products: data.products,
+          supplier_name: data.supplier_name,
         }),
       });
       const importData = await importRes.json();
 
       if (importRes.ok) {
-        alert(`${importData.count} materialen geïmporteerd van ${parseData.supplier_name ?? "leverancier"}`);
+        alert(`${importData.count} materialen geïmporteerd van ${data.supplier_name ?? "leverancier"}`);
         loadMaterials();
       } else {
         alert("Fout bij importeren: " + importData.error);
       }
-    } finally {
+    };
+
+    worker.onerror = (err) => {
+      worker.terminate();
       setDicoUploading(false);
+      setDicoProgress(null);
       if (dicoInputRef.current) dicoInputRef.current.value = "";
-    }
+      alert("Fout bij verwerken XML: " + err.message);
+    };
   }
 
   const filteredMaterials = filterCategory
@@ -214,7 +245,9 @@ export default function AdminMaterialsPage() {
         <div className="flex gap-2 md:gap-3">
           <label className={`flex items-center gap-1.5 md:gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition cursor-pointer text-sm ${dicoUploading ? "opacity-50 pointer-events-none" : ""}`}>
             {dicoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCode2 className="w-4 h-4" />}
-            <span className="hidden sm:inline">DICO XML</span>
+            <span className="hidden sm:inline">
+              {dicoProgress !== null ? `Verwerken ${dicoProgress}%` : "DICO XML"}
+            </span>
             <span className="sm:hidden">XML</span>
             <input
               ref={dicoInputRef}
