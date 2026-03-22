@@ -10,7 +10,6 @@ import {
   FileText,
   Sparkles,
   Loader2,
-  Check,
   Package,
   Wrench,
   Clock,
@@ -441,6 +440,22 @@ function NewQuotePage() {
     );
   }
 
+  async function saveAndRedirect(generatedResult: QuoteResult) {
+    setLoadingStage("Offerte opslaan...");
+    const res = await fetch("/api/save-quote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_name: form.client_name,
+        status: "draft",
+        json_data: { form, result: generatedResult, selectedModules, language },
+        existing_project_id: existingProjectId,
+      }),
+    });
+    const data = await res.json();
+    router.push(existingProjectId ? `/projects/${existingProjectId}` : `/projects/${data.id}`);
+  }
+
   async function handleGenerate() {
     setLoading(true);
     setLoadingStage("Verbinden met AI...");
@@ -483,7 +498,12 @@ function NewQuotePage() {
             if (event.type === "progress") {
               setLoadingStage(event.stage);
             } else if (event.type === "result") {
-              setResult(event.data);
+              if (event.data?.lines?.length > 0) {
+                await saveAndRedirect(event.data);
+                return;
+              } else {
+                setResult(event.data);
+              }
             } else if (event.type === "error") {
               setResult({
                 error: event.error,
@@ -502,21 +522,6 @@ function NewQuotePage() {
     }
     setLoading(false);
     setLoadingStage("");
-  }
-
-  async function handleSaveQuote() {
-    const res = await fetch("/api/save-quote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        client_name: form.client_name,
-        status: "draft",
-        json_data: { form, result, selectedModules, language },
-        existing_project_id: existingProjectId,
-      }),
-    });
-    const data = await res.json();
-    router.push(existingProjectId ? `/projects/${existingProjectId}` : `/projects/${data.id}`);
   }
 
   async function handleSaveDraft() {
@@ -539,7 +544,6 @@ function NewQuotePage() {
   }
 
   const hasError = result && ("error" in result && result.error);
-  const hasQuote = result && result.lines && !hasError;
 
   if (loadingProject) {
     return (
@@ -901,28 +905,7 @@ function NewQuotePage() {
               </div>
             )}
 
-            {/* Success state - Structured quote display */}
-            {hasQuote && (
-              <div className="mt-4">
-                <QuoteDisplay quote={result} />
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-6">
-                  <button
-                    onClick={handleSaveQuote}
-                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium px-4 py-2.5 md:px-5 rounded-lg transition text-sm md:text-base"
-                  >
-                    <Check className="w-4 h-4" />
-                    Offerte Opslaan als Concept
-                  </button>
-                  <button
-                    onClick={handleRegenerate}
-                    className="flex items-center justify-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 font-medium px-4 py-2.5 rounded-lg transition text-sm md:text-base"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    Opnieuw genereren
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Success state handled by auto-save redirect */}
           </div>
         )}
 
