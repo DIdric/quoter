@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, Loader2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Copy, Check } from "lucide-react";
+
+const SUPPORT_EMAIL = "didric@didric.nl";
 
 interface Message {
   role: "user" | "assistant";
@@ -20,8 +22,16 @@ export function HelpdeskChat() {
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailCopied, setEmailCopied] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  function copyEmail() {
+    navigator.clipboard.writeText(SUPPORT_EMAIL).then(() => {
+      setEmailCopied(true);
+      setTimeout(() => setEmailCopied(false), 2000);
+    });
+  }
 
   useEffect(() => {
     if (open) {
@@ -105,7 +115,7 @@ export function HelpdeskChat() {
         updated[updated.length - 1] = {
           role: "assistant",
           content:
-            "Er ging iets mis. Probeer het opnieuw of stuur een mail naar [support@quoter.nl](mailto:support@quoter.nl).",
+            `Er ging iets mis. Probeer het opnieuw of stuur een mail naar [${SUPPORT_EMAIL}](mailto:${SUPPORT_EMAIL}).`,
         };
         return updated;
       });
@@ -213,12 +223,19 @@ export function HelpdeskChat() {
           </div>
 
           {/* Escalation footer */}
-          <p className="text-xs text-slate-400 text-center pb-2">
-            Geen antwoord?{" "}
-            <a href="mailto:support@quoter.nl" className="text-brand-500 hover:underline">
-              support@quoter.nl
+          <div className="flex items-center justify-center gap-1.5 pb-2">
+            <span className="text-xs text-slate-400">Geen antwoord?</span>
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="text-xs text-brand-500 hover:underline">
+              {SUPPORT_EMAIL}
             </a>
-          </p>
+            <button
+              onClick={copyEmail}
+              title="Kopieer e-mailadres"
+              className="text-slate-400 hover:text-brand-500 transition"
+            >
+              {emailCopied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+            </button>
+          </div>
         </div>
       )}
 
