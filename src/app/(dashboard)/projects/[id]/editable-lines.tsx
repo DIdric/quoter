@@ -183,6 +183,29 @@ export function EditableQuoteLines({
         .eq("id", quoteId)
         .eq("user_id", userId);
 
+      // ── Feedback loop: sla significante hoeveelheidscorrecties op ──────────
+      const corrections = result.lines.flatMap((original) => {
+        const edited = lines.find(
+          (l) => l.description === original.description && l.category === original.category
+        );
+        if (!edited || original.quantity === 0) return [];
+        const ratio = edited.quantity / original.quantity;
+        // Alleen opslaan als de afwijking meer dan 20% is
+        if (ratio >= 0.8 && ratio <= 1.25) return [];
+        return [{
+          user_id: userId,
+          category: original.category,
+          description: original.description,
+          unit: original.unit,
+          ai_quantity: original.quantity,
+          corrected_quantity: edited.quantity,
+        }];
+      });
+
+      if (corrections.length > 0) {
+        await supabase.from("quote_corrections").insert(corrections);
+      }
+
       setEditing(false);
       router.refresh();
     } catch (err) {

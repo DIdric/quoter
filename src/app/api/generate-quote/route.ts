@@ -222,6 +222,23 @@ export async function POST(request: Request) {
     .from("default_materials")
     .select("name, unit, cost_price");
 
+  // Feedback loop: haal recente hoeveelheidscorrecties op (max 30, meest recent)
+  const { data: rawCorrections } = await supabase
+    .from("quote_corrections")
+    .select("category, description, unit, ai_quantity, corrected_quantity")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  // Dedupliceer op description: bewaar alleen de meest recente per post
+  const seenDescriptions = new Set<string>();
+  const corrections = (rawCorrections ?? []).filter((c) => {
+    const key = `${c.category}||${c.description}`;
+    if (seenDescriptions.has(key)) return false;
+    seenDescriptions.add(key);
+    return true;
+  });
+
   const body = await request.json();
 
   const hourlyRate = profile?.hourly_rate ?? 45;
@@ -279,6 +296,16 @@ export async function POST(request: Request) {
     modulesSection = `\n\nGeselecteerde modules (gebruik als categorieën): ${moduleNames.join(", ")}`;
   }
 
+  const correctionsSection =
+    corrections.length > 0
+      ? `\n\nKalibratie op basis van eerdere correcties van deze aannemer (gebruik dit als ijkpunt voor vergelijkbare posten):\n${corrections
+          .map(
+            (c) =>
+              `- ${c.category} / ${c.description}: gebruik ~${c.corrected_quantity} ${c.unit} (eerder gecorrigeerd van ${c.ai_quantity})`
+          )
+          .join("\n")}`
+      : "";
+
   const userMessage = `Genereer een offerte:
 
 Bedrijf: ${businessName}
@@ -291,7 +318,7 @@ Omschrijving: ${body.project_description || "Geen"}
 ${modulesSection}
 
 Materialen:
-${materialsList}
+${materialsList}${correctionsSection}
 
 Opdracht:
 ${body.ai_input}${translationInstruction}`;

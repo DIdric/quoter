@@ -48,10 +48,25 @@ create table public.quotes (
   created_at timestamptz default now()
 );
 
+-- Quote corrections (feedback loop voor betere hoeveelheidsschattingen)
+create table public.quote_corrections (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users on delete cascade not null,
+  category text not null,
+  description text not null,
+  unit text not null,
+  ai_quantity numeric(10,2) not null,
+  corrected_quantity numeric(10,2) not null,
+  created_at timestamptz default now()
+);
+create index idx_quote_corrections_user_created
+  on public.quote_corrections (user_id, created_at desc);
+
 -- Row Level Security (multi-tenant isolation)
 alter table public.profiles enable row level security;
 alter table public.materials enable row level security;
 alter table public.quotes enable row level security;
+alter table public.quote_corrections enable row level security;
 
 -- Profiles: users can only access their own profile (or public business info for shared quotes)
 create policy "Users can view own profile"
