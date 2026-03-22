@@ -123,7 +123,7 @@ export function HelpdeskChat() {
 
   // Simple markdown: bold **text**, links [text](url)
   function renderContent(text: string) {
-    const parts = text.split(/(\*\*[^*]+\*\*|\[([^\]]+)\]\(([^)]+)\))/g);
+    const parts = text.split(/(\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g).filter((p): p is string => p !== undefined);
     return parts.map((part, i) => {
       if (part.startsWith("**") && part.endsWith("**")) {
         return <strong key={i}>{part.slice(2, -2)}</strong>;
