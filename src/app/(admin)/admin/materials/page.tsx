@@ -151,41 +151,67 @@ export default function AdminMaterialsPage() {
       };
       const delimiter = detectDelimiter(lines[0]);
 
-      // Parse header row, normalise to lowercase without quotes
       const normalise = (s: string) =>
         s.trim().toLowerCase().replace(/^"|"$/g, "").replace(/\s+/g, " ");
 
-      const headerCols = lines[0].split(delimiter).map(normalise);
-
-      // Find column index by keyword candidates
-      const findCol = (...keywords: string[]): number => {
-        for (const kw of keywords) {
-          const idx = headerCols.findIndex((h) => h.includes(kw));
-          if (idx >= 0) return idx;
-        }
-        return -1;
-      };
-
-      const nameIdx  = findCol("naam", "omschrijving", "name", "artikel", "description", "product");
-      const catIdx   = findCol("categorie", "category", "groep", "type", "subgroep");
-      const unitIdx  = findCol("eenheid", "unit", "eh");
-      const priceIdx = findCol(
-        "netto prijs", "nettoprijsexcl", "prijs excl", "prijs_excl", "kostprijs",
-        "cost", "netto", "prijs", "price"
+      // Detect whether the first row is a header or data.
+      // A header contains at least one recognised keyword; a data row has a
+      // numeric-looking field or only known unit codes.
+      const HEADER_KEYWORDS = [
+        "naam", "name", "omschrijving", "description", "artikel",
+        "categorie", "category", "groep", "eenheid", "unit",
+        "prijs", "price", "kostprijs", "netto",
+      ];
+      const firstCols = lines[0].split(delimiter).map(normalise);
+      const hasHeader = firstCols.some((col) =>
+        HEADER_KEYWORDS.some((kw) => col.includes(kw))
       );
 
-      // Fall back to positional if header recognition failed
-      const ni = nameIdx  >= 0 ? nameIdx  : 0;
-      const ci = catIdx   >= 0 ? catIdx   : 1;
-      const ui = unitIdx  >= 0 ? unitIdx  : 2;
-      const pi = priceIdx >= 0 ? priceIdx : 3;
+      // Determine column indices from header, or use positional fallback
+      let ni: number, ci: number, ui: number, pi: number;
+
+      if (hasHeader) {
+        const findCol = (...keywords: string[]): number => {
+          for (const kw of keywords) {
+            const idx = firstCols.findIndex((h) => h.includes(kw));
+            if (idx >= 0) return idx;
+          }
+          return -1;
+        };
+        ni = findCol("naam", "omschrijving", "name", "artikel", "description", "product");
+        ci = findCol("categorie", "category", "groep", "type", "subgroep");
+        ui = findCol("eenheid", "unit", "eh");
+        pi = findCol(
+          "netto prijs", "nettoprijsexcl", "prijs excl", "prijs_excl", "kostprijs",
+          "cost", "netto", "prijs", "price"
+        );
+        // Fallback to position for unrecognised headers
+        if (ni < 0) ni = 0;
+        if (pi < 0) pi = firstCols.length - 1; // price is usually the last column
+        if (ui < 0) ui = pi > 1 ? pi - 1 : -1;
+        if (ci < 0) ci = -1; // no category column
+      } else {
+        // No header — infer layout from column count of the first data row
+        const colCount = firstCols.length;
+        if (colCount === 3) {
+          // naam;eenheid;prijs
+          ni = 0; ci = -1; ui = 1; pi = 2;
+        } else if (colCount === 4) {
+          // naam;categorie;eenheid;prijs  OR  naam;eenheid;prijs;?
+          ni = 0; ci = 1; ui = 2; pi = 3;
+        } else {
+          // Best guess: name first, price last, unit second-to-last
+          ni = 0; ci = -1; pi = colCount - 1; ui = colCount - 2;
+        }
+      }
 
       const splitLine = (line: string): string[] =>
         line.split(delimiter).map((s) => s.trim().replace(/^"|"$/g, ""));
 
+      const dataLines = hasHeader ? lines.slice(1) : lines;
+
       let skipped = 0;
-      const rows = lines
-        .slice(1)                      // skip header
+      const rows = dataLines
         .map((line) => {
           const p = splitLine(line);
           const name = p[ni] ?? "";
@@ -194,7 +220,7 @@ export default function AdminMaterialsPage() {
           if (!name || isNaN(price) || price < 0) { skipped++; return null; }
           return {
             name,
-            category: p[ci] || "Overig",
+            category: (ci >= 0 ? p[ci] : "") || "Overig",
             unit:     p[ui] || "stuk",
             cost_price: price,
             source:   file.name.replace(/\.csv$/i, ""),
@@ -206,8 +232,8 @@ export default function AdminMaterialsPage() {
         setUploadMessage({
           type: "error",
           text: `Geen geldige regels gevonden (${skipped} overgeslagen). ` +
-                `Herkende kolommen: naam(${ni}), cat(${ci}), eenheid(${ui}), prijs(${pi}). ` +
-                `Verwacht formaat: naam;categorie;eenheid;prijs`,
+                `Layout: ${hasHeader ? "header herkend" : "geen header"}, ` +
+                `kolommen: naam(${ni}), cat(${ci}), eenheid(${ui}), prijs(${pi}).`,
         });
         return;
       }
