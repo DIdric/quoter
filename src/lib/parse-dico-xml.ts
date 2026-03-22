@@ -63,8 +63,8 @@ function normaliseUnit(raw: string): string {
   const map: Record<string, string> = {
     stk: "stuk", st: "stuk", stuks: "stuk", pce: "stuk", pc: "stuk", ea: "stuk",
     m: "m", mtr: "m", lm: "m",
-    m2: "m2", m²: "m2",
-    m3: "m3", m³: "m3",
+    m2: "m2", "m²": "m2",
+    m3: "m3", "m³": "m3",
     kg: "kg", kgr: "kg",
     l: "liter", ltr: "liter", lit: "liter",
     doos: "doos", ds: "doos", box: "doos",
