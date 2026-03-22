@@ -4,15 +4,12 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Clock,
-  User,
-  Mail,
-  Phone,
-  MapPin,
   Sparkles,
 } from "lucide-react";
 import { QuoteActions } from "./actions";
 import { EditableQuoteLines } from "./editable-lines";
 import { EditableModuleDescriptions } from "./editable-module-descriptions";
+import { EditableProjectDetails } from "./editable-project-details";
 import { Uitsluitingen } from "./uitsluitingen";
 import { TranslateButton } from "./translate-button";
 import { ActualCostsPanel } from "./actual-costs";
@@ -150,58 +147,13 @@ export default async function QuoteDetailPage({
         </span>
       </div>
 
-      {/* Client & Project Info */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-4 md:mb-6">
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-5">
-          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
-            Klantgegevens
-          </h2>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-slate-800">
-              <User className="w-4 h-4 text-slate-400" />
-              <span className="font-medium">{quote.client_name}</span>
-            </div>
-            {form?.client_email && (
-              <div className="flex items-center gap-2 text-slate-600 text-sm">
-                <Mail className="w-4 h-4 text-slate-400" />
-                {form.client_email}
-              </div>
-            )}
-            {form?.client_phone && (
-              <div className="flex items-center gap-2 text-slate-600 text-sm">
-                <Phone className="w-4 h-4 text-slate-400" />
-                {form.client_phone}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {form && (
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-5">
-            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
-              Projectdetails
-            </h2>
-            <div className="space-y-2">
-              {form.project_title && (
-                <p className="font-medium text-slate-800">
-                  {form.project_title}
-                </p>
-              )}
-              {form.project_location && (
-                <div className="flex items-center gap-2 text-slate-600 text-sm">
-                  <MapPin className="w-4 h-4 text-slate-400" />
-                  {form.project_location}
-                </div>
-              )}
-              {form.project_description && (
-                <p className="text-sm text-slate-600 mt-1">
-                  {form.project_description}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Client & Project Info — editable */}
+      <EditableProjectDetails
+        quoteId={quote.id}
+        userId={user.id}
+        initialForm={form ?? {}}
+        initialClientName={quote.client_name}
+      />
 
       {/* Quote Content */}
       {hasQuoteLines ? (
