@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { FileText, Package, Clock, Euro, TrendingUp, Plus, Zap } from "lucide-react";
+import { FileText, Clock, Euro, TrendingUp, Plus, Zap } from "lucide-react";
 import { TIER_LIMITS, type SubscriptionTier } from "@/lib/usage-limits";
+import { DicoXmlUpload } from "./dico-xml-upload";
 
 interface QuoteJsonData {
   form?: {
@@ -172,6 +173,11 @@ export default async function DashboardPage() {
             />
           </div>
         )}
+      </div>
+
+      {/* DICO XML Upload */}
+      <div className="mb-6 md:mb-8">
+        <DicoXmlUpload />
       </div>
 
       {/* Recent Quotes */}
