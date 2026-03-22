@@ -131,98 +131,154 @@ export default function AdminMaterialsPage() {
     setCsvUploading(true);
     setUploadMessage(null);
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("source", "Warmteservice");
-
     try {
-      const res = await fetch("/api/admin/import-csv", {
-        method: "POST",
-        body: formData,
-      });
+      // Parse CSV entirely in the browser — no file upload needed (avoids 413)
+      const text = await file.text();
+      const lines = text.split("\n").filter((l) => l.trim());
+      const dataLines = lines.slice(1);
+      const delimiter = dataLines[0]?.includes(";") ? ";" : ",";
 
-      const data = await res.json();
-      if (res.ok) {
-        setUploadMessage({ type: "success", text: `${data.count} materialen geïmporteerd` });
-        loadMaterials();
-      } else {
-        setUploadMessage({ type: "error", text: "Fout bij importeren: " + data.error });
+      const rows = dataLines
+        .map((line) => {
+          const parts = line.split(delimiter).map((s) => s.trim().replace(/^"|"$/g, ""));
+          if (parts.length < 4) return null;
+          const [name, category, unit, ...priceParts] = parts;
+          const price = parseFloat(priceParts.join("").replace(",", "."));
+          if (!name || isNaN(price)) return null;
+          return { name, category: category || "Overig", unit: unit || "stuk", cost_price: price, source: "Warmteservice" };
+        })
+        .filter(Boolean) as { name: string; category: string; unit: string; cost_price: number; source: string }[];
+
+      if (rows.length === 0) {
+        setUploadMessage({ type: "error", text: "Geen geldige regels gevonden. Verwacht formaat: naam;categorie;eenheid;prijs" });
+        return;
       }
+
+      // Send in batches of 200 rows (small JSON bodies, no size limit issues)
+      const BATCH = 200;
+      let total = 0;
+      for (let i = 0; i < rows.length; i += BATCH) {
+        const batch = rows.slice(i, i + BATCH);
+        const res = await fetch("/api/admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "import-materials-batch", rows: batch }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setUploadMessage({ type: "error", text: "Fout bij importeren: " + data.error });
+          return;
+        }
+        total += data.count ?? 0;
+      }
+
+      setUploadMessage({ type: "success", text: `${total} materialen geïmporteerd` });
+      loadMaterials();
     } catch {
-      setUploadMessage({ type: "error", text: "Netwerkfout bij uploaden" });
+      setUploadMessage({ type: "error", text: "Fout bij verwerken CSV" });
     } finally {
       setCsvUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
-  async function handleDicoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleDicoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setDicoUploading(true);
-    setDicoProgress("XML verwerken op server...");
+    setDicoProgress("XML inlezen...");
     setUploadMessage(null);
 
-    try {
-      // Stap 1: parse XML server-side (geen DOMParser nodig)
-      const formData = new FormData();
-      formData.append("file", file);
+    // Parse XML in a Web Worker (regex-based, no DOMParser, no file upload needed)
+    const worker = new Worker(
+      new URL("@/lib/dico-parser.worker.ts", import.meta.url)
+    );
 
-      const parseRes = await fetch("/api/parse-pricelist", {
-        method: "POST",
-        body: formData,
-      });
+    file.text().then((text) => {
+      if (!text.trim().startsWith("<")) {
+        setUploadMessage({ type: "error", text: "Bestand lijkt geen geldig XML te zijn" });
+        worker.terminate();
+        setDicoUploading(false);
+        setDicoProgress(null);
+        if (dicoInputRef.current) dicoInputRef.current.value = "";
+        return;
+      }
+      setDicoProgress("XML verwerken...");
+      worker.postMessage(text);
+    });
 
-      const parseData = await parseRes.json();
+    worker.onmessage = async (ev) => {
+      const data = ev.data;
 
-      if (!parseRes.ok) {
-        setUploadMessage({ type: "error", text: parseData.error ?? "Fout bij verwerken XML" });
+      if (data?.progress !== undefined) {
+        setDicoProgress(`Verwerken ${data.progress}%`);
         return;
       }
 
-      if (!parseData.products?.length) {
-        setUploadMessage({ type: "error", text: "Geen artikelen gevonden in het XML-bestand. Controleer of het een DICO-exportbestand is (SALES_V005)." });
+      worker.terminate();
+
+      if (data?.error) {
+        setDicoUploading(false);
+        setDicoProgress(null);
+        if (dicoInputRef.current) dicoInputRef.current.value = "";
+        setUploadMessage({ type: "error", text: "Fout bij verwerken XML: " + data.error });
         return;
       }
 
-      // Stap 2: importeer in batches van 500
-      setDicoProgress(`${parseData.products.length} artikelen gevonden, importeren...`);
+      if (!data.products?.length) {
+        setDicoUploading(false);
+        setDicoProgress(null);
+        if (dicoInputRef.current) dicoInputRef.current.value = "";
+        setUploadMessage({ type: "error", text: "Geen artikelen gevonden. Controleer of het een DICO-exportbestand is (SALES_V005)." });
+        return;
+      }
+
+      // Send parsed products in batches of 500 (small JSON bodies)
       const BATCH = 500;
       let totalImported = 0;
+      const allProducts = data.products;
 
-      for (let i = 0; i < parseData.products.length; i += BATCH) {
-        const batch = parseData.products.slice(i, i + BATCH);
+      for (let i = 0; i < allProducts.length; i += BATCH) {
+        setDicoProgress(`Importeren ${totalImported} / ${allProducts.length}...`);
+        const batch = allProducts.slice(i, i + BATCH);
         const importRes = await fetch("/api/admin", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             action: "import-materials-dico",
             products: batch,
-            supplier_name: parseData.supplier_name,
+            supplier_name: data.supplier_name,
           }),
         });
         const importData = await importRes.json();
         if (!importRes.ok) {
+          setDicoUploading(false);
+          setDicoProgress(null);
+          if (dicoInputRef.current) dicoInputRef.current.value = "";
           setUploadMessage({ type: "error", text: "Fout bij importeren: " + importData.error });
           return;
         }
         totalImported += importData.count ?? 0;
-        setDicoProgress(`${totalImported} / ${parseData.products.length} geïmporteerd...`);
       }
 
-      setUploadMessage({
-        type: "success",
-        text: `${totalImported} materialen geïmporteerd van ${parseData.supplier_name ?? "leverancier"}`,
-      });
-      loadMaterials();
-    } catch {
-      setUploadMessage({ type: "error", text: "Netwerkfout bij uploaden" });
-    } finally {
       setDicoUploading(false);
       setDicoProgress(null);
       if (dicoInputRef.current) dicoInputRef.current.value = "";
-    }
+      setUploadMessage({
+        type: "success",
+        text: `${totalImported} materialen geïmporteerd van ${data.supplier_name ?? "leverancier"}`,
+      });
+      loadMaterials();
+    };
+
+    worker.onerror = (err) => {
+      worker.terminate();
+      setDicoUploading(false);
+      setDicoProgress(null);
+      if (dicoInputRef.current) dicoInputRef.current.value = "";
+      setUploadMessage({ type: "error", text: "Fout bij verwerken XML: " + err.message });
+    };
   }
 
   const filteredMaterials = filterCategory

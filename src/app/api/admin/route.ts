@@ -308,5 +308,36 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, count: materials.length });
   }
 
+  // Pre-parsed rows from client-side CSV/XML parsing — no file upload needed
+  if (body.action === "import-materials-batch") {
+    const rows = body.rows as Array<{
+      name: string;
+      category?: string;
+      unit?: string;
+      cost_price: number;
+      source?: string;
+      article_number?: string;
+    }>;
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return NextResponse.json({ error: "Geen rijen opgegeven" }, { status: 400 });
+    }
+
+    const materials = rows.map((r) => ({
+      name: r.name,
+      category: r.category || "Overig",
+      unit: r.unit || "stuk",
+      cost_price: r.cost_price,
+      source: r.source || body.source || "Onbekend",
+      source_url: null,
+      article_number: r.article_number ?? null,
+    }));
+
+    const { error } = await service.from("default_materials").insert(materials);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ success: true, count: materials.length });
+  }
+
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });
 }

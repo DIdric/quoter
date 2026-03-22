@@ -78,7 +78,7 @@ function normaliseUnit(raw: string): string {
 
 // ─── main parser ──────────────────────────────────────────────────────────────
 
-export function parseDicoXml(xmlText: string): DicoParseResult {
+export function parseDicoXml(xmlText: string, onProgress?: (pct: number) => void): DicoParseResult {
   // Normalise line endings
   const xml = xmlText.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
@@ -113,7 +113,12 @@ export function parseDicoXml(xmlText: string): DicoParseResult {
   const products: DicoProduct[] = [];
   let skipped = 0;
 
-  for (const block of articleBlocks) {
+  const total = articleBlocks.length;
+  for (let _i = 0; _i < total; _i++) {
+    const block = articleBlocks[_i];
+    if (onProgress && _i > 0 && _i % 5000 === 0) {
+      onProgress(Math.round((_i / total) * 100));
+    }
     // Product name — multiple possible tags
     const name = el(
       block,
@@ -179,7 +184,7 @@ export function parseDicoXml(xmlText: string): DicoParseResult {
     products,
     supplier_name,
     supplier_gln,
-    total_found: articleBlocks.length,
+    total_found: total,
     skipped,
   };
 }
