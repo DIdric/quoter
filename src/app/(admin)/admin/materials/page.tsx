@@ -37,7 +37,9 @@ export default function AdminMaterialsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState("");
   const [dicoUploading, setDicoUploading] = useState(false);
-  const [dicoProgress, setDicoProgress] = useState<number | null>(null);
+  const [dicoProgress, setDicoProgress] = useState<string | null>(null);
+  const [csvUploading, setCsvUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const dicoInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name: "",
@@ -126,100 +128,101 @@ export default function AdminMaterialsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const csv = await file.text();
-    const res = await fetch("/api/admin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "import-materials-csv",
-        csv,
-        source: "Hornbach",
-      }),
-    });
+    setCsvUploading(true);
+    setUploadMessage(null);
 
-    const data = await res.json();
-    if (res.ok) {
-      alert(`${data.count} materialen geïmporteerd`);
-      loadMaterials();
-    } else {
-      alert("Fout bij importeren: " + data.error);
-    }
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("source", "Warmteservice");
 
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }
-
-  function handleDicoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setDicoUploading(true);
-    setDicoProgress(0);
-
-    const worker = new Worker(
-      new URL("@/lib/dico-parser.worker.ts", import.meta.url)
-    );
-
-    file.text().then((text) => {
-      if (!text.trim().startsWith("<")) {
-        alert("Bestand lijkt geen geldig XML te zijn");
-        worker.terminate();
-        setDicoUploading(false);
-        setDicoProgress(null);
-        if (dicoInputRef.current) dicoInputRef.current.value = "";
-        return;
-      }
-      worker.postMessage(text);
-    });
-
-    worker.onmessage = async (ev) => {
-      const data = ev.data;
-
-      // Progress update
-      if (data?.progress !== undefined) {
-        setDicoProgress(data.progress);
-        return;
-      }
-
-      worker.terminate();
-      setDicoProgress(null);
-      setDicoUploading(false);
-      if (dicoInputRef.current) dicoInputRef.current.value = "";
-
-      if (data?.error) {
-        alert("Fout bij verwerken XML: " + data.error);
-        return;
-      }
-
-      if (data.products.length === 0) {
-        alert("Geen artikelen gevonden in het XML-bestand. Controleer of het een DICO-exportbestand is (SALES_V005).");
-        return;
-      }
-
-      const importRes = await fetch("/api/admin", {
+    try {
+      const res = await fetch("/api/admin/import-csv", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "import-materials-dico",
-          products: data.products,
-          supplier_name: data.supplier_name,
-        }),
+        body: formData,
       });
-      const importData = await importRes.json();
 
-      if (importRes.ok) {
-        alert(`${importData.count} materialen geïmporteerd van ${data.supplier_name ?? "leverancier"}`);
+      const data = await res.json();
+      if (res.ok) {
+        setUploadMessage({ type: "success", text: `${data.count} materialen geïmporteerd` });
         loadMaterials();
       } else {
-        alert("Fout bij importeren: " + importData.error);
+        setUploadMessage({ type: "error", text: "Fout bij importeren: " + data.error });
       }
-    };
+    } catch {
+      setUploadMessage({ type: "error", text: "Netwerkfout bij uploaden" });
+    } finally {
+      setCsvUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
-    worker.onerror = (err) => {
-      worker.terminate();
+  async function handleDicoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setDicoUploading(true);
+    setDicoProgress("XML verwerken op server...");
+    setUploadMessage(null);
+
+    try {
+      // Stap 1: parse XML server-side (geen DOMParser nodig)
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const parseRes = await fetch("/api/parse-pricelist", {
+        method: "POST",
+        body: formData,
+      });
+
+      const parseData = await parseRes.json();
+
+      if (!parseRes.ok) {
+        setUploadMessage({ type: "error", text: parseData.error ?? "Fout bij verwerken XML" });
+        return;
+      }
+
+      if (!parseData.products?.length) {
+        setUploadMessage({ type: "error", text: "Geen artikelen gevonden in het XML-bestand. Controleer of het een DICO-exportbestand is (SALES_V005)." });
+        return;
+      }
+
+      // Stap 2: importeer in batches van 500
+      setDicoProgress(`${parseData.products.length} artikelen gevonden, importeren...`);
+      const BATCH = 500;
+      let totalImported = 0;
+
+      for (let i = 0; i < parseData.products.length; i += BATCH) {
+        const batch = parseData.products.slice(i, i + BATCH);
+        const importRes = await fetch("/api/admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "import-materials-dico",
+            products: batch,
+            supplier_name: parseData.supplier_name,
+          }),
+        });
+        const importData = await importRes.json();
+        if (!importRes.ok) {
+          setUploadMessage({ type: "error", text: "Fout bij importeren: " + importData.error });
+          return;
+        }
+        totalImported += importData.count ?? 0;
+        setDicoProgress(`${totalImported} / ${parseData.products.length} geïmporteerd...`);
+      }
+
+      setUploadMessage({
+        type: "success",
+        text: `${totalImported} materialen geïmporteerd van ${parseData.supplier_name ?? "leverancier"}`,
+      });
+      loadMaterials();
+    } catch {
+      setUploadMessage({ type: "error", text: "Netwerkfout bij uploaden" });
+    } finally {
       setDicoUploading(false);
       setDicoProgress(null);
       if (dicoInputRef.current) dicoInputRef.current.value = "";
-      alert("Fout bij verwerken XML: " + err.message);
-    };
+    }
   }
 
   const filteredMaterials = filterCategory
@@ -246,7 +249,7 @@ export default function AdminMaterialsPage() {
           <label className={`flex items-center gap-1.5 md:gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition cursor-pointer text-sm ${dicoUploading ? "opacity-50 pointer-events-none" : ""}`}>
             {dicoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCode2 className="w-4 h-4" />}
             <span className="hidden sm:inline">
-              {dicoProgress !== null ? `Verwerken ${dicoProgress}%` : "DICO XML"}
+              {dicoProgress ?? "DICO XML"}
             </span>
             <span className="sm:hidden">XML</span>
             <input
@@ -255,11 +258,12 @@ export default function AdminMaterialsPage() {
               accept=".xml"
               onChange={handleDicoUpload}
               className="hidden"
+              disabled={dicoUploading}
             />
           </label>
-          <label className="flex items-center gap-1.5 md:gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition cursor-pointer text-sm">
-            <Upload className="w-4 h-4" />
-            <span className="hidden sm:inline">CSV Importeren</span>
+          <label className={`flex items-center gap-1.5 md:gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition cursor-pointer text-sm ${csvUploading ? "opacity-50 pointer-events-none" : ""}`}>
+            {csvUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            <span className="hidden sm:inline">{csvUploading ? "Importeren..." : "CSV Importeren"}</span>
             <span className="sm:hidden">CSV</span>
             <input
               ref={fileInputRef}
@@ -267,6 +271,7 @@ export default function AdminMaterialsPage() {
               accept=".csv"
               onChange={handleCSVUpload}
               className="hidden"
+              disabled={csvUploading}
             />
           </label>
           <button
@@ -283,6 +288,22 @@ export default function AdminMaterialsPage() {
           </button>
         </div>
       </div>
+
+      {/* Upload feedback */}
+      {uploadMessage && (
+        <div className={`flex items-center justify-between gap-2 rounded-lg px-4 py-3 mb-4 text-sm font-medium ${uploadMessage.type === "success" ? "bg-green-50 border border-green-200 text-green-700" : "bg-red-50 border border-red-200 text-red-700"}`}>
+          <span>{uploadMessage.text}</span>
+          <button onClick={() => setUploadMessage(null)} className="ml-2 shrink-0"><X className="w-4 h-4" /></button>
+        </div>
+      )}
+
+      {/* XML progress banner */}
+      {dicoUploading && dicoProgress && (
+        <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 mb-4 text-sm text-blue-700">
+          <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+          <span>{dicoProgress}</span>
+        </div>
+      )}
 
       {/* CSV format info */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4 mb-4 text-xs md:text-sm text-blue-700">
