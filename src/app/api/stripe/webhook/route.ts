@@ -3,10 +3,12 @@ import { getStripe, PLANS, type PlanId } from "@/lib/stripe";
 import { createClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 /**
  * Map a Stripe Price ID back to our subscription tier.
@@ -25,7 +27,7 @@ async function updateTier(
   customerId: string,
   tier: "free" | "pro" | "business"
 ) {
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from("profiles")
     .update({ subscription_tier: tier })
     .eq("stripe_customer_id", customerId);

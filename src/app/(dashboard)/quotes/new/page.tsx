@@ -23,6 +23,7 @@ import {
   ArrowUpFromLine,
   BrickWall,
   AlertTriangle,
+  Check,
 } from "lucide-react";
 import { VoiceInput } from "@/components/voice-input";
 import { CONSTRUCTION_MODULES, type ConstructionModule } from "@/lib/construction-modules";
@@ -920,7 +921,7 @@ function NewQuotePage() {
             Vorige
           </button>
           <div className="flex items-center gap-2 sm:gap-3">
-            {currentStep >= 1 && form.client_name && !hasQuote && (
+            {currentStep >= 1 && form.client_name && !existingProjectId && (
               <button
                 onClick={handleSaveDraft}
                 className="flex items-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 font-medium px-3 py-2.5 md:px-4 rounded-lg transition text-sm md:text-base flex-1 sm:flex-none justify-center"
