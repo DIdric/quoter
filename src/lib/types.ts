@@ -1,3 +1,14 @@
+export type DisplayMode = "open" | "module" | "hoogover";
+
+export type Language = "nl" | "en" | "de" | "pl";
+
+export interface Keurmerk {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  type: "preset" | "custom";
+}
+
 export interface Profile {
   id: string;
   business_name: string | null;
@@ -14,6 +25,9 @@ export interface Profile {
   margin_percentage: number;
   quote_validity_days: number;
   quote_number_prefix: string | null;
+  default_display_mode: DisplayMode;
+  default_language?: Language;
+  keurmerken: Keurmerk[];
   subscription_tier: "free" | "pro" | "business";
   stripe_customer_id: string | null;
 }

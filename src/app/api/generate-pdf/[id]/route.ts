@@ -36,7 +36,74 @@ interface QuoteResult {
   total_incl_btw: number;
   estimated_days: number;
   notes: string;
+  uitsluitingen?: string[];
+  language?: string;
 }
+
+type DisplayMode = "open" | "module" | "hoogover";
+
+const PDF_LABELS: Record<string, Record<string, string>> = {
+  nl: {
+    dear: "Beste", dearFormal: "Geachte heer/mevrouw,",
+    introPrefix: "Hierbij zenden wij u onze vrijblijvende offerte ten behoeve van",
+    introLocation: "te", techSection: "Technische omschrijving werkzaamheden",
+    colDesc: "Omschrijving", colType: "Type", colAmount: "Aantal",
+    colPrice: "Prijs", colTotal: "Totaal", colModule: "Module",
+    colPriceExcl: "Prijs excl. BTW", totalExcl: "Totaal excl. BTW",
+    btw: "BTW (21%)", totalIncl: "Totaal incl. BTW", notes: "Opmerkingen:",
+    exclusions: "Uitsluitingen", validUntil: "Deze offerte is geldig tot",
+    closing1: "Wij vertrouwen erop u hiermee een passende aanbieding te hebben gedaan.",
+    closing2: "Met vriendelijke groet,", quoteLabel: "Offerte:", subjectLabel: "Betreft:",
+    locationLabel: "Locatie:", dateLabel: "Offertedatum:", expiryLabel: "Vervaldatum:",
+    durationLabel: "Doorlooptijd:", workday: "werkdag", workdays: "werkdagen",
+    typeMaterial: "Materiaal", typeLabor: "Arbeid",
+  },
+  en: {
+    dear: "Dear", dearFormal: "Dear Sir/Madam,",
+    introPrefix: "Please find enclosed our non-binding quotation for",
+    introLocation: "in", techSection: "Technical description of works",
+    colDesc: "Description", colType: "Type", colAmount: "Quantity",
+    colPrice: "Price", colTotal: "Total", colModule: "Module",
+    colPriceExcl: "Price excl. VAT", totalExcl: "Total excl. VAT",
+    btw: "VAT (21%)", totalIncl: "Total incl. VAT", notes: "Notes:",
+    exclusions: "Exclusions", validUntil: "This quotation is valid until",
+    closing1: "We trust this offer meets your requirements.",
+    closing2: "Kind regards,", quoteLabel: "Quote:", subjectLabel: "Subject:",
+    locationLabel: "Location:", dateLabel: "Quote date:", expiryLabel: "Expiry date:",
+    durationLabel: "Duration:", workday: "working day", workdays: "working days",
+    typeMaterial: "Material", typeLabor: "Labour",
+  },
+  de: {
+    dear: "Sehr geehrte(r)", dearFormal: "Sehr geehrte Damen und Herren,",
+    introPrefix: "Hiermit übersenden wir Ihnen unser unverbindliches Angebot für",
+    introLocation: "in", techSection: "Technische Beschreibung der Arbeiten",
+    colDesc: "Beschreibung", colType: "Typ", colAmount: "Menge",
+    colPrice: "Preis", colTotal: "Gesamt", colModule: "Modul",
+    colPriceExcl: "Preis exkl. MwSt.", totalExcl: "Gesamt exkl. MwSt.",
+    btw: "MwSt. (21%)", totalIncl: "Gesamt inkl. MwSt.", notes: "Anmerkungen:",
+    exclusions: "Ausschlüsse", validUntil: "Dieses Angebot ist gültig bis",
+    closing1: "Wir vertrauen darauf, Ihnen hiermit ein passendes Angebot gemacht zu haben.",
+    closing2: "Mit freundlichen Grüßen,", quoteLabel: "Angebot:", subjectLabel: "Betreff:",
+    locationLabel: "Standort:", dateLabel: "Angebotsdatum:", expiryLabel: "Ablaufdatum:",
+    durationLabel: "Laufzeit:", workday: "Arbeitstag", workdays: "Arbeitstage",
+    typeMaterial: "Material", typeLabor: "Arbeit",
+  },
+  pl: {
+    dear: "Szanowny/a", dearFormal: "Szanowni Państwo,",
+    introPrefix: "W załączeniu przesyłamy naszą ofertę na",
+    introLocation: "w", techSection: "Techniczny opis prac",
+    colDesc: "Opis", colType: "Typ", colAmount: "Ilość",
+    colPrice: "Cena", colTotal: "Razem", colModule: "Moduł",
+    colPriceExcl: "Cena bez VAT", totalExcl: "Razem bez VAT",
+    btw: "VAT (21%)", totalIncl: "Razem z VAT", notes: "Uwagi:",
+    exclusions: "Wyłączenia", validUntil: "Oferta ważna do",
+    closing1: "Mamy nadzieję, że nasza oferta spełnia Państwa oczekiwania.",
+    closing2: "Z poważaniem,", quoteLabel: "Oferta:", subjectLabel: "Dotyczy:",
+    locationLabel: "Lokalizacja:", dateLabel: "Data oferty:", expiryLabel: "Data ważności:",
+    durationLabel: "Czas realizacji:", workday: "dzień roboczy", workdays: "dni robocze",
+    typeMaterial: "Materiał", typeLabor: "Robocizna",
+  },
+};
 
 interface QuoteJsonData {
   form?: {
@@ -48,6 +115,7 @@ interface QuoteJsonData {
     project_location?: string;
   };
   result?: QuoteResult;
+  display_mode?: DisplayMode;
 }
 
 function formatCurrency(amount: number): string {
@@ -120,6 +188,8 @@ export async function GET(
     const jsonData = quote.json_data as QuoteJsonData | null;
     const form = jsonData?.form;
     const result = jsonData?.result;
+    const displayMode: DisplayMode =
+      jsonData?.display_mode ?? p.default_display_mode ?? "open";
 
     if (!result) {
       return NextResponse.json(
@@ -127,6 +197,9 @@ export async function GET(
         { status: 400 }
       );
     }
+
+    const lang = result.language ?? "nl";
+    const labels = PDF_LABELS[lang] ?? PDF_LABELS.nl;
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -138,8 +211,9 @@ export async function GET(
     // PAGE 1: COVER / HEADER
     // ============================================================
 
-    // -- Logo (top-right or top-left) --
+    // -- Logo (top-right, max 45×15 mm bounding box, aspect ratio preserved) --
     let logoLoaded = false;
+    let logoRenderH = 0;
     if (p.logo_url) {
       try {
         const logoRes = await fetch(p.logo_url);
@@ -149,7 +223,17 @@ export async function GET(
           const contentType =
             logoRes.headers.get("content-type") || "image/png";
           const imgData = `data:${contentType};base64,${base64}`;
-          doc.addImage(imgData, "PNG", rightCol - 40, y, 40, 20);
+
+          // Max bounding box: 45 × 15 mm (≈ 180 × 60 px at 96 dpi)
+          const maxW = 45;
+          const maxH = 15;
+          const imgProps = doc.getImageProperties(imgData);
+          const scale = Math.min(maxW / imgProps.width, maxH / imgProps.height);
+          const logoW = Math.round(imgProps.width * scale * 10) / 10;
+          const logoH = Math.round(imgProps.height * scale * 10) / 10;
+
+          doc.addImage(imgData, "PNG", rightCol - logoW, y, logoW, logoH);
+          logoRenderH = logoH;
           logoLoaded = true;
         }
       } catch {
@@ -158,7 +242,7 @@ export async function GET(
     }
 
     // -- Business info (top-right, below logo) --
-    const bizY = logoLoaded ? y + 24 : y;
+    const bizY = logoLoaded ? y + logoRenderH + 4 : y;
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(30, 41, 59);
@@ -234,11 +318,11 @@ export async function GET(
     doc.setTextColor(51, 65, 85);
 
     const metaLeft = [
-      `Offerte:     ${quoteNumber}`,
-      `Betreft:     ${result.quote_title}`,
+      `${labels.quoteLabel.padEnd(13)} ${quoteNumber}`,
+      `${labels.subjectLabel.padEnd(13)} ${result.quote_title}`,
     ];
     if (form?.project_location) {
-      metaLeft.push(`Locatie:     ${form.project_location}`);
+      metaLeft.push(`${labels.locationLabel.padEnd(13)} ${form.project_location}`);
     }
     metaLeft.forEach((line) => {
       doc.text(line, margin, y);
@@ -247,11 +331,12 @@ export async function GET(
 
     // Dates on the right
     const metaRightY = y - metaLeft.length * 4.5;
-    doc.text(`Offertedatum:   ${formatDateNL(quoteDate)}`, rightCol, metaRightY, { align: "right" });
-    doc.text(`Vervaldatum:    ${formatDateNL(expiryDate)}`, rightCol, metaRightY + 4.5, { align: "right" });
+    doc.text(`${labels.dateLabel.padEnd(16)} ${formatDateNL(quoteDate)}`, rightCol, metaRightY, { align: "right" });
+    doc.text(`${labels.expiryLabel.padEnd(16)} ${formatDateNL(expiryDate)}`, rightCol, metaRightY + 4.5, { align: "right" });
     if (result.estimated_days > 0) {
+      const wdLabel = result.estimated_days !== 1 ? labels.workdays : labels.workday;
       doc.text(
-        `Doorlooptijd:   ${result.estimated_days} werkdag${result.estimated_days !== 1 ? "en" : ""}`,
+        `${labels.durationLabel.padEnd(16)} ${result.estimated_days} ${wdLabel}`,
         rightCol,
         metaRightY + 9,
         { align: "right" }
@@ -273,18 +358,18 @@ export async function GET(
 
     const clientFirstName = (form?.client_name || "").split(" ")[0];
     const greeting = clientFirstName
-      ? `Beste ${form?.client_name},`
-      : "Geachte heer/mevrouw,";
+      ? `${labels.dear} ${form?.client_name},`
+      : labels.dearFormal;
     doc.text(greeting, margin, y);
     y += 6;
 
-    const introText = `Hierbij zenden wij u onze vrijblijvende offerte ten behoeve van ${(result.quote_title || "de werkzaamheden").toLowerCase()}${form?.project_location ? ` te ${form.project_location}` : ""}.`;
+    const introText = `${labels.introPrefix} ${(result.quote_title || "de werkzaamheden").toLowerCase()}${form?.project_location ? ` ${labels.introLocation} ${form.project_location}` : ""}.`;
     const introWrapped = doc.splitTextToSize(introText, pageWidth - margin * 2);
     doc.text(introWrapped, margin, y);
     y += introWrapped.length * 4 + 8;
 
     // ============================================================
-    // TECHNICAL DESCRIPTION PER MODULE
+    // MODULE DESCRIPTIONS (all modes; hoogover skips bullet items)
     // ============================================================
     if (result.modules && result.modules.length > 0) {
       if (y > 230) {
@@ -295,7 +380,7 @@ export async function GET(
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(30, 41, 59);
-      doc.text("Technische omschrijving werkzaamheden", margin, y);
+      doc.text(labels.techSection, margin, y);
       y += 8;
 
       result.modules.forEach((mod) => {
@@ -322,26 +407,28 @@ export async function GET(
         doc.text(introLines, margin, y);
         y += introLines.length * 3.5 + 2;
 
-        // Bullet items
-        mod.items.forEach((item) => {
-          if (y > 270) {
-            doc.addPage();
-            y = 20;
-          }
-          const itemWrapped = doc.splitTextToSize(
-            `•  ${item}`,
-            pageWidth - margin * 2 - 5
-          );
-          doc.text(itemWrapped, margin + 3, y);
-          y += itemWrapped.length * 3.5 + 0.5;
-        });
+        // Bullet items — skipped for hoogover mode
+        if (displayMode !== "hoogover") {
+          mod.items.forEach((item) => {
+            if (y > 270) {
+              doc.addPage();
+              y = 20;
+            }
+            const itemWrapped = doc.splitTextToSize(
+              `•  ${item}`,
+              pageWidth - margin * 2 - 5
+            );
+            doc.text(itemWrapped, margin + 3, y);
+            y += itemWrapped.length * 3.5 + 0.5;
+          });
+        }
 
         y += 5;
       });
     }
 
     // ============================================================
-    // PRICE TABLE
+    // PRICE TABLE — rendered based on displayMode
     // ============================================================
     if (y > 200) {
       doc.addPage();
@@ -349,70 +436,110 @@ export async function GET(
     }
 
     const categories = [...new Set(result.lines.map((l) => l.category))];
-    const tableBody: (
-      | string
-      | { content: string; styles?: Record<string, unknown> }
-    )[][] = [];
 
-    categories.forEach((category) => {
-      tableBody.push([
-        {
-          content: category,
-          styles: {
-            fontStyle: "bold",
-            fillColor: [248, 250, 252],
-            textColor: [51, 65, 85],
+    if (displayMode === "open") {
+      // ── Smaak 1: Open begroting — alle regels zichtbaar ──────────
+      const tableBody: (
+        | string
+        | { content: string; styles?: Record<string, unknown> }
+      )[][] = [];
+
+      categories.forEach((category) => {
+        tableBody.push([
+          {
+            content: category,
+            styles: {
+              fontStyle: "bold",
+              fillColor: [248, 250, 252],
+              textColor: [51, 65, 85],
+            },
           },
+          { content: "", styles: { fillColor: [248, 250, 252] } },
+          { content: "", styles: { fillColor: [248, 250, 252] } },
+          { content: "", styles: { fillColor: [248, 250, 252] } },
+          { content: "", styles: { fillColor: [248, 250, 252] } },
+        ]);
+
+        result.lines
+          .filter((l) => l.category === category)
+          .forEach((line) => {
+            tableBody.push([
+              line.description,
+              line.type === "materiaal" ? labels.typeMaterial : labels.typeLabor,
+              `${line.quantity} ${line.unit}`,
+              formatCurrency(line.unit_price),
+              formatCurrency(line.total),
+            ]);
+          });
+      });
+
+      autoTable(doc, {
+        startY: y,
+        head: [[labels.colDesc, labels.colType, labels.colAmount, labels.colPrice, labels.colTotal]],
+        body: tableBody,
+        theme: "striped",
+        headStyles: {
+          fillColor: [249, 115, 22],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 9,
         },
-        { content: "", styles: { fillColor: [248, 250, 252] } },
-        { content: "", styles: { fillColor: [248, 250, 252] } },
-        { content: "", styles: { fillColor: [248, 250, 252] } },
-        { content: "", styles: { fillColor: [248, 250, 252] } },
-      ]);
+        bodyStyles: { fontSize: 8.5, textColor: [51, 65, 85] },
+        columnStyles: {
+          0: { cellWidth: "auto" },
+          1: { cellWidth: 22, halign: "center" },
+          2: { cellWidth: 25, halign: "right" },
+          3: { cellWidth: 28, halign: "right" },
+          4: { cellWidth: 28, halign: "right" },
+        },
+        margin: { left: margin, right: margin },
+      });
 
-      result.lines
-        .filter((l) => l.category === category)
-        .forEach((line) => {
-          tableBody.push([
-            line.description,
-            line.type === "materiaal" ? "Materiaal" : "Arbeid",
-            `${line.quantity} ${line.unit}`,
-            formatCurrency(line.unit_price),
-            formatCurrency(line.total),
-          ]);
-        });
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      y = (doc as any).lastAutoTable.finalY + 10;
+    } else if (displayMode === "module") {
+      // ── Smaak 2: Per module — totaalprijs per module ──────────────
+      // Distribute margin proportionally across modules
+      const totalLinesSum =
+        result.subtotal_materials + result.subtotal_labor;
 
-    autoTable(doc, {
-      startY: y,
-      head: [["Omschrijving", "Type", "Aantal", "Prijs", "Totaal"]],
-      body: tableBody,
-      theme: "striped",
-      headStyles: {
-        fillColor: [249, 115, 22],
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-        fontSize: 9,
-      },
-      bodyStyles: {
-        fontSize: 8.5,
-        textColor: [51, 65, 85],
-      },
-      columnStyles: {
-        0: { cellWidth: "auto" },
-        1: { cellWidth: 22, halign: "center" },
-        2: { cellWidth: 25, halign: "right" },
-        3: { cellWidth: 28, halign: "right" },
-        4: { cellWidth: 28, halign: "right" },
-      },
-      margin: { left: margin, right: margin },
-    });
+      const moduleTableBody = categories.map((cat) => {
+        const catSum = result.lines
+          .filter((l) => l.category === cat)
+          .reduce((s, l) => s + l.total, 0);
+        const moduleTotal =
+          totalLinesSum > 0
+            ? (catSum / totalLinesSum) * result.total_excl_btw
+            : catSum;
+        return [cat, formatCurrency(moduleTotal)];
+      });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    y = (doc as any).lastAutoTable.finalY + 10;
+      autoTable(doc, {
+        startY: y,
+        head: [[labels.colModule, labels.colPriceExcl]],
+        body: moduleTableBody,
+        theme: "striped",
+        headStyles: {
+          fillColor: [249, 115, 22],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 9,
+        },
+        bodyStyles: { fontSize: 8.5, textColor: [51, 65, 85] },
+        columnStyles: {
+          0: { cellWidth: "auto" },
+          1: { cellWidth: 40, halign: "right" },
+        },
+        margin: { left: margin, right: margin },
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      y = (doc as any).lastAutoTable.finalY + 10;
+    }
+    // displayMode === "hoogover": no price table — only module descriptions + grand total
 
     // ============================================================
-    // TOTALS
+    // TOTALS — architecture rule: NEVER show margin amount
     // ============================================================
     if (y > 235) {
       doc.addPage();
@@ -422,48 +549,33 @@ export async function GET(
     const totalsX = pageWidth - margin - 70;
     const valuesX = rightCol;
 
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(71, 85, 105);
+    if (displayMode !== "hoogover") {
+      // Smaak 1 & 2: show excl. BTW + BTW + incl. BTW
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(71, 85, 105);
 
-    const totalsRows = [
-      ["Materialen", formatCurrency(result.subtotal_materials)],
-      ["Arbeid", formatCurrency(result.subtotal_labor)],
-      ["Winstmarge", formatCurrency(result.margin_amount)],
-    ];
-
-    totalsRows.forEach(([label, value]) => {
-      doc.text(label, totalsX, y);
-      doc.text(value, valuesX, y, { align: "right" });
+      doc.text(labels.totalExcl, totalsX, y);
+      doc.text(formatCurrency(result.total_excl_btw), valuesX, y, {
+        align: "right",
+      });
       y += 5;
-    });
 
-    doc.setDrawColor(203, 213, 225);
-    doc.line(totalsX, y, valuesX, y);
-    y += 5;
+      doc.text(labels.btw, totalsX, y);
+      doc.text(formatCurrency(result.btw_amount), valuesX, y, {
+        align: "right",
+      });
+      y += 5;
 
-    doc.setFont("helvetica", "bold");
-    doc.text("Totaal excl. BTW", totalsX, y);
-    doc.text(formatCurrency(result.total_excl_btw), valuesX, y, {
-      align: "right",
-    });
-    y += 5;
-
-    doc.setFont("helvetica", "normal");
-    doc.text("BTW (21%)", totalsX, y);
-    doc.text(formatCurrency(result.btw_amount), valuesX, y, {
-      align: "right",
-    });
-    y += 5;
-
-    doc.setDrawColor(203, 213, 225);
-    doc.line(totalsX, y, valuesX, y);
-    y += 6;
+      doc.setDrawColor(203, 213, 225);
+      doc.line(totalsX, y, valuesX, y);
+      y += 6;
+    }
 
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(21, 128, 61);
-    doc.text("Totaal incl. BTW", totalsX, y);
+    doc.text(labels.totalIncl, totalsX, y);
     doc.text(formatCurrency(result.total_incl_btw), valuesX, y, {
       align: "right",
     });
@@ -480,7 +592,7 @@ export async function GET(
       doc.setFontSize(9);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(100, 116, 139);
-      doc.text("Opmerkingen:", margin, y);
+      doc.text(labels.notes, margin, y);
       y += 5;
       doc.setFont("helvetica", "normal");
       doc.setTextColor(71, 85, 105);
@@ -490,6 +602,38 @@ export async function GET(
       );
       doc.text(noteLines, margin, y);
       y += noteLines.length * 4 + 8;
+    }
+
+    // ============================================================
+    // UITSLUITINGEN
+    // ============================================================
+    if (result.uitsluitingen && result.uitsluitingen.length > 0) {
+      if (y > 240) {
+        doc.addPage();
+        y = 20;
+      }
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(51, 65, 85);
+      doc.text(labels.exclusions, margin, y);
+      y += 6;
+
+      result.uitsluitingen.forEach((item, index) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(71, 85, 105);
+        const itemText = `${index + 1}.  ${item}`;
+        const wrapped = doc.splitTextToSize(itemText, pageWidth - margin * 2 - 5);
+        doc.text(wrapped, margin + 3, y);
+        y += wrapped.length * 3.5 + 1.5;
+      });
+
+      y += 6;
     }
 
     // ============================================================
@@ -509,22 +653,63 @@ export async function GET(
     doc.setFont("helvetica", "normal");
     doc.setTextColor(51, 65, 85);
     doc.text(
-      `Deze offerte is geldig tot ${formatDateNL(expiryDate)}.`,
+      `${labels.validUntil} ${formatDateNL(expiryDate)}.`,
       margin,
       y
     );
     y += 5;
-    doc.text(
-      "Wij vertrouwen erop u hiermee een passende aanbieding te hebben gedaan.",
-      margin,
-      y
-    );
+    doc.text(labels.closing1, margin, y);
     y += 5;
-    doc.text("Met vriendelijke groet,", margin, y);
+    doc.text(labels.closing2, margin, y);
     y += 8;
 
     doc.setFont("helvetica", "bold");
     doc.text(p.business_name || "", margin, y);
+
+    // ============================================================
+    // KEURMERK IMAGES — pre-process before footer loop
+    // ============================================================
+    interface KeurmerkRender {
+      name: string;
+      imgData: string | null;
+      w: number; // mm
+      h: number; // mm
+    }
+    const keurmerkRenders: KeurmerkRender[] = [];
+    const rawKeurmerken = (p.keurmerken ?? []) as Array<{
+      id: string;
+      name: string;
+      logo_url: string | null;
+    }>;
+    const kH = 8; // max logo height in mm
+
+    for (const k of rawKeurmerken) {
+      if (k.logo_url) {
+        try {
+          const kRes = await fetch(k.logo_url);
+          if (kRes.ok) {
+            const kBuf = await kRes.arrayBuffer();
+            const kB64 = Buffer.from(kBuf).toString("base64");
+            const kCT = kRes.headers.get("content-type") || "image/png";
+            const kImgData = `data:${kCT};base64,${kB64}`;
+            const kProps = doc.getImageProperties(kImgData);
+            const scale = kH / kProps.height;
+            keurmerkRenders.push({
+              name: k.name,
+              imgData: kImgData,
+              w: Math.round(kProps.width * scale * 10) / 10,
+              h: kH,
+            });
+          } else {
+            keurmerkRenders.push({ name: k.name, imgData: null, w: 0, h: kH });
+          }
+        } catch {
+          keurmerkRenders.push({ name: k.name, imgData: null, w: 0, h: kH });
+        }
+      } else {
+        keurmerkRenders.push({ name: k.name, imgData: null, w: 0, h: kH });
+      }
+    }
 
     // ============================================================
     // FOOTER on every page
@@ -533,6 +718,34 @@ export async function GET(
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       const pageH = doc.internal.pageSize.getHeight();
+
+      // Keurmerk logos/badges — right-aligned, above footer line
+      if (keurmerkRenders.length > 0) {
+        const kLogoY = pageH - 24; // 8mm logos + 1mm gap above footer line
+        let kLogoX = rightCol;
+
+        for (let ki = keurmerkRenders.length - 1; ki >= 0; ki--) {
+          const k = keurmerkRenders[ki];
+          if (k.imgData) {
+            kLogoX -= k.w;
+            doc.addImage(k.imgData, "PNG", kLogoX, kLogoY, k.w, k.h);
+            kLogoX -= 2;
+          } else {
+            // Text badge for presets without uploaded logo
+            doc.setFontSize(5.5);
+            doc.setFont("helvetica", "normal");
+            const textW = doc.getTextWidth(k.name);
+            const badgeW = textW + 3;
+            kLogoX -= badgeW;
+            doc.setDrawColor(203, 213, 225);
+            doc.setFillColor(248, 250, 252);
+            doc.roundedRect(kLogoX, kLogoY, badgeW, kH, 1, 1, "FD");
+            doc.setTextColor(71, 85, 105);
+            doc.text(k.name, kLogoX + 1.5, kLogoY + 5.5);
+            kLogoX -= 2;
+          }
+        }
+      }
 
       // Footer line
       doc.setDrawColor(220, 220, 220);

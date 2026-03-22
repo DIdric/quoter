@@ -12,7 +12,12 @@ import {
 } from "lucide-react";
 import { QuoteActions } from "./actions";
 import { EditableQuoteLines } from "./editable-lines";
+import { EditableModuleDescriptions } from "./editable-module-descriptions";
+import { Uitsluitingen } from "./uitsluitingen";
+import { TranslateButton } from "./translate-button";
 import { ActualCostsPanel } from "./actual-costs";
+import { DisplayModePicker } from "./display-mode-picker";
+import type { DisplayMode } from "@/lib/types";
 
 interface QuoteLine {
   category: string;
@@ -24,9 +29,16 @@ interface QuoteLine {
   total: number;
 }
 
+interface QuoteModule {
+  name: string;
+  intro: string;
+  items: string[];
+}
+
 interface QuoteResult {
   quote_title: string;
   summary: string;
+  modules?: QuoteModule[];
   lines: QuoteLine[];
   subtotal_materials: number;
   subtotal_labor: number;
@@ -36,6 +48,9 @@ interface QuoteResult {
   total_incl_btw: number;
   estimated_days: number;
   notes: string;
+  uitsluitingen?: string[];
+  uitsluitingen_suggestions?: string[];
+  language?: string;
 }
 
 interface QuoteJsonData {
@@ -49,6 +64,7 @@ interface QuoteJsonData {
     ai_input?: string;
   };
   result?: QuoteResult;
+  language?: string;
 }
 
 export default async function QuoteDetailPage({
@@ -80,15 +96,19 @@ export default async function QuoteDetailPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("margin_percentage")
+    .select("margin_percentage, default_display_mode")
     .eq("id", user.id)
     .single();
 
   const marginPercentage = profile?.margin_percentage ?? 15;
 
-  const jsonData = quote.json_data as QuoteJsonData | null;
+  const jsonData = quote.json_data as QuoteJsonData & { display_mode?: DisplayMode } | null;
   const form = jsonData?.form;
   const result = jsonData?.result;
+  const displayMode: DisplayMode =
+    jsonData?.display_mode ??
+    (profile?.default_display_mode as DisplayMode | undefined) ??
+    "open";
   const hasQuoteLines = result && result.lines && result.lines.length > 0;
 
   return (
@@ -198,6 +218,15 @@ export default async function QuoteDetailPage({
             )}
           </div>
 
+          {/* Module descriptions (editable) */}
+          {result.modules && result.modules.length > 0 && (
+            <EditableModuleDescriptions
+              quoteId={quote.id}
+              modules={result.modules}
+              userId={user.id}
+            />
+          )}
+
           {/* Editable Lines & Totals */}
           <EditableQuoteLines
             quoteId={quote.id}
@@ -205,6 +234,14 @@ export default async function QuoteDetailPage({
             isDraft={quote.status === "draft"}
             marginPercentage={marginPercentage}
             userId={user.id}
+          />
+
+          {/* Uitsluitingen */}
+          <Uitsluitingen
+            quoteId={quote.id}
+            userId={user.id}
+            initialSuggestions={result.uitsluitingen_suggestions ?? []}
+            initialUitsluitingen={result.uitsluitingen ?? []}
           />
 
           {/* Notes */}
@@ -224,15 +261,30 @@ export default async function QuoteDetailPage({
             />
           )}
 
-          {/* Actions */}
-          <QuoteActions
+          {/* Display mode picker */}
+          <DisplayModePicker
             quoteId={quote.id}
-            status={quote.status}
-            clientName={form?.client_name}
-            clientEmail={form?.client_email}
-            shareToken={quote.share_token}
+            currentMode={displayMode}
             userId={user.id}
           />
+
+          {/* Actions */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <QuoteActions
+              quoteId={quote.id}
+              status={quote.status}
+              clientName={form?.client_name}
+              clientEmail={form?.client_email}
+              shareToken={quote.share_token}
+              userId={user.id}
+            />
+            {hasQuoteLines && (
+              <TranslateButton
+                quoteId={quote.id}
+                currentLanguage={jsonData?.language ?? result?.language ?? "nl"}
+              />
+            )}
+          </div>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8 text-center text-slate-500">

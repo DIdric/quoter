@@ -199,43 +199,6 @@ export function EditableQuoteLines({
 
   return (
     <div className="space-y-6">
-      {/* Edit toggle */}
-      {/* Edit toggle */}
-      <div className="flex justify-end">
-        {!editing ? (
-          <button
-            onClick={() => setEditing(true)}
-            className="flex items-center gap-2 text-sm text-slate-600 hover:text-brand-600 hover:bg-brand-50 px-3 py-1.5 rounded-lg transition"
-          >
-            <Pencil className="w-4 h-4" />
-            Regelitems bewerken
-          </button>
-        ) : (
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleCancel}
-              disabled={saving}
-              className="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-800 hover:bg-slate-100 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
-            >
-              <X className="w-4 h-4" />
-              Annuleren
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2 text-sm bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-1.5 rounded-lg transition disabled:opacity-50"
-            >
-              {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              Opslaan
-            </button>
-          </div>
-        )}
-      </div>
-
       {/* Lines grouped by category */}
       {categories.map((category) => {
         const categoryLines = lines
@@ -245,14 +208,51 @@ export function EditableQuoteLines({
 
         return (
           <div key={category}>
-            <h3 className="font-semibold text-slate-700 mb-2 flex items-center gap-2">
-              {categoryType === "materiaal" ? (
-                <Package className="w-4 h-4 text-blue-500" />
-              ) : (
-                <Wrench className="w-4 h-4 text-brand-500" />
-              )}
-              {category}
-            </h3>
+            {/* Sticky category header with per-category edit button */}
+            <div className="sticky top-12 lg:top-2 z-10 bg-slate-50/95 backdrop-blur-sm rounded-lg mb-2 flex items-center justify-between py-1.5 px-1">
+              <h3 className="font-semibold text-slate-700 flex items-center gap-2">
+                {categoryType === "materiaal" ? (
+                  <Package className="w-4 h-4 text-blue-500" />
+                ) : (
+                  <Wrench className="w-4 h-4 text-brand-500" />
+                )}
+                {category}
+              </h3>
+              <div className="flex items-center gap-1.5">
+                {!editing ? (
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-brand-600 hover:bg-brand-50 px-2.5 py-1.5 rounded-lg transition"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                    Bewerken
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={handleCancel}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-800 hover:bg-slate-100 px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                      Annuleren
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 text-xs bg-brand-500 hover:bg-brand-600 text-white font-medium px-2.5 py-1.5 rounded-lg transition disabled:opacity-50"
+                    >
+                      {saving ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Save className="w-3.5 h-3.5" />
+                      )}
+                      Opslaan
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
             <div className="bg-white border border-slate-200 rounded-lg overflow-x-auto">
               <table className="w-full text-sm min-w-[500px]">
                 <thead className="bg-slate-50">

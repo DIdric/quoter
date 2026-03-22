@@ -1,4 +1,5 @@
 import Sidebar from "@/components/sidebar";
+import { HelpdeskChat } from "@/components/helpdesk-chat";
 
 export default function DashboardLayout({
   children,
@@ -13,6 +14,7 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+      <HelpdeskChat />
     </div>
   );
 }

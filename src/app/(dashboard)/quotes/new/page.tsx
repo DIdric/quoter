@@ -23,6 +23,7 @@ import {
   DoorOpen,
   ArrowUpFromLine,
   BrickWall,
+  AlertTriangle,
 } from "lucide-react";
 import { VoiceInput } from "@/components/voice-input";
 import { CONSTRUCTION_MODULES, type ConstructionModule } from "@/lib/construction-modules";
@@ -79,6 +80,7 @@ interface QuoteResult {
   total_incl_btw: number;
   estimated_days: number;
   notes: string;
+  validation_warnings?: string[];
   error?: string;
   message?: string;
 }
@@ -125,6 +127,28 @@ function QuoteDisplay({ quote }: { quote: QuoteResult }) {
           </div>
         )}
       </div>
+
+      {/* Validation warnings */}
+      {quote.validation_warnings && quote.validation_warnings.length > 0 && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-800 text-sm mb-1">
+                Let op: niet alle werkzaamheden hebben een prijsregel
+              </p>
+              <ul className="space-y-0.5">
+                {quote.validation_warnings.map((w, i) => (
+                  <li key={i} className="text-sm text-amber-700">• {w}</li>
+                ))}
+              </ul>
+              <p className="text-xs text-amber-600 mt-2">
+                Je kunt de offerte alsnog opslaan. Controleer of de ontbrekende posten verwerkt zijn in andere categorieën.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Technical description */}
       {quote.technical_description && (
@@ -296,6 +320,13 @@ export default function NewQuotePageWrapper() {
   );
 }
 
+const LANGUAGES = [
+  { code: "nl", flag: "🇳🇱", label: "NL" },
+  { code: "en", flag: "🇬🇧", label: "EN" },
+  { code: "de", flag: "🇩🇪", label: "DE" },
+  { code: "pl", flag: "🇵🇱", label: "PL" },
+];
+
 function NewQuotePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -306,6 +337,7 @@ function NewQuotePage() {
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [suggestingModules, setSuggestingModules] = useState(false);
   const [modulesSuggested, setModulesSuggested] = useState(false);
+  const [language, setLanguage] = useState("nl");
   const [form, setForm] = useState({
     client_name: "",
     client_email: "",
@@ -318,6 +350,17 @@ function NewQuotePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Load default language from profile
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("profiles").select("default_language").eq("id", user.id).single()
+        .then(({ data }) => {
+          if (data?.default_language) setLanguage(data.default_language);
+        });
+    });
+  }, [supabase]);
 
   useEffect(() => {
     const projectId = searchParams.get("project");
@@ -405,7 +448,7 @@ function NewQuotePage() {
       const response = await fetch("/api/generate-quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, selectedModules }),
+        body: JSON.stringify({ ...form, selectedModules, language }),
       });
 
       // Handle quota limit (non-streaming JSON response)
@@ -468,7 +511,7 @@ function NewQuotePage() {
       body: JSON.stringify({
         client_name: form.client_name,
         status: "draft",
-        json_data: { form, result, selectedModules },
+        json_data: { form, result, selectedModules, language },
         existing_project_id: existingProjectId,
       }),
     });
@@ -783,6 +826,32 @@ function NewQuotePage() {
                 Tip: Gebruik de microfoon om je opdracht in te spreken
               </p>
             </div>
+
+            {/* Language selector */}
+            {!result && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Taal van de offerte
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => setLanguage(lang.code)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition ${
+                        language === lang.code
+                          ? "border-brand-500 bg-brand-50 text-brand-700"
+                          : "border-slate-200 text-slate-600 hover:border-slate-300"
+                      }`}
+                    >
+                      <span>{lang.flag}</span>
+                      <span>{lang.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {!result && !loading && (
               <button

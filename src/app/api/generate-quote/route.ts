@@ -28,7 +28,8 @@ Je output is ALTIJD valide JSON met exact deze structuur:
   "btw_amount": 0,
   "total_incl_btw": 0,
   "estimated_days": 0,
-  "notes": "Eventuele opmerkingen of aannames"
+  "notes": "Eventuele opmerkingen of aannames",
+  "uitsluitingen": ["Voorbeeld: schilderwerk is niet inbegrepen", "Voorbeeld: oplevering conform NEN 2767"]
 }
 
 Regels:
@@ -41,6 +42,7 @@ Regels:
 - Geef realistische schattingen - liever iets ruimer dan te krap
 - Als er bouwmodules zijn geselecteerd, gebruik de modulenamen als categorieën. Genereer 3-8 regels per module.
 - Wees beknopt in beschrijvingen
+- Genereer 3-5 relevante uitsluitingen voor dit projecttype. Gebruik vakjargon. Wees specifiek en concreet, niet generiek.
 - Geef alleen de JSON terug, geen andere tekst`;
 
 /**
@@ -132,6 +134,18 @@ export async function POST(request: Request) {
   const marginPct = profile?.margin_percentage ?? 15;
   const businessName = profile?.business_name ?? "Mijn Bedrijf";
 
+  const language: string = body.language || "nl";
+  const languageNames: Record<string, string> = {
+    nl: "Nederlands",
+    en: "English",
+    de: "Deutsch",
+    pl: "Polski",
+  };
+  const translationInstruction =
+    language !== "nl"
+      ? `\nTaal: Schrijf ALLE tekst (titels, beschrijvingen, samenvatting, opmerkingen, werkbeschrijvingen, uitsluitingen) in het ${languageNames[language] ?? language}. Houd eenheden (m², m, m3, stuk, uur, kg, liter, doos, zak), getallen, productnamen en bedragen onvertaald.\n`
+      : "";
+
   const userMaterialsList =
     materials && materials.length > 0
       ? materials
@@ -186,7 +200,7 @@ Materialen:
 ${materialsList}
 
 Opdracht:
-${body.ai_input}`;
+${body.ai_input}${translationInstruction}`;
 
   // Use streaming for faster perceived response
   const encoder = new TextEncoder();
@@ -282,6 +296,17 @@ ${body.ai_input}`;
           quoteData.total_incl_btw = totalInclBtw;
         }
 
+        // Store language
+        quoteData.language = language;
+
+        // Store AI uitsluitingen as suggestions; user starts with empty accepted list
+        if (Array.isArray(quoteData.uitsluitingen)) {
+          quoteData.uitsluitingen_suggestions = quoteData.uitsluitingen;
+        } else {
+          quoteData.uitsluitingen_suggestions = [];
+        }
+        quoteData.uitsluitingen = [];
+
         // Merge module definitions from our own data (not AI-generated)
         if (selectedModuleIds.length > 0) {
           quoteData.modules = selectedModuleIds
@@ -295,6 +320,21 @@ ${body.ai_input}`;
               };
             })
             .filter(Boolean);
+        }
+
+        // Validate: each selected module should have at least one corresponding line
+        if (Array.isArray(quoteData.modules) && quoteData.modules.length > 0 && Array.isArray(quoteData.lines)) {
+          const lineCategories = new Set(
+            quoteData.lines.map((l: { category: string }) => l.category.toLowerCase().trim())
+          );
+          const missingModules: string[] = quoteData.modules
+            .filter((mod: { name: string }) => !lineCategories.has(mod.name.toLowerCase().trim()))
+            .map((mod: { name: string }) => mod.name);
+          if (missingModules.length > 0) {
+            quoteData.validation_warnings = missingModules.map(
+              (name: string) => `"${name}" staat in de werkbeschrijving maar heeft geen corresponderende regel in de prijstabel`
+            );
+          }
         }
 
         controller.enqueue(

@@ -5,6 +5,10 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { FileText, Plus, Search, Loader2 } from "lucide-react";
 
+const LANGUAGE_FLAGS: Record<string, string> = {
+  en: "🇬🇧", de: "🇩🇪", pl: "🇵🇱",
+};
+
 interface QuoteRow {
   id: string;
   client_name: string;
@@ -20,6 +24,7 @@ interface QuoteRow {
       quote_title?: string;
       total_incl_btw?: number;
     };
+    language?: string;
   } | null;
 }
 
@@ -109,6 +114,8 @@ export default function ProjectsPage() {
                 quote.json_data?.result?.quote_title ||
                 quote.json_data?.form?.project_title;
               const total = quote.json_data?.result?.total_incl_btw;
+              const lang = quote.json_data?.language;
+              const langFlag = lang && lang !== "nl" ? LANGUAGE_FLAGS[lang] : null;
 
               return (
                 <Link
@@ -136,6 +143,11 @@ export default function ProjectsPage() {
                     {total != null && (
                       <span className="text-sm font-medium text-slate-700 hidden sm:block">
                         €{total.toLocaleString("nl-NL", { minimumFractionDigits: 2 })}
+                      </span>
+                    )}
+                    {langFlag && (
+                      <span className="text-sm" title={lang?.toUpperCase()}>
+                        {langFlag} <span className="text-xs text-slate-500 font-medium">{lang?.toUpperCase()}</span>
                       </span>
                     )}
                     <span
