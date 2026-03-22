@@ -30,6 +30,7 @@ export interface Profile {
   keurmerken: Keurmerk[];
   subscription_tier: "free" | "pro" | "business";
   stripe_customer_id: string | null;
+  onboarding_completed: boolean;
 }
 
 export interface Material {

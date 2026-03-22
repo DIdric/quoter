@@ -362,6 +362,21 @@ function NewQuotePage() {
     });
   }, [supabase]);
 
+  // Prefill from URL params (used by onboarding demo flow)
+  useEffect(() => {
+    const projectId = searchParams.get("project");
+    if (projectId) return; // handled by the effect below
+    const title = searchParams.get("title");
+    const description = searchParams.get("description");
+    if (title || description) {
+      setForm((prev) => ({
+        ...prev,
+        project_title: title || prev.project_title,
+        project_description: description || prev.project_description,
+      }));
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     const projectId = searchParams.get("project");
     if (!projectId) return;
@@ -555,8 +570,23 @@ function NewQuotePage() {
     );
   }
 
+  const isOnboarding = searchParams.get("onboarding") === "true";
+
   return (
     <div className="max-w-3xl mx-auto">
+      {/* Onboarding welcome banner */}
+      {isOnboarding && (
+        <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+          <Sparkles className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-blue-800">Jouw eerste offerte!</p>
+            <p className="text-sm text-blue-600 mt-0.5">
+              We hebben een demo-project voor je ingevuld. Pas de omschrijving aan naar je eigen project, of genereer direct om te zien hoe het werkt.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-3 mb-6 md:mb-8">
         <button

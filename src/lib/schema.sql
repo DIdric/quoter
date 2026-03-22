@@ -22,6 +22,7 @@ create table public.profiles (
   quote_validity_days integer default 30,
   subscription_tier text not null default 'free' check (subscription_tier in ('free', 'pro', 'business')),
   stripe_customer_id text,
+  onboarding_completed boolean not null default false,
   created_at timestamptz default now()
 );
 
