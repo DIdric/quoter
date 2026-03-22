@@ -248,6 +248,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   }
 
+  if (body.action === "import-materials-dico") {
+    const products = body.products as Array<{
+      name: string;
+      unit: string;
+      price_excl_vat: number;
+      article_code?: string;
+      supplier_name?: string;
+    }>;
+
+    const materials = products.map((p) => ({
+      name: p.name,
+      category: "Overig",
+      unit: p.unit,
+      cost_price: p.price_excl_vat,
+      source: p.supplier_name ?? body.supplier_name ?? "DICO",
+      source_url: null,
+      article_number: p.article_code ?? null,
+    }));
+
+    if (materials.length > 0) {
+      const { error } = await service.from("default_materials").insert(materials);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, count: materials.length });
+  }
+
   if (body.action === "import-materials-csv") {
     const lines = (body.csv as string).split("\n").filter((l: string) => l.trim());
     const dataLines = lines.slice(1); // Skip header

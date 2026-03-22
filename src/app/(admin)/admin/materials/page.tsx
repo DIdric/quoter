@@ -10,6 +10,7 @@ import {
   X,
   Check,
   Loader2,
+  FileCode2,
 } from "lucide-react";
 import type { DefaultMaterial } from "@/lib/types";
 
@@ -35,6 +36,8 @@ export default function AdminMaterialsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState("");
+  const [dicoUploading, setDicoUploading] = useState(false);
+  const dicoInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     name: "",
     category: "Overig",
@@ -144,6 +147,45 @@ export default function AdminMaterialsPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  async function handleDicoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setDicoUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const parseRes = await fetch("/api/parse-pricelist", { method: "POST", body: formData });
+      const parseData = await parseRes.json();
+
+      if (!parseRes.ok) {
+        alert("Fout bij verwerken XML: " + parseData.error);
+        return;
+      }
+
+      const importRes = await fetch("/api/admin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "import-materials-dico",
+          products: parseData.products,
+          supplier_name: parseData.supplier_name,
+        }),
+      });
+      const importData = await importRes.json();
+
+      if (importRes.ok) {
+        alert(`${importData.count} materialen geïmporteerd van ${parseData.supplier_name ?? "leverancier"}`);
+        loadMaterials();
+      } else {
+        alert("Fout bij importeren: " + importData.error);
+      }
+    } finally {
+      setDicoUploading(false);
+      if (dicoInputRef.current) dicoInputRef.current.value = "";
+    }
+  }
+
   const filteredMaterials = filterCategory
     ? materials.filter((m) => m.category === filterCategory)
     : materials;
@@ -165,6 +207,18 @@ export default function AdminMaterialsPage() {
           Standaard Materialen ({materials.length})
         </h1>
         <div className="flex gap-2 md:gap-3">
+          <label className={`flex items-center gap-1.5 md:gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition cursor-pointer text-sm ${dicoUploading ? "opacity-50 pointer-events-none" : ""}`}>
+            {dicoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCode2 className="w-4 h-4" />}
+            <span className="hidden sm:inline">DICO XML</span>
+            <span className="sm:hidden">XML</span>
+            <input
+              ref={dicoInputRef}
+              type="file"
+              accept=".xml"
+              onChange={handleDicoUpload}
+              className="hidden"
+            />
+          </label>
           <label className="flex items-center gap-1.5 md:gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition cursor-pointer text-sm">
             <Upload className="w-4 h-4" />
             <span className="hidden sm:inline">CSV Importeren</span>
