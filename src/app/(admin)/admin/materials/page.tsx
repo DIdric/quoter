@@ -132,25 +132,83 @@ export default function AdminMaterialsPage() {
     setUploadMessage(null);
 
     try {
-      // Parse CSV entirely in the browser — no file upload needed (avoids 413)
-      const text = await file.text();
-      const lines = text.split("\n").filter((l) => l.trim());
-      const dataLines = lines.slice(1);
-      const delimiter = dataLines[0]?.includes(";") ? ";" : ",";
+      // Strip BOM and split on CR+LF or LF
+      const raw = await file.text();
+      const text = raw.replace(/^\uFEFF/, "");
+      const lines = text.split(/\r?\n/).filter((l) => l.trim());
 
-      const rows = dataLines
+      if (lines.length < 2) {
+        setUploadMessage({ type: "error", text: "CSV heeft te weinig regels (minimaal 1 headerregel + 1 dataregel)" });
+        return;
+      }
+
+      // Auto-detect delimiter by trying ;  ,  \t on the header row
+      const detectDelimiter = (header: string): string => {
+        for (const d of [";", "\t", ","]) {
+          if (header.split(d).length >= 4) return d;
+        }
+        return ";";
+      };
+      const delimiter = detectDelimiter(lines[0]);
+
+      // Parse header row, normalise to lowercase without quotes
+      const normalise = (s: string) =>
+        s.trim().toLowerCase().replace(/^"|"$/g, "").replace(/\s+/g, " ");
+
+      const headerCols = lines[0].split(delimiter).map(normalise);
+
+      // Find column index by keyword candidates
+      const findCol = (...keywords: string[]): number => {
+        for (const kw of keywords) {
+          const idx = headerCols.findIndex((h) => h.includes(kw));
+          if (idx >= 0) return idx;
+        }
+        return -1;
+      };
+
+      const nameIdx  = findCol("naam", "omschrijving", "name", "artikel", "description", "product");
+      const catIdx   = findCol("categorie", "category", "groep", "type", "subgroep");
+      const unitIdx  = findCol("eenheid", "unit", "eh");
+      const priceIdx = findCol(
+        "netto prijs", "nettoprijsexcl", "prijs excl", "prijs_excl", "kostprijs",
+        "cost", "netto", "prijs", "price"
+      );
+
+      // Fall back to positional if header recognition failed
+      const ni = nameIdx  >= 0 ? nameIdx  : 0;
+      const ci = catIdx   >= 0 ? catIdx   : 1;
+      const ui = unitIdx  >= 0 ? unitIdx  : 2;
+      const pi = priceIdx >= 0 ? priceIdx : 3;
+
+      const splitLine = (line: string): string[] =>
+        line.split(delimiter).map((s) => s.trim().replace(/^"|"$/g, ""));
+
+      let skipped = 0;
+      const rows = lines
+        .slice(1)                      // skip header
         .map((line) => {
-          const parts = line.split(delimiter).map((s) => s.trim().replace(/^"|"$/g, ""));
-          if (parts.length < 4) return null;
-          const [name, category, unit, ...priceParts] = parts;
-          const price = parseFloat(priceParts.join("").replace(",", "."));
-          if (!name || isNaN(price)) return null;
-          return { name, category: category || "Overig", unit: unit || "stuk", cost_price: price, source: "Warmteservice" };
+          const p = splitLine(line);
+          const name = p[ni] ?? "";
+          const priceRaw = (p[pi] ?? "").replace(",", ".").replace(/[^\d.]/g, "");
+          const price = parseFloat(priceRaw);
+          if (!name || isNaN(price) || price < 0) { skipped++; return null; }
+          return {
+            name,
+            category: p[ci] || "Overig",
+            unit:     p[ui] || "stuk",
+            cost_price: price,
+            source:   file.name.replace(/\.csv$/i, ""),
+          };
         })
         .filter(Boolean) as { name: string; category: string; unit: string; cost_price: number; source: string }[];
 
       if (rows.length === 0) {
-        setUploadMessage({ type: "error", text: "Geen geldige regels gevonden. Verwacht formaat: naam;categorie;eenheid;prijs" });
+        setUploadMessage({
+          type: "error",
+          text: `Geen geldige regels gevonden (${skipped} overgeslagen). ` +
+                `Herkende kolommen: naam(${ni}), cat(${ci}), eenheid(${ui}), prijs(${pi}). ` +
+                `Verwacht formaat: naam;categorie;eenheid;prijs`,
+        });
         return;
       }
 
@@ -172,10 +230,13 @@ export default function AdminMaterialsPage() {
         total += data.count ?? 0;
       }
 
-      setUploadMessage({ type: "success", text: `${total} materialen geïmporteerd` });
+      setUploadMessage({
+        type: "success",
+        text: `${total} materialen geïmporteerd${skipped > 0 ? ` (${skipped} regels overgeslagen)` : ""}`,
+      });
       loadMaterials();
-    } catch {
-      setUploadMessage({ type: "error", text: "Fout bij verwerken CSV" });
+    } catch (err) {
+      setUploadMessage({ type: "error", text: "Fout bij verwerken CSV: " + String(err) });
     } finally {
       setCsvUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -363,11 +424,12 @@ export default function AdminMaterialsPage() {
 
       {/* CSV format info */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4 mb-4 text-xs md:text-sm text-blue-700">
-        <strong>CSV formaat:</strong> naam;categorie;eenheid;kostprijs (bijv:{" "}
+        <strong>CSV formaat:</strong> Separator ; , of tab — kolomvolgorde wordt automatisch herkend via de headerregel.
+        Kolommen <em>naam/omschrijving</em>, <em>eenheid</em> en <em>prijs</em> zijn verplicht; <em>categorie/groep</em> is optioneel.{" "}
+        Voorbeeld:{" "}
         <code className="bg-blue-100 px-1 rounded">
-          Koperbuis 15mm;Buizen &amp; Fittingen;m;4,50
+          naam;categorie;eenheid;prijs
         </code>
-        )
       </div>
 
       {/* Category filter */}
