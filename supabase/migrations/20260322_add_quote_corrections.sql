@@ -1,5 +1,7 @@
 -- Migration: feedback loop — sla gebruikerscorrecties op hoeveelheden op
 
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 CREATE TABLE IF NOT EXISTS public.quote_corrections (
   id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id uuid REFERENCES auth.users ON DELETE CASCADE NOT NULL,
