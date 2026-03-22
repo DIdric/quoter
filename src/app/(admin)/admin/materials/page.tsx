@@ -13,6 +13,7 @@ import {
   FileCode2,
 } from "lucide-react";
 import type { DefaultMaterial } from "@/lib/types";
+import { parseDicoXml } from "@/lib/parse-dico-xml";
 
 const CATEGORIES = [
   "Sanitair",
@@ -153,13 +154,17 @@ export default function AdminMaterialsPage() {
     setDicoUploading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const parseRes = await fetch("/api/parse-pricelist", { method: "POST", body: formData });
-      const parseData = await parseRes.json();
+      const text = await file.text();
 
-      if (!parseRes.ok) {
-        alert("Fout bij verwerken XML: " + parseData.error);
+      if (!text.trim().startsWith("<")) {
+        alert("Bestand lijkt geen geldig XML te zijn");
+        return;
+      }
+
+      const parseData = parseDicoXml(text);
+
+      if (parseData.products.length === 0) {
+        alert("Geen artikelen gevonden in het XML-bestand. Controleer of het een DICO-exportbestand is (SALES_V005).");
         return;
       }
 
