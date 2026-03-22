@@ -36,6 +36,7 @@ interface QuoteResult {
   total_incl_btw: number;
   estimated_days: number;
   notes: string;
+  uitsluitingen?: string[];
 }
 
 type DisplayMode = "open" | "module" | "hoogover";
@@ -533,6 +534,38 @@ export async function GET(
       );
       doc.text(noteLines, margin, y);
       y += noteLines.length * 4 + 8;
+    }
+
+    // ============================================================
+    // UITSLUITINGEN
+    // ============================================================
+    if (result.uitsluitingen && result.uitsluitingen.length > 0) {
+      if (y > 240) {
+        doc.addPage();
+        y = 20;
+      }
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(51, 65, 85);
+      doc.text("Uitsluitingen", margin, y);
+      y += 6;
+
+      result.uitsluitingen.forEach((item, index) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(71, 85, 105);
+        const itemText = `${index + 1}.  ${item}`;
+        const wrapped = doc.splitTextToSize(itemText, pageWidth - margin * 2 - 5);
+        doc.text(wrapped, margin + 3, y);
+        y += wrapped.length * 3.5 + 1.5;
+      });
+
+      y += 6;
     }
 
     // ============================================================

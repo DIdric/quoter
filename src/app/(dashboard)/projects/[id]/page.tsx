@@ -13,6 +13,7 @@ import {
 import { QuoteActions } from "./actions";
 import { EditableQuoteLines } from "./editable-lines";
 import { EditableModuleDescriptions } from "./editable-module-descriptions";
+import { Uitsluitingen } from "./uitsluitingen";
 import { ActualCostsPanel } from "./actual-costs";
 import { DisplayModePicker } from "./display-mode-picker";
 import type { DisplayMode } from "@/lib/types";
@@ -46,6 +47,8 @@ interface QuoteResult {
   total_incl_btw: number;
   estimated_days: number;
   notes: string;
+  uitsluitingen?: string[];
+  uitsluitingen_suggestions?: string[];
 }
 
 interface QuoteJsonData {
@@ -228,6 +231,14 @@ export default async function QuoteDetailPage({
             isDraft={quote.status === "draft"}
             marginPercentage={marginPercentage}
             userId={user.id}
+          />
+
+          {/* Uitsluitingen */}
+          <Uitsluitingen
+            quoteId={quote.id}
+            userId={user.id}
+            initialSuggestions={result.uitsluitingen_suggestions ?? []}
+            initialUitsluitingen={result.uitsluitingen ?? []}
           />
 
           {/* Notes */}

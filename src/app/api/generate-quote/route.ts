@@ -28,7 +28,8 @@ Je output is ALTIJD valide JSON met exact deze structuur:
   "btw_amount": 0,
   "total_incl_btw": 0,
   "estimated_days": 0,
-  "notes": "Eventuele opmerkingen of aannames"
+  "notes": "Eventuele opmerkingen of aannames",
+  "uitsluitingen": ["Voorbeeld: schilderwerk is niet inbegrepen", "Voorbeeld: oplevering conform NEN 2767"]
 }
 
 Regels:
@@ -41,6 +42,7 @@ Regels:
 - Geef realistische schattingen - liever iets ruimer dan te krap
 - Als er bouwmodules zijn geselecteerd, gebruik de modulenamen als categorieën. Genereer 3-8 regels per module.
 - Wees beknopt in beschrijvingen
+- Genereer 3-5 relevante uitsluitingen voor dit projecttype. Gebruik vakjargon. Wees specifiek en concreet, niet generiek.
 - Geef alleen de JSON terug, geen andere tekst`;
 
 /**
@@ -281,6 +283,14 @@ ${body.ai_input}`;
           quoteData.btw_amount = btwAmount;
           quoteData.total_incl_btw = totalInclBtw;
         }
+
+        // Store AI uitsluitingen as suggestions; user starts with empty accepted list
+        if (Array.isArray(quoteData.uitsluitingen)) {
+          quoteData.uitsluitingen_suggestions = quoteData.uitsluitingen;
+        } else {
+          quoteData.uitsluitingen_suggestions = [];
+        }
+        quoteData.uitsluitingen = [];
 
         // Merge module definitions from our own data (not AI-generated)
         if (selectedModuleIds.length > 0) {
