@@ -134,6 +134,18 @@ export async function POST(request: Request) {
   const marginPct = profile?.margin_percentage ?? 15;
   const businessName = profile?.business_name ?? "Mijn Bedrijf";
 
+  const language: string = body.language || "nl";
+  const languageNames: Record<string, string> = {
+    nl: "Nederlands",
+    en: "English",
+    de: "Deutsch",
+    pl: "Polski",
+  };
+  const translationInstruction =
+    language !== "nl"
+      ? `\nTaal: Schrijf ALLE tekst (titels, beschrijvingen, samenvatting, opmerkingen, werkbeschrijvingen, uitsluitingen) in het ${languageNames[language] ?? language}. Houd eenheden (m², m, m3, stuk, uur, kg, liter, doos, zak), getallen, productnamen en bedragen onvertaald.\n`
+      : "";
+
   const userMaterialsList =
     materials && materials.length > 0
       ? materials
@@ -188,7 +200,7 @@ Materialen:
 ${materialsList}
 
 Opdracht:
-${body.ai_input}`;
+${body.ai_input}${translationInstruction}`;
 
   // Use streaming for faster perceived response
   const encoder = new TextEncoder();
@@ -283,6 +295,9 @@ ${body.ai_input}`;
           quoteData.btw_amount = btwAmount;
           quoteData.total_incl_btw = totalInclBtw;
         }
+
+        // Store language
+        quoteData.language = language;
 
         // Store AI uitsluitingen as suggestions; user starts with empty accepted list
         if (Array.isArray(quoteData.uitsluitingen)) {

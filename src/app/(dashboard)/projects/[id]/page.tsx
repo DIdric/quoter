@@ -14,6 +14,7 @@ import { QuoteActions } from "./actions";
 import { EditableQuoteLines } from "./editable-lines";
 import { EditableModuleDescriptions } from "./editable-module-descriptions";
 import { Uitsluitingen } from "./uitsluitingen";
+import { TranslateButton } from "./translate-button";
 import { ActualCostsPanel } from "./actual-costs";
 import { DisplayModePicker } from "./display-mode-picker";
 import type { DisplayMode } from "@/lib/types";
@@ -49,6 +50,7 @@ interface QuoteResult {
   notes: string;
   uitsluitingen?: string[];
   uitsluitingen_suggestions?: string[];
+  language?: string;
 }
 
 interface QuoteJsonData {
@@ -62,6 +64,7 @@ interface QuoteJsonData {
     ai_input?: string;
   };
   result?: QuoteResult;
+  language?: string;
 }
 
 export default async function QuoteDetailPage({
@@ -266,14 +269,22 @@ export default async function QuoteDetailPage({
           />
 
           {/* Actions */}
-          <QuoteActions
-            quoteId={quote.id}
-            status={quote.status}
-            clientName={form?.client_name}
-            clientEmail={form?.client_email}
-            shareToken={quote.share_token}
-            userId={user.id}
-          />
+          <div className="flex flex-wrap gap-3 items-center">
+            <QuoteActions
+              quoteId={quote.id}
+              status={quote.status}
+              clientName={form?.client_name}
+              clientEmail={form?.client_email}
+              shareToken={quote.share_token}
+              userId={user.id}
+            />
+            {hasQuoteLines && (
+              <TranslateButton
+                quoteId={quote.id}
+                currentLanguage={jsonData?.language ?? result?.language ?? "nl"}
+              />
+            )}
+          </div>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8 text-center text-slate-500">

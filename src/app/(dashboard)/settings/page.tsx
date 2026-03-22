@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile, DisplayMode, Keurmerk } from "@/lib/types";
+import type { Profile, DisplayMode, Keurmerk, Language } from "@/lib/types";
 import { Save, Loader2, Upload, X, Image as ImageIcon, Zap, Check, ExternalLink, Lock, Award } from "lucide-react";
 
 const PRESET_KEURMERKEN = [
@@ -242,6 +242,7 @@ export default function SettingsPage() {
         quote_validity_days: profile.quote_validity_days,
         quote_number_prefix: profile.quote_number_prefix,
         default_display_mode: profile.default_display_mode,
+        default_language: profile.default_language ?? "nl",
         keurmerken: keurmerken,
       })
       .eq("id", user.id);
@@ -545,6 +546,37 @@ export default function SettingsPage() {
                     {m.label}
                   </span>
                   <span className="text-xs text-slate-500">{m.description}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Default language */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Standaard taal voor offertes
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  { code: "nl", flag: "🇳🇱", label: "Nederlands" },
+                  { code: "en", flag: "🇬🇧", label: "English" },
+                  { code: "de", flag: "🇩🇪", label: "Deutsch" },
+                  { code: "pl", flag: "🇵🇱", label: "Polski" },
+                ] as { code: Language; flag: string; label: string }[]
+              ).map((lang) => (
+                <button
+                  key={lang.code}
+                  type="button"
+                  onClick={() => setProfile({ ...profile, default_language: lang.code })}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border-2 text-sm font-medium transition ${
+                    (profile.default_language ?? "nl") === lang.code
+                      ? "border-brand-500 bg-brand-50 text-brand-700"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  <span>{lang.flag}</span>
+                  <span>{lang.label}</span>
                 </button>
               ))}
             </div>

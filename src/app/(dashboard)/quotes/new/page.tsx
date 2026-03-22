@@ -320,6 +320,13 @@ export default function NewQuotePageWrapper() {
   );
 }
 
+const LANGUAGES = [
+  { code: "nl", flag: "🇳🇱", label: "NL" },
+  { code: "en", flag: "🇬🇧", label: "EN" },
+  { code: "de", flag: "🇩🇪", label: "DE" },
+  { code: "pl", flag: "🇵🇱", label: "PL" },
+];
+
 function NewQuotePage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -330,6 +337,7 @@ function NewQuotePage() {
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
   const [suggestingModules, setSuggestingModules] = useState(false);
   const [modulesSuggested, setModulesSuggested] = useState(false);
+  const [language, setLanguage] = useState("nl");
   const [form, setForm] = useState({
     client_name: "",
     client_email: "",
@@ -342,6 +350,17 @@ function NewQuotePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+
+  // Load default language from profile
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase.from("profiles").select("default_language").eq("id", user.id).single()
+        .then(({ data }) => {
+          if (data?.default_language) setLanguage(data.default_language);
+        });
+    });
+  }, [supabase]);
 
   useEffect(() => {
     const projectId = searchParams.get("project");
@@ -429,7 +448,7 @@ function NewQuotePage() {
       const response = await fetch("/api/generate-quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, selectedModules }),
+        body: JSON.stringify({ ...form, selectedModules, language }),
       });
 
       // Handle quota limit (non-streaming JSON response)
@@ -492,7 +511,7 @@ function NewQuotePage() {
       body: JSON.stringify({
         client_name: form.client_name,
         status: "draft",
-        json_data: { form, result, selectedModules },
+        json_data: { form, result, selectedModules, language },
         existing_project_id: existingProjectId,
       }),
     });
@@ -807,6 +826,32 @@ function NewQuotePage() {
                 Tip: Gebruik de microfoon om je opdracht in te spreken
               </p>
             </div>
+
+            {/* Language selector */}
+            {!result && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Taal van de offerte
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => setLanguage(lang.code)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition ${
+                        language === lang.code
+                          ? "border-brand-500 bg-brand-50 text-brand-700"
+                          : "border-slate-200 text-slate-600 hover:border-slate-300"
+                      }`}
+                    >
+                      <span>{lang.flag}</span>
+                      <span>{lang.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {!result && !loading && (
               <button

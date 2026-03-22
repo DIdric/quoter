@@ -37,9 +37,73 @@ interface QuoteResult {
   estimated_days: number;
   notes: string;
   uitsluitingen?: string[];
+  language?: string;
 }
 
 type DisplayMode = "open" | "module" | "hoogover";
+
+const PDF_LABELS: Record<string, Record<string, string>> = {
+  nl: {
+    dear: "Beste", dearFormal: "Geachte heer/mevrouw,",
+    introPrefix: "Hierbij zenden wij u onze vrijblijvende offerte ten behoeve van",
+    introLocation: "te", techSection: "Technische omschrijving werkzaamheden",
+    colDesc: "Omschrijving", colType: "Type", colAmount: "Aantal",
+    colPrice: "Prijs", colTotal: "Totaal", colModule: "Module",
+    colPriceExcl: "Prijs excl. BTW", totalExcl: "Totaal excl. BTW",
+    btw: "BTW (21%)", totalIncl: "Totaal incl. BTW", notes: "Opmerkingen:",
+    exclusions: "Uitsluitingen", validUntil: "Deze offerte is geldig tot",
+    closing1: "Wij vertrouwen erop u hiermee een passende aanbieding te hebben gedaan.",
+    closing2: "Met vriendelijke groet,", quoteLabel: "Offerte:", subjectLabel: "Betreft:",
+    locationLabel: "Locatie:", dateLabel: "Offertedatum:", expiryLabel: "Vervaldatum:",
+    durationLabel: "Doorlooptijd:", workday: "werkdag", workdays: "werkdagen",
+    typeMaterial: "Materiaal", typeLabor: "Arbeid",
+  },
+  en: {
+    dear: "Dear", dearFormal: "Dear Sir/Madam,",
+    introPrefix: "Please find enclosed our non-binding quotation for",
+    introLocation: "in", techSection: "Technical description of works",
+    colDesc: "Description", colType: "Type", colAmount: "Quantity",
+    colPrice: "Price", colTotal: "Total", colModule: "Module",
+    colPriceExcl: "Price excl. VAT", totalExcl: "Total excl. VAT",
+    btw: "VAT (21%)", totalIncl: "Total incl. VAT", notes: "Notes:",
+    exclusions: "Exclusions", validUntil: "This quotation is valid until",
+    closing1: "We trust this offer meets your requirements.",
+    closing2: "Kind regards,", quoteLabel: "Quote:", subjectLabel: "Subject:",
+    locationLabel: "Location:", dateLabel: "Quote date:", expiryLabel: "Expiry date:",
+    durationLabel: "Duration:", workday: "working day", workdays: "working days",
+    typeMaterial: "Material", typeLabor: "Labour",
+  },
+  de: {
+    dear: "Sehr geehrte(r)", dearFormal: "Sehr geehrte Damen und Herren,",
+    introPrefix: "Hiermit übersenden wir Ihnen unser unverbindliches Angebot für",
+    introLocation: "in", techSection: "Technische Beschreibung der Arbeiten",
+    colDesc: "Beschreibung", colType: "Typ", colAmount: "Menge",
+    colPrice: "Preis", colTotal: "Gesamt", colModule: "Modul",
+    colPriceExcl: "Preis exkl. MwSt.", totalExcl: "Gesamt exkl. MwSt.",
+    btw: "MwSt. (21%)", totalIncl: "Gesamt inkl. MwSt.", notes: "Anmerkungen:",
+    exclusions: "Ausschlüsse", validUntil: "Dieses Angebot ist gültig bis",
+    closing1: "Wir vertrauen darauf, Ihnen hiermit ein passendes Angebot gemacht zu haben.",
+    closing2: "Mit freundlichen Grüßen,", quoteLabel: "Angebot:", subjectLabel: "Betreff:",
+    locationLabel: "Standort:", dateLabel: "Angebotsdatum:", expiryLabel: "Ablaufdatum:",
+    durationLabel: "Laufzeit:", workday: "Arbeitstag", workdays: "Arbeitstage",
+    typeMaterial: "Material", typeLabor: "Arbeit",
+  },
+  pl: {
+    dear: "Szanowny/a", dearFormal: "Szanowni Państwo,",
+    introPrefix: "W załączeniu przesyłamy naszą ofertę na",
+    introLocation: "w", techSection: "Techniczny opis prac",
+    colDesc: "Opis", colType: "Typ", colAmount: "Ilość",
+    colPrice: "Cena", colTotal: "Razem", colModule: "Moduł",
+    colPriceExcl: "Cena bez VAT", totalExcl: "Razem bez VAT",
+    btw: "VAT (21%)", totalIncl: "Razem z VAT", notes: "Uwagi:",
+    exclusions: "Wyłączenia", validUntil: "Oferta ważna do",
+    closing1: "Mamy nadzieję, że nasza oferta spełnia Państwa oczekiwania.",
+    closing2: "Z poważaniem,", quoteLabel: "Oferta:", subjectLabel: "Dotyczy:",
+    locationLabel: "Lokalizacja:", dateLabel: "Data oferty:", expiryLabel: "Data ważności:",
+    durationLabel: "Czas realizacji:", workday: "dzień roboczy", workdays: "dni robocze",
+    typeMaterial: "Materiał", typeLabor: "Robocizna",
+  },
+};
 
 interface QuoteJsonData {
   form?: {
@@ -133,6 +197,9 @@ export async function GET(
         { status: 400 }
       );
     }
+
+    const lang = result.language ?? "nl";
+    const labels = PDF_LABELS[lang] ?? PDF_LABELS.nl;
 
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -251,11 +318,11 @@ export async function GET(
     doc.setTextColor(51, 65, 85);
 
     const metaLeft = [
-      `Offerte:     ${quoteNumber}`,
-      `Betreft:     ${result.quote_title}`,
+      `${labels.quoteLabel.padEnd(13)} ${quoteNumber}`,
+      `${labels.subjectLabel.padEnd(13)} ${result.quote_title}`,
     ];
     if (form?.project_location) {
-      metaLeft.push(`Locatie:     ${form.project_location}`);
+      metaLeft.push(`${labels.locationLabel.padEnd(13)} ${form.project_location}`);
     }
     metaLeft.forEach((line) => {
       doc.text(line, margin, y);
@@ -264,11 +331,12 @@ export async function GET(
 
     // Dates on the right
     const metaRightY = y - metaLeft.length * 4.5;
-    doc.text(`Offertedatum:   ${formatDateNL(quoteDate)}`, rightCol, metaRightY, { align: "right" });
-    doc.text(`Vervaldatum:    ${formatDateNL(expiryDate)}`, rightCol, metaRightY + 4.5, { align: "right" });
+    doc.text(`${labels.dateLabel.padEnd(16)} ${formatDateNL(quoteDate)}`, rightCol, metaRightY, { align: "right" });
+    doc.text(`${labels.expiryLabel.padEnd(16)} ${formatDateNL(expiryDate)}`, rightCol, metaRightY + 4.5, { align: "right" });
     if (result.estimated_days > 0) {
+      const wdLabel = result.estimated_days !== 1 ? labels.workdays : labels.workday;
       doc.text(
-        `Doorlooptijd:   ${result.estimated_days} werkdag${result.estimated_days !== 1 ? "en" : ""}`,
+        `${labels.durationLabel.padEnd(16)} ${result.estimated_days} ${wdLabel}`,
         rightCol,
         metaRightY + 9,
         { align: "right" }
@@ -290,12 +358,12 @@ export async function GET(
 
     const clientFirstName = (form?.client_name || "").split(" ")[0];
     const greeting = clientFirstName
-      ? `Beste ${form?.client_name},`
-      : "Geachte heer/mevrouw,";
+      ? `${labels.dear} ${form?.client_name},`
+      : labels.dearFormal;
     doc.text(greeting, margin, y);
     y += 6;
 
-    const introText = `Hierbij zenden wij u onze vrijblijvende offerte ten behoeve van ${(result.quote_title || "de werkzaamheden").toLowerCase()}${form?.project_location ? ` te ${form.project_location}` : ""}.`;
+    const introText = `${labels.introPrefix} ${(result.quote_title || "de werkzaamheden").toLowerCase()}${form?.project_location ? ` ${labels.introLocation} ${form.project_location}` : ""}.`;
     const introWrapped = doc.splitTextToSize(introText, pageWidth - margin * 2);
     doc.text(introWrapped, margin, y);
     y += introWrapped.length * 4 + 8;
@@ -312,7 +380,7 @@ export async function GET(
       doc.setFontSize(12);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(30, 41, 59);
-      doc.text("Technische omschrijving werkzaamheden", margin, y);
+      doc.text(labels.techSection, margin, y);
       y += 8;
 
       result.modules.forEach((mod) => {
@@ -397,7 +465,7 @@ export async function GET(
           .forEach((line) => {
             tableBody.push([
               line.description,
-              line.type === "materiaal" ? "Materiaal" : "Arbeid",
+              line.type === "materiaal" ? labels.typeMaterial : labels.typeLabor,
               `${line.quantity} ${line.unit}`,
               formatCurrency(line.unit_price),
               formatCurrency(line.total),
@@ -407,7 +475,7 @@ export async function GET(
 
       autoTable(doc, {
         startY: y,
-        head: [["Omschrijving", "Type", "Aantal", "Prijs", "Totaal"]],
+        head: [[labels.colDesc, labels.colType, labels.colAmount, labels.colPrice, labels.colTotal]],
         body: tableBody,
         theme: "striped",
         headStyles: {
@@ -448,7 +516,7 @@ export async function GET(
 
       autoTable(doc, {
         startY: y,
-        head: [["Module", "Prijs excl. BTW"]],
+        head: [[labels.colModule, labels.colPriceExcl]],
         body: moduleTableBody,
         theme: "striped",
         headStyles: {
@@ -487,13 +555,13 @@ export async function GET(
       doc.setFont("helvetica", "normal");
       doc.setTextColor(71, 85, 105);
 
-      doc.text("Totaal excl. BTW", totalsX, y);
+      doc.text(labels.totalExcl, totalsX, y);
       doc.text(formatCurrency(result.total_excl_btw), valuesX, y, {
         align: "right",
       });
       y += 5;
 
-      doc.text("BTW (21%)", totalsX, y);
+      doc.text(labels.btw, totalsX, y);
       doc.text(formatCurrency(result.btw_amount), valuesX, y, {
         align: "right",
       });
@@ -507,7 +575,7 @@ export async function GET(
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(21, 128, 61);
-    doc.text("Totaal incl. BTW", totalsX, y);
+    doc.text(labels.totalIncl, totalsX, y);
     doc.text(formatCurrency(result.total_incl_btw), valuesX, y, {
       align: "right",
     });
@@ -524,7 +592,7 @@ export async function GET(
       doc.setFontSize(9);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(100, 116, 139);
-      doc.text("Opmerkingen:", margin, y);
+      doc.text(labels.notes, margin, y);
       y += 5;
       doc.setFont("helvetica", "normal");
       doc.setTextColor(71, 85, 105);
@@ -548,7 +616,7 @@ export async function GET(
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(51, 65, 85);
-      doc.text("Uitsluitingen", margin, y);
+      doc.text(labels.exclusions, margin, y);
       y += 6;
 
       result.uitsluitingen.forEach((item, index) => {
@@ -585,18 +653,14 @@ export async function GET(
     doc.setFont("helvetica", "normal");
     doc.setTextColor(51, 65, 85);
     doc.text(
-      `Deze offerte is geldig tot ${formatDateNL(expiryDate)}.`,
+      `${labels.validUntil} ${formatDateNL(expiryDate)}.`,
       margin,
       y
     );
     y += 5;
-    doc.text(
-      "Wij vertrouwen erop u hiermee een passende aanbieding te hebben gedaan.",
-      margin,
-      y
-    );
+    doc.text(labels.closing1, margin, y);
     y += 5;
-    doc.text("Met vriendelijke groet,", margin, y);
+    doc.text(labels.closing2, margin, y);
     y += 8;
 
     doc.setFont("helvetica", "bold");
