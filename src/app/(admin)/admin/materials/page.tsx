@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Package,
   Plus,
@@ -11,6 +11,9 @@ import {
   Check,
   Loader2,
   FileCode2,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import type { DefaultMaterial } from "@/lib/types";
 
@@ -30,8 +33,14 @@ const CATEGORIES = [
 
 const UNITS = ["stuk", "m", "m2", "m3", "kg", "liter", "doos", "zak", "rol", "set"];
 
+const PAGE_SIZE = 50;
+
 export default function AdminMaterialsPage() {
   const [materials, setMaterials] = useState<DefaultMaterial[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -52,16 +61,30 @@ export default function AdminMaterialsPage() {
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Debounce search query by 300 ms
   useEffect(() => {
-    loadMaterials();
-  }, []);
+    const t = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+      setPage(0); // reset to page 0 on new search
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
-  async function loadMaterials() {
-    const res = await fetch("/api/admin?action=default-materials");
+  const loadMaterials = useCallback(async () => {
+    setLoading(true);
+    const params = new URLSearchParams({ action: "default-materials", page: String(page), limit: String(PAGE_SIZE) });
+    if (debouncedQuery) params.set("q", debouncedQuery);
+    if (filterCategory) params.set("category", filterCategory);
+    const res = await fetch(`/api/admin?${params}`);
     const data = await res.json();
     setMaterials(data.materials ?? []);
+    setTotal(data.total ?? 0);
     setLoading(false);
-  }
+  }, [page, debouncedQuery, filterCategory]);
+
+  useEffect(() => {
+    loadMaterials();
+  }, [loadMaterials]);
 
   async function handleSave() {
     const res = await fetch("/api/admin", {
@@ -240,7 +263,7 @@ export default function AdminMaterialsPage() {
 
       // Send in batches of 200 rows (small JSON bodies, no size limit issues)
       const BATCH = 200;
-      let total = 0;
+      let imported = 0;
       for (let i = 0; i < rows.length; i += BATCH) {
         const batch = rows.slice(i, i + BATCH);
         const res = await fetch("/api/admin", {
@@ -253,12 +276,12 @@ export default function AdminMaterialsPage() {
           setUploadMessage({ type: "error", text: "Fout bij importeren: " + data.error });
           return;
         }
-        total += data.count ?? 0;
+        imported += data.count ?? 0;
       }
 
       setUploadMessage({
         type: "success",
-        text: `${total} materialen geïmporteerd${skipped > 0 ? ` (${skipped} regels overgeslagen)` : ""}`,
+        text: `${imported} materialen geïmporteerd${skipped > 0 ? ` (${skipped} regels overgeslagen)` : ""}`,
       });
       loadMaterials();
     } catch (err) {
@@ -368,11 +391,7 @@ export default function AdminMaterialsPage() {
     };
   }
 
-  const filteredMaterials = filterCategory
-    ? materials.filter((m) => m.category === filterCategory)
-    : materials;
-
-  const categories = [...new Set(materials.map((m) => m.category))].sort();
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   if (loading) {
     return (
@@ -386,7 +405,7 @@ export default function AdminMaterialsPage() {
     <div>
       <div className="flex items-center justify-between mb-4 md:mb-6 gap-3 flex-wrap">
         <h1 className="text-xl md:text-2xl font-bold text-slate-800">
-          Standaard Materialen ({materials.length})
+          Standaard Materialen ({total.toLocaleString("nl-NL")})
         </h1>
         <div className="flex gap-2 md:gap-3">
           <label className={`flex items-center gap-1.5 md:gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition cursor-pointer text-sm ${dicoUploading ? "opacity-50 pointer-events-none" : ""}`}>
@@ -458,34 +477,29 @@ export default function AdminMaterialsPage() {
         </code>
       </div>
 
-      {/* Category filter */}
-      {categories.length > 1 && (
-        <div className="flex gap-2 mb-4 flex-wrap">
-          <button
-            onClick={() => setFilterCategory("")}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-              !filterCategory
-                ? "bg-brand-500 text-white"
-                : "bg-white border border-slate-300 text-slate-600 hover:bg-slate-50"
-            }`}
-          >
-            Alles
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setFilterCategory(cat)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                filterCategory === cat
-                  ? "bg-brand-500 text-white"
-                  : "bg-white border border-slate-300 text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+      {/* Search + category filter */}
+      <div className="flex gap-2 mb-4 flex-wrap">
+        <div className="relative flex-1 min-w-48">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Zoek op naam…"
+            className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+          />
         </div>
-      )}
+        <select
+          value={filterCategory}
+          onChange={(e) => { setFilterCategory(e.target.value); setPage(0); }}
+          className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none bg-white"
+        >
+          <option value="">Alle categorieën</option>
+          {CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>{cat}</option>
+          ))}
+        </select>
+      </div>
 
       {/* Add/Edit Form */}
       {showForm && (
@@ -593,76 +607,111 @@ export default function AdminMaterialsPage() {
 
       {/* Materials Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-        {filteredMaterials.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[650px]">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">Naam</th>
-                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">Categorie</th>
-                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">Eenheid</th>
-                  <th className="text-right px-4 py-3 md:px-6 text-sm font-medium text-slate-500">Prijs</th>
-                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">Bron</th>
-                  <th className="text-right px-4 py-3 md:px-6 text-sm font-medium text-slate-500">Acties</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {filteredMaterials.map((mat) => (
-                  <tr key={mat.id} className="hover:bg-slate-50 transition">
-                    <td className="px-4 py-3 md:px-6 font-medium text-slate-800">
-                      {mat.source_url ? (
-                        <a
-                          href={mat.source_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-brand-500 hover:underline"
-                        >
-                          {mat.name}
-                        </a>
-                      ) : (
-                        mat.name
-                      )}
-                    </td>
-                    <td className="px-4 py-3 md:px-6 text-slate-600">
-                      <span className="px-2 py-1 bg-slate-100 rounded text-xs font-medium">
-                        {mat.category}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 md:px-6 text-slate-600">{mat.unit}</td>
-                    <td className="px-4 py-3 md:px-6 text-right text-slate-800">
-                      {new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(mat.cost_price))}
-                    </td>
-                    <td className="px-4 py-3 md:px-6 text-slate-600 text-sm">
-                      {mat.source}{mat.article_number ? ` (#${mat.article_number})` : ""}
-                    </td>
-                    <td className="px-4 py-3 md:px-6 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => handleEdit(mat)}
-                          className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(mat.id)}
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
           </div>
+        ) : materials.length > 0 ? (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[650px]">
+                <thead>
+                  <tr className="border-b border-slate-200">
+                    <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">Naam</th>
+                    <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">Categorie</th>
+                    <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">Eenheid</th>
+                    <th className="text-right px-4 py-3 md:px-6 text-sm font-medium text-slate-500">Prijs</th>
+                    <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">Bron</th>
+                    <th className="text-right px-4 py-3 md:px-6 text-sm font-medium text-slate-500">Acties</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {materials.map((mat) => (
+                    <tr key={mat.id} className="hover:bg-slate-50 transition">
+                      <td className="px-4 py-3 md:px-6 font-medium text-slate-800">
+                        {mat.source_url ? (
+                          <a
+                            href={mat.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-brand-500 hover:underline"
+                          >
+                            {mat.name}
+                          </a>
+                        ) : (
+                          mat.name
+                        )}
+                      </td>
+                      <td className="px-4 py-3 md:px-6 text-slate-600">
+                        <span className="px-2 py-1 bg-slate-100 rounded text-xs font-medium">
+                          {mat.category}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 md:px-6 text-slate-600">{mat.unit}</td>
+                      <td className="px-4 py-3 md:px-6 text-right text-slate-800">
+                        {new Intl.NumberFormat("nl-NL", { style: "currency", currency: "EUR" }).format(Number(mat.cost_price))}
+                      </td>
+                      <td className="px-4 py-3 md:px-6 text-slate-600 text-sm">
+                        {mat.source}{mat.article_number ? ` (#${mat.article_number})` : ""}
+                      </td>
+                      <td className="px-4 py-3 md:px-6 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleEdit(mat)}
+                            className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(mat.id)}
+                            className="p-1.5 rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500 transition"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 text-sm text-slate-600">
+                <span>
+                  {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} van {total.toLocaleString("nl-NL")}
+                </span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                    className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="px-3 py-1.5 font-medium">{page + 1} / {totalPages}</span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                    disabled={page >= totalPages - 1}
+                    className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="px-6 py-12 text-center text-slate-500">
             <Package className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-            <p>Nog geen standaard materialen</p>
-            <p className="text-sm mt-1">
-              Voeg materialen toe of importeer via CSV
-            </p>
+            {debouncedQuery || filterCategory ? (
+              <p>Geen resultaten gevonden</p>
+            ) : (
+              <>
+                <p>Nog geen standaard materialen</p>
+                <p className="text-sm mt-1">Voeg materialen toe of importeer via CSV</p>
+              </>
+            )}
           </div>
         )}
       </div>

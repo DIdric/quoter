@@ -176,13 +176,24 @@ export async function GET(request: Request) {
   }
 
   if (action === "default-materials") {
-    const { data } = await service
-      .from("default_materials")
-      .select("*")
-      .order("category")
-      .order("name");
+    const url = new URL(request.url);
+    const q        = url.searchParams.get("q")?.trim() ?? "";
+    const category = url.searchParams.get("category")?.trim() ?? "";
+    const page     = Math.max(0, parseInt(url.searchParams.get("page") ?? "0", 10));
+    const limit    = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") ?? "50", 10)));
 
-    return NextResponse.json({ materials: data ?? [] });
+    let query = service
+      .from("default_materials")
+      .select("*", { count: "exact" })
+      .order("category")
+      .order("name")
+      .range(page * limit, page * limit + limit - 1);
+
+    if (q)        query = query.ilike("name", `%${q}%`);
+    if (category) query = query.eq("category", category);
+
+    const { data, count } = await query;
+    return NextResponse.json({ materials: data ?? [], total: count ?? 0, page, limit });
   }
 
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });
