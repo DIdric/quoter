@@ -43,7 +43,101 @@ Regels:
 - Als er bouwmodules zijn geselecteerd, gebruik de modulenamen als categorieën. Genereer 3-8 regels per module.
 - Wees beknopt in beschrijvingen
 - Genereer 3-5 relevante uitsluitingen voor dit projecttype. Gebruik vakjargon. Wees specifiek en concreet, niet generiek.
-- Geef alleen de JSON terug, geen andere tekst`;
+- Geef alleen de JSON terug, geen andere tekst
+
+## HOEVEELHEIDSNORMEN (Nederlandse bouwpraktijk)
+
+Gebruik deze vakkundige normen als basis voor hoeveelheidsschattingen. Pas aan op basis van complexiteit, hoogte en specifieke omstandigheden.
+
+### Sloopwerk & demontage
+- Wandtegels verwijderen: 1,5–2 uur/m²
+- Vloertegels verwijderen: 1–1,5 uur/m²
+- Chape/dekvloer breken: 0,5–1 uur/m²
+- Systeemwand/-plafond demonteren: 0,3–0,5 uur/m²
+- Keuken demonteren: 4–6 uur totaal
+- Badkamer volledig strippen (≤10m²): 6–10 uur totaal
+- Kozijn + deur verwijderen: 1–2 uur/stuk
+- Radiatoren demonteren: 0,5–1 uur/stuk
+
+### Tegelwerk
+- Wandtegels plaatsen (standaard formaat ≤30×60): 0,8–1,2 uur/m²
+- Wandtegels plaatsen (groot formaat >60×60): 0,5–0,8 uur/m²
+- Vloertegels plaatsen (standaard): 0,6–1 uur/m²
+- Vloertegels plaatsen (visgraat/diagonaal): 1–1,5 uur/m²
+- Tegellijm wandtegels: 4–6 kg/m²; vloertegels: 6–8 kg/m²
+- Voegmiddel: 0,5–1 kg/m² (afhankelijk van voegbreedte)
+- Snijverlies tegels: 10–15% extra op oppervlak
+
+### Stucwerk & afwerking
+- Machine-stucen (glad): 0,12–0,18 uur/m²
+- Handstucen (glad): 0,3–0,5 uur/m²
+- Spuitplamuur/egaliseren: 0,1–0,15 uur/m²
+- Gipsplaat (12,5mm) monteren op wand: 0,2–0,3 uur/m² (incl. schroeven, kopen: 1,05 m²/m²)
+- Gipsplaat plafond: 0,3–0,4 uur/m²
+- Stucpleister verbruik: 1,2–1,5 kg/m² per mm laagdikte
+
+### Schilderwerk
+- Muren/plafond schilderen 2 lagen: 0,15–0,25 uur/m²
+- Kozijnen/deuren schilderen (2 lagen): 1–2 uur/strekkende meter
+- Grondlaag aanbrengen: 0,1–0,15 uur/m²
+- Verfverbruik: 0,1–0,15 liter/m² per laag
+
+### Metselwerk
+- Halfsteens metselwerk (100mm): 0,5–0,7 uur/m²; 55–60 stenen/m²
+- Steens metselwerk (210mm): 0,8–1,2 uur/m²; 110–120 stenen/m²
+- Metselmortel: 25–35 kg/m² (halfsteens)
+- Lintelen plaatsen: 1–2 uur/stuk
+
+### Vloeren
+- Parket/laminaat leggen (incl. ondervloer): 0,2–0,3 uur/m²
+- PVC-vloer leggen (click): 0,15–0,2 uur/m²
+- Dekvloer storten (5cm, droge mortel): 0,3–0,4 uur/m²; 75 kg mortel/m²
+- Vloerisolatie (EPS/PIR) leggen: 0,1–0,15 uur/m²
+
+### Sanitair & loodgieterswerk
+- CV-ketel vervangen (inclusief aansluiten): 8–12 uur
+- Douche plaatsen (douchebak + wand + kraan): 6–10 uur
+- Toilet plaatsen (hangtoilet incl. inbouwreservoir): 4–6 uur
+- Wastafel + kraan aansluiten: 2–3 uur
+- Bad plaatsen + aansluiten: 5–8 uur
+- Radiator plaatsen + aansluiten: 2–3 uur/stuk
+- Vloerverwarming leggen (mat): 0,2–0,3 uur/m²
+- Koper/PEX leidingwerk trekken: 1–2 uur/m (afhankelijk van toegankelijkheid)
+
+### Elektra
+- Groep (16A) installeren (incl. kabel): 3–5 uur
+- Stopcontact of schakelaar plaatsen: 0,5–1 uur/punt
+- LED-armatuur plaatsen en aansluiten: 0,5–1 uur/stuk
+- Inbouwspot plaatsen: 0,3–0,5 uur/stuk
+- Kabelgoot aanbrengen: 0,2–0,3 uur/m
+
+### Kozijnen, deuren & ramen
+- Kozijn plaatsen (hout/kunststof, standaard): 3–5 uur/stuk
+- Binnendeur plaatsen (incl. kozijn en hang- en sluitwerk): 3–4 uur/stuk
+- Dakraam plaatsen: 4–6 uur/stuk
+- Rolluik of zonwering monteren: 2–3 uur/stuk
+
+### Isolatie
+- Spouwmuurisolatie inblazen: 0,05–0,1 uur/m² (boorgaten + vullen)
+- Dakisolatie (plat dak, PIR): 0,2–0,3 uur/m²
+- Vloerisolatie kruipruimte (EPS): 0,15–0,2 uur/m²
+
+### Dakwerk
+- Dakpannen leggen (incl. latten): 0,4–0,6 uur/m²
+- Dakbedekking plat dak (EPDM/bitumen): 0,4–0,6 uur/m²
+- Dakgoot + afvoer plaatsen: 0,5–1 uur/m
+
+### Typische projecttotalen (referentie voor estimated_days)
+- Badkamer renovatie 5m²: 40–55 manuur → 5–7 werkdagen (1 man)
+- Badkamer renovatie 8–10m²: 60–80 manuur → 7–10 werkdagen
+- Keuken plaatsen (exclusief muren/vloer): 20–32 uur → 3–4 werkdagen
+- Woning schilderen binnenzijde (100m² woonoppervlak): 60–80 uur
+- Aanbouw 15m² (ruwbouw + afwerking): 200–280 manuur
+- Dakkapel plaatsen (standaard): 60–100 manuur
+
+### Richtlijn estimated_days
+Bereken: (totaal arbeid uren) ÷ 8 uur/dag, afgerond naar boven. Bij 2 man op de klus: deel door 2.`;
+
 
 /**
  * Attempts to repair truncated JSON by closing open brackets/braces.
