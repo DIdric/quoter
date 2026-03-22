@@ -196,6 +196,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ materials: data ?? [], total: count ?? 0, page, limit });
   }
 
+  if (action === "default-material-categories") {
+    const { data } = await service
+      .from("default_materials")
+      .select("category")
+      .order("category");
+
+    const categories = [...new Set((data ?? []).map((r: { category: string }) => r.category))].sort();
+    return NextResponse.json({ categories });
+  }
+
   return NextResponse.json({ error: "Unknown action" }, { status: 400 });
 }
 

@@ -45,6 +45,7 @@ export default function AdminMaterialsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [filterCategory, setFilterCategory] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const [dicoUploading, setDicoUploading] = useState(false);
   const [dicoProgress, setDicoProgress] = useState<string | null>(null);
   const [csvUploading, setCsvUploading] = useState(false);
@@ -70,6 +71,13 @@ export default function AdminMaterialsPage() {
     return () => clearTimeout(t);
   }, [searchQuery]);
 
+  // Load distinct categories from DB (run once, refresh after imports)
+  const loadCategories = useCallback(async () => {
+    const res = await fetch("/api/admin?action=default-material-categories");
+    const data = await res.json();
+    setCategories(data.categories ?? []);
+  }, []);
+
   const loadMaterials = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ action: "default-materials", page: String(page), limit: String(PAGE_SIZE) });
@@ -85,6 +93,10 @@ export default function AdminMaterialsPage() {
   useEffect(() => {
     loadMaterials();
   }, [loadMaterials]);
+
+  useEffect(() => {
+    loadCategories();
+  }, [loadCategories]);
 
   async function handleSave() {
     const res = await fetch("/api/admin", {
@@ -284,6 +296,7 @@ export default function AdminMaterialsPage() {
         text: `${imported} materialen geïmporteerd${skipped > 0 ? ` (${skipped} regels overgeslagen)` : ""}`,
       });
       loadMaterials();
+      loadCategories();
     } catch (err) {
       setUploadMessage({ type: "error", text: "Fout bij verwerken CSV: " + String(err) });
     } finally {
@@ -380,6 +393,7 @@ export default function AdminMaterialsPage() {
         text: `${totalImported} materialen geïmporteerd van ${data.supplier_name ?? "leverancier"}`,
       });
       loadMaterials();
+      loadCategories();
     };
 
     worker.onerror = (err) => {
@@ -495,7 +509,7 @@ export default function AdminMaterialsPage() {
           className="px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none bg-white"
         >
           <option value="">Alle categorieën</option>
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
