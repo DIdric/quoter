@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { X, Plus } from "lucide-react";
 
 interface QuoteModule {
   name: string;
@@ -65,6 +66,30 @@ export function EditableModuleDescriptions({
     );
   };
 
+  const removeItem = useCallback(
+    async (modIndex: number, itemIndex: number) => {
+      const updated = localModules.map((m, i) => {
+        if (i !== modIndex) return m;
+        return { ...m, items: m.items.filter((_, j) => j !== itemIndex) };
+      });
+      setLocalModules(updated);
+      await saveModules(updated);
+    },
+    [localModules, saveModules]
+  );
+
+  const addItem = useCallback(
+    async (modIndex: number) => {
+      const updated = localModules.map((m, i) => {
+        if (i !== modIndex) return m;
+        return { ...m, items: [...m.items, ""] };
+      });
+      setLocalModules(updated);
+      await saveModules(updated);
+    },
+    [localModules, saveModules]
+  );
+
   const handleIntroBlur = useCallback(
     async (modIndex: number) => {
       setSavingField(`intro-${modIndex}`);
@@ -125,11 +150,29 @@ export function EditableModuleDescriptions({
                   onBlur={() => handleItemBlur(modIndex)}
                   className="flex-1 px-2 py-1 text-sm text-slate-600 bg-white border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-brand-400 focus:border-brand-400"
                 />
+                <button
+                  type="button"
+                  onClick={() => removeItem(modIndex, itemIndex)}
+                  className="shrink-0 text-slate-300 hover:text-red-400 transition-colors"
+                  title="Verwijder regel"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
               </li>
             ))}
             {savingField === `items-${modIndex}` && (
               <li className="text-xs text-slate-400 pl-5">opslaan...</li>
             )}
+            <li>
+              <button
+                type="button"
+                onClick={() => addItem(modIndex)}
+                className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-brand-600 transition-colors mt-1 pl-5"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Regel toevoegen
+              </button>
+            </li>
           </ul>
         </div>
       ))}

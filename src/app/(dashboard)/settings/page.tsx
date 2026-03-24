@@ -37,6 +37,7 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [keurmerken, setKeurmerken] = useState<Keurmerk[]>([]);
   const [uploadingKeurmerk, setUploadingKeurmerk] = useState(false);
@@ -219,13 +220,14 @@ export default function SettingsPage() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setSaveError(null);
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase
+    const { error } = await supabase
       .from("profiles")
       .update({
         business_name: profile.business_name,
@@ -248,8 +250,12 @@ export default function SettingsPage() {
       .eq("id", user.id);
 
     setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    if (error) {
+      setSaveError(error.message);
+    } else {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    }
   }
 
   if (loading) {
@@ -753,6 +759,11 @@ export default function SettingsPage() {
             {saved && (
               <span className="text-sm text-green-600 font-medium">
                 Instellingen opgeslagen!
+              </span>
+            )}
+            {saveError && (
+              <span className="text-sm text-red-600 font-medium">
+                Opslaan mislukt: {saveError}
               </span>
             )}
           </div>
