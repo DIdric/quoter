@@ -370,6 +370,210 @@ function StepIndicator({
   );
 }
 
+// ── QuotePreviewPanel ────────────────────────────────────────────────────────
+function QuotePreviewPanel({
+  result,
+  profile,
+  displayMode,
+  marginPct,
+  form,
+}: {
+  result: QuoteResult;
+  profile: {
+    business_name: string | null;
+    logo_url: string | null;
+    business_address: string | null;
+    business_postal_code: string | null;
+    business_city: string | null;
+    business_phone: string | null;
+    business_email: string | null;
+    kvk_number: string | null;
+    btw_number: string | null;
+  } | null;
+  displayMode: "open" | "module" | "hoogover";
+  marginPct: number;
+  form: {
+    client_name: string;
+    client_email: string;
+    project_title: string;
+    project_location: string;
+  };
+}) {
+  const t = recalcTotalsFromLines(result.lines, marginPct);
+  const today = new Date().toLocaleDateString("nl-NL");
+  const categories = [...new Set(result.lines.map((l) => l.category))];
+
+  return (
+    <div className="text-xs text-slate-700 space-y-4 font-sans">
+      {/* a. Company header */}
+      <div className="relative">
+        <span className="absolute top-0 right-0 text-[10px] text-slate-400 italic">Jouw bedrijfsinfo</span>
+        <div className="flex justify-between items-start pr-24">
+          <div>
+            <p className="font-semibold text-sm text-slate-800">
+              {profile?.business_name || "Jouw Bedrijfsnaam"}
+            </p>
+            {profile?.business_address && (
+              <p className="text-slate-500">
+                {profile.business_address}
+                {(profile.business_postal_code || profile.business_city) && (
+                  <>, {profile.business_postal_code} {profile.business_city}</>
+                )}
+              </p>
+            )}
+            {profile?.business_phone && (
+              <p className="text-slate-500">{profile.business_phone}</p>
+            )}
+            {profile?.business_email && (
+              <p className="text-slate-500">{profile.business_email}</p>
+            )}
+          </div>
+          <div>
+            {profile?.logo_url ? (
+              <img src={profile.logo_url} alt="logo" className="h-10 object-contain" />
+            ) : (
+              <div className="w-16 h-10 bg-slate-100 border border-slate-200 rounded flex items-center justify-center text-[10px] text-slate-400 font-medium">
+                LOGO
+              </div>
+            )}
+          </div>
+        </div>
+        <hr className="my-2 border-slate-200" />
+        <div className="flex gap-4 text-[10px] text-slate-400">
+          {profile?.kvk_number && <span>KVK: {profile.kvk_number}</span>}
+          {profile?.btw_number && <span>BTW: {profile.btw_number}</span>}
+        </div>
+      </div>
+
+      {/* b. Quote meta */}
+      <div className="space-y-1">
+        <div className="flex justify-between items-start">
+          <p className="text-sm font-semibold text-slate-800">Offerte</p>
+          <p className="text-slate-500">{today}</p>
+        </div>
+        <p><span className="text-slate-500">Betreft:</span> {form.project_title || result.quote_title}</p>
+        <p><span className="text-slate-500">Klant:</span> {form.client_name || "—"}</p>
+        {form.project_location && (
+          <p><span className="text-slate-500">Locatie:</span> {form.project_location}</p>
+        )}
+      </div>
+
+      {/* c. Technical description */}
+      {result.modules && result.modules.length > 0 && (
+        <div>
+          <p className="font-semibold text-slate-700 mb-1 text-[11px] uppercase tracking-wide">
+            Technische omschrijving werkzaamheden
+          </p>
+          <div className="space-y-2">
+            {result.modules.map((mod, i) => (
+              <div key={i}>
+                <p className="font-semibold text-slate-800">{mod.name}</p>
+                <p className="italic text-slate-500">{mod.intro}</p>
+                {displayMode !== "hoogover" && (
+                  <ul className="mt-0.5 space-y-0.5 pl-3">
+                    {mod.items.map((item, j) => (
+                      <li key={j} className="text-slate-600">• {item}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* d. Price section */}
+      {displayMode === "open" && (
+        <div>
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="text-left py-1 px-2 font-medium text-slate-600">Omschrijving</th>
+                <th className="text-right py-1 px-2 font-medium text-slate-600 w-12">Aantal</th>
+                <th className="text-left py-1 px-2 font-medium text-slate-600 w-12">Eenheid</th>
+                <th className="text-right py-1 px-2 font-medium text-slate-600 w-16">Prijs</th>
+                <th className="text-right py-1 px-2 font-medium text-slate-600 w-16">Totaal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {result.lines.map((line, i) => (
+                <tr key={i} className="border-b border-slate-100">
+                  <td className="py-1 px-2 text-slate-700">{line.description}</td>
+                  <td className="py-1 px-2 text-right text-slate-600">{line.quantity}</td>
+                  <td className="py-1 px-2 text-slate-600">{line.unit}</td>
+                  <td className="py-1 px-2 text-right text-slate-600">{formatCurrency(line.unit_price)}</td>
+                  <td className="py-1 px-2 text-right font-medium text-slate-800">
+                    {formatCurrency(Math.round(line.quantity * line.unit_price * 100) / 100)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {displayMode === "module" && (
+        <div>
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="text-left py-1 px-2 font-medium text-slate-600">Module</th>
+                <th className="text-right py-1 px-2 font-medium text-slate-600 w-20">Prijs</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categories.map((cat) => {
+                const catLines = result.lines.filter((l) => l.category === cat);
+                const base = catLines.reduce((s, l) => s + l.quantity * l.unit_price, 0);
+                const catTotal = Math.round(base * (1 + marginPct / 100) * 100) / 100;
+                return (
+                  <tr key={cat} className="border-b border-slate-100">
+                    <td className="py-1 px-2 text-slate-700">{cat}</td>
+                    <td className="py-1 px-2 text-right font-medium text-slate-800">{formatCurrency(catTotal)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* e. Totals */}
+      <div className="border-t border-slate-200 pt-2 space-y-1">
+        {displayMode !== "hoogover" && (
+          <>
+            <div className="flex justify-between text-slate-500">
+              <span>Materialen</span>
+              <span>{formatCurrency(t.subtotal_materials)}</span>
+            </div>
+            <div className="flex justify-between text-slate-500">
+              <span>Arbeid</span>
+              <span>{formatCurrency(t.subtotal_labor)}</span>
+            </div>
+          </>
+        )}
+        <div className="flex justify-between text-slate-600 font-medium">
+          <span>Totaal excl. BTW</span>
+          <span>{formatCurrency(t.total_excl_btw)}</span>
+        </div>
+        <div className="flex justify-between text-slate-500">
+          <span>BTW 21%</span>
+          <span>{formatCurrency(t.btw_amount)}</span>
+        </div>
+        <div className="flex justify-between font-bold text-sm text-slate-800 border-t border-slate-200 pt-1 mt-1">
+          <span>Totaal incl. BTW</span>
+          <span>{formatCurrency(t.total_incl_btw)}</span>
+        </div>
+      </div>
+
+      {/* f. Notes */}
+      {result.notes && (
+        <p className="italic text-slate-500 text-[11px]">{result.notes}</p>
+      )}
+    </div>
+  );
+}
+
 export default function NewQuotePageWrapper() {
   return (
     <Suspense
@@ -418,15 +622,46 @@ function NewQuotePage() {
   const supabase = createClient();
 
   const [marginPct, setMarginPct] = useState(15);
+  const [displayMode, setDisplayMode] = useState<"open" | "module" | "hoogover">("open");
+  const [activeTab, setActiveTab] = useState<"Bewerken" | "Preview">("Bewerken");
+  const [profile, setProfile] = useState<{
+    business_name: string | null;
+    logo_url: string | null;
+    business_address: string | null;
+    business_postal_code: string | null;
+    business_city: string | null;
+    business_phone: string | null;
+    business_email: string | null;
+    kvk_number: string | null;
+    btw_number: string | null;
+  } | null>(null);
 
-  // Load default language and margin from profile
+  // Load default language, margin, and profile from profiles table
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      supabase.from("profiles").select("default_language, margin_percentage").eq("id", user.id).single()
+      supabase
+        .from("profiles")
+        .select(
+          "default_language, margin_percentage, business_name, logo_url, business_address, business_postal_code, business_city, business_phone, business_email, kvk_number, btw_number, default_display_mode"
+        )
+        .eq("id", user.id)
+        .single()
         .then(({ data }) => {
           if (data?.default_language) setLanguage(data.default_language);
           if (data?.margin_percentage != null) setMarginPct(data.margin_percentage);
+          if (data?.default_display_mode) setDisplayMode(data.default_display_mode as "open" | "module" | "hoogover");
+          setProfile({
+            business_name: data?.business_name ?? null,
+            logo_url: data?.logo_url ?? null,
+            business_address: data?.business_address ?? null,
+            business_postal_code: data?.business_postal_code ?? null,
+            business_city: data?.business_city ?? null,
+            business_phone: data?.business_phone ?? null,
+            business_email: data?.business_email ?? null,
+            kvk_number: data?.kvk_number ?? null,
+            btw_number: data?.btw_number ?? null,
+          });
         });
     });
   }, [supabase]);
@@ -587,7 +822,7 @@ function NewQuotePage() {
       body: JSON.stringify({
         client_name: form.client_name,
         status: "draft",
-        json_data: { form, result, selectedModules, language },
+        json_data: { form, result, selectedModules, language, display_mode: displayMode },
         existing_project_id: existingProjectId,
       }),
     });
@@ -631,7 +866,7 @@ function NewQuotePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className={currentStep === 0 ? "max-w-3xl mx-auto" : "max-w-6xl mx-auto"}>
       {/* Header */}
       <div className="flex items-center gap-3 mb-6 md:mb-8">
         <button
@@ -948,10 +1183,33 @@ function NewQuotePage() {
 
           {/* ── STAP 2: Aanpassen ───────────────────────────────── */}
           {currentStep === 1 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold text-slate-800 mb-4">
-                Gegenereerde offerte
-              </h2>
+            <div>
+
+              {/* Mobile tabs */}
+              <div className="flex sm:hidden border-b border-slate-200 mb-4">
+                {(["Bewerken", "Preview"] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`flex-1 py-2 text-sm font-medium transition border-b-2 -mb-px ${
+                      activeTab === tab
+                        ? "border-brand-500 text-brand-600"
+                        : "border-transparent text-slate-500 hover:text-slate-700"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+
+              {/* Desktop: side by side. Mobile: one tab at a time */}
+              <div className="flex flex-col sm:flex-row gap-0 min-h-[600px]">
+
+                {/* LEFT: Edit panel */}
+                <div className={`sm:w-1/2 sm:border-r border-slate-200 sm:pr-6 space-y-4 ${activeTab !== "Bewerken" ? "hidden sm:block" : ""}`}>
+                  <h2 className="text-lg font-semibold text-slate-800">
+                    Gegenereerde offerte
+                  </h2>
 
               {/* Error state */}
               {hasError && (
@@ -1388,64 +1646,164 @@ function NewQuotePage() {
                   </button>
                 </div>
               )}
+                </div>{/* end left edit panel */}
+
+                {/* RIGHT: Preview panel */}
+                <div className={`sm:w-1/2 sm:pl-6 ${activeTab !== "Preview" ? "hidden sm:block" : ""}`}>
+                  {/* Style picker — sticky */}
+                  <div className="sticky top-0 z-10 bg-white pb-3 border-b border-slate-200 mb-4">
+                    <p className="text-xs text-slate-500 mb-2">Weergavestijl</p>
+                    <div className="flex gap-2">
+                      {[
+                        { key: "open", label: "Gedetailleerd" },
+                        { key: "module", label: "Per module" },
+                        { key: "hoogover", label: "Hoogover" },
+                      ].map(({ key, label }) => (
+                        <button
+                          key={key}
+                          onClick={() => setDisplayMode(key as "open" | "module" | "hoogover")}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                            displayMode === key
+                              ? "bg-brand-500 text-white border-brand-500"
+                              : "bg-white text-slate-600 border-slate-200 hover:border-brand-300"
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Live preview */}
+                  {hasQuote && (
+                    <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+                      <QuotePreviewPanel
+                        result={result}
+                        profile={profile}
+                        displayMode={displayMode}
+                        marginPct={marginPct}
+                        form={{
+                          client_name: form.client_name,
+                          client_email: form.client_email,
+                          project_title: form.project_title,
+                          project_location: form.project_location,
+                        }}
+                      />
+                    </div>
+                  )}
+                  {!hasQuote && (
+                    <div className="text-center py-12 text-slate-400 text-sm">
+                      Nog geen offerte om te previewen.
+                    </div>
+                  )}
+                </div>{/* end right preview panel */}
+
+              </div>{/* end flex row */}
             </div>
           )}
 
           {/* ── STAP 3: Versturen ───────────────────────────────── */}
           {currentStep === 2 && (
-            <div className="space-y-6">
-              <h2 className="text-lg font-semibold text-slate-800">
-                Versturen
-              </h2>
+            <div className="flex flex-col sm:flex-row gap-0 min-h-[600px]">
 
-              {/* Summary card */}
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-5 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Klant</span>
-                  <span className="font-medium text-slate-800">{form.client_name || "—"}</span>
+              {/* LEFT: Send options */}
+              <div className="sm:w-1/2 sm:border-r border-slate-200 sm:pr-6 space-y-6">
+                <h2 className="text-xl font-bold text-slate-800">Offerte definitief</h2>
+
+                {/* Summary */}
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-5 space-y-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Klant</span>
+                    <span className="font-medium text-slate-800">{form.client_name || "—"}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">Project</span>
+                    <span className="font-medium text-slate-800">{form.project_title || "—"}</span>
+                  </div>
+                  {totals && (
+                    <div className="border-t border-slate-200 pt-3 flex justify-between">
+                      <span className="text-slate-500 text-sm flex items-center gap-1.5">
+                        <Euro className="w-4 h-4 text-green-600" /> Totaal incl. BTW
+                      </span>
+                      <span className="text-lg font-bold text-green-700">
+                        {formatCurrency(totals.total_incl_btw)}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-500">Project</span>
-                  <span className="font-medium text-slate-800">{form.project_title || "—"}</span>
+
+                {/* Style picker */}
+                <div>
+                  <p className="text-xs text-slate-500 mb-2">Weergavestijl</p>
+                  <div className="flex gap-2">
+                    {[
+                      { key: "open", label: "Gedetailleerd" },
+                      { key: "module", label: "Per module" },
+                      { key: "hoogover", label: "Hoogover" },
+                    ].map(({ key, label }) => (
+                      <button
+                        key={key}
+                        onClick={() => setDisplayMode(key as "open" | "module" | "hoogover")}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
+                          displayMode === key
+                            ? "bg-brand-500 text-white border-brand-500"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-brand-300"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                {totals && (
-                  <div className="border-t border-slate-200 pt-3 flex justify-between">
-                    <span className="text-slate-500 text-sm flex items-center gap-1.5">
-                      <Euro className="w-4 h-4 text-green-600" /> Totaal incl. BTW
-                    </span>
-                    <span className="text-lg font-bold text-green-700">
-                      {formatCurrency(totals.total_incl_btw)}
-                    </span>
+
+                {/* Action buttons */}
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={handleSaveQuote}
+                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-3 rounded-lg transition text-sm md:text-base"
+                  >
+                    <Send className="w-4 h-4" />
+                    Opslaan &amp; naar project →
+                  </button>
+                  <button
+                    onClick={handleSaveDraft}
+                    className="flex items-center justify-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 font-medium px-4 py-3 rounded-lg transition text-sm md:text-base border border-slate-200"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Opslaan als concept
+                  </button>
+                </div>
+
+                {/* Back link */}
+                <button
+                  onClick={() => setCurrentStep(1)}
+                  className="flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm transition"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Terug naar aanpassen
+                </button>
+              </div>
+
+              {/* RIGHT: Final preview */}
+              <div className="sm:w-1/2 sm:pl-6 mt-6 sm:mt-0">
+                {hasQuote && (
+                  <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm">
+                    <QuotePreviewPanel
+                      result={result}
+                      profile={profile}
+                      displayMode={displayMode}
+                      marginPct={marginPct}
+                      form={{
+                        client_name: form.client_name,
+                        client_email: form.client_email,
+                        project_title: form.project_title,
+                        project_location: form.project_location,
+                      }}
+                    />
                   </div>
                 )}
               </div>
 
-              {/* Action buttons */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={handleSaveQuote}
-                  className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-3 rounded-lg transition text-sm md:text-base"
-                >
-                  <Send className="w-4 h-4" />
-                  Opslaan &amp; naar project →
-                </button>
-                <button
-                  onClick={handleSaveDraft}
-                  className="flex items-center justify-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 font-medium px-4 py-3 rounded-lg transition text-sm md:text-base border border-slate-200"
-                >
-                  <FileText className="w-4 h-4" />
-                  Opslaan als concept
-                </button>
-              </div>
-
-              {/* Back button */}
-              <button
-                onClick={() => setCurrentStep(1)}
-                className="flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm transition"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Terug naar aanpassen
-              </button>
             </div>
           )}
         </div>
