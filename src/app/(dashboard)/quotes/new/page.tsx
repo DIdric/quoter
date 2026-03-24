@@ -24,6 +24,8 @@ import {
   BrickWall,
   AlertTriangle,
   Send,
+  Trash2,
+  Plus,
 } from "lucide-react";
 import { VoiceInput } from "@/components/voice-input";
 import { CONSTRUCTION_MODULES, type ConstructionModule } from "@/lib/construction-modules";
@@ -415,13 +417,16 @@ function NewQuotePage() {
   const searchParams = useSearchParams();
   const supabase = createClient();
 
-  // Load default language from profile
+  const [marginPct, setMarginPct] = useState(15);
+
+  // Load default language and margin from profile
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      supabase.from("profiles").select("default_language").eq("id", user.id).single()
+      supabase.from("profiles").select("default_language, margin_percentage").eq("id", user.id).single()
         .then(({ data }) => {
           if (data?.default_language) setLanguage(data.default_language);
+          if (data?.margin_percentage != null) setMarginPct(data.margin_percentage);
         });
     });
   }, [supabase]);
@@ -614,7 +619,7 @@ function NewQuotePage() {
   const hasQuote = result && result.lines && !hasError;
 
   // Totals for Versturen summary
-  const totals = hasQuote ? recalcTotalsFromLines(result.lines, 15) : null;
+  const totals = hasQuote ? recalcTotalsFromLines(result.lines, marginPct) : null;
 
   if (loadingProject) {
     return (
@@ -971,9 +976,388 @@ function NewQuotePage() {
 
               {/* Success state */}
               {hasQuote && (
-                <div>
-                  <QuoteDisplay quote={result} />
-                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-6 pt-4 border-t border-slate-200">
+                <div className="space-y-6">
+
+                  {/* Header card */}
+                  <div className="bg-brand-50 border border-brand-200 rounded-lg p-4">
+                    <h3 className="text-lg font-bold text-slate-800">{result.quote_title}</h3>
+                    <p className="text-sm text-slate-600 mt-1">{result.summary}</p>
+                    {result.estimated_days > 0 && (
+                      <div className="flex items-center gap-1.5 mt-2 text-sm text-brand-700">
+                        <Clock className="w-4 h-4" />
+                        Geschatte doorlooptijd: {result.estimated_days} werkdag{result.estimated_days !== 1 ? "en" : ""}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Validation warnings */}
+                  {result.validation_warnings && result.validation_warnings.length > 0 && (
+                    <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-semibold text-amber-800 text-sm mb-1">
+                            Let op: niet alle werkzaamheden hebben een prijsregel
+                          </p>
+                          <ul className="space-y-0.5">
+                            {result.validation_warnings.map((w, i) => (
+                              <li key={i} className="text-sm text-amber-700">• {w}</li>
+                            ))}
+                          </ul>
+                          <p className="text-xs text-amber-600 mt-2">
+                            Je kunt de offerte alsnog opslaan. Controleer of de ontbrekende posten verwerkt zijn in andere categorieën.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Editable Module Descriptions ── */}
+                  {result.modules && result.modules.length > 0 && (
+                    <div className="border border-slate-200 rounded-lg overflow-hidden">
+                      <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                        <h3 className="font-semibold text-slate-800 text-sm">Technische omschrijving</h3>
+                      </div>
+                      <div className="p-4 space-y-5">
+                        {result.modules.map((mod, modIdx) => (
+                          <div key={modIdx}>
+                            <h4 className="font-medium text-slate-700 mb-2 text-sm">{mod.name}</h4>
+                            <div className="space-y-1.5">
+                              {mod.items.map((item, itemIdx) => (
+                                <div key={itemIdx} className="flex items-center gap-2">
+                                  <input
+                                    type="text"
+                                    value={item}
+                                    onChange={(e) => {
+                                      const updatedModules = result.modules!.map((m, mi) =>
+                                        mi !== modIdx ? m : {
+                                          ...m,
+                                          items: m.items.map((it, ii) => ii === itemIdx ? e.target.value : it),
+                                        }
+                                      );
+                                      setResult((prev) => prev ? { ...prev, modules: updatedModules } : prev);
+                                    }}
+                                    className="flex-1 px-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updatedModules = result.modules!.map((m, mi) =>
+                                        mi !== modIdx ? m : {
+                                          ...m,
+                                          items: m.items.filter((_, ii) => ii !== itemIdx),
+                                        }
+                                      );
+                                      setResult((prev) => prev ? { ...prev, modules: updatedModules } : prev);
+                                    }}
+                                    className="p-1.5 text-slate-400 hover:text-red-500 transition shrink-0"
+                                    title="Verwijder regel"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updatedModules = result.modules!.map((m, mi) =>
+                                    mi !== modIdx ? m : { ...m, items: [...m.items, ""] }
+                                  );
+                                  setResult((prev) => prev ? { ...prev, modules: updatedModules } : prev);
+                                }}
+                                className="flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 font-medium mt-1 transition"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                Regel toevoegen
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Editable Price Lines ── */}
+                  {(() => {
+                    const categories = [...new Set(result.lines.map((l) => l.category))];
+                    return (
+                      <div className="border border-slate-200 rounded-lg overflow-hidden">
+                        <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
+                          <h3 className="font-semibold text-slate-800 text-sm">Prijsoverzicht</h3>
+                        </div>
+                        <div className="p-4 space-y-6">
+                          {categories.map((category) => {
+                            const catLines = result.lines
+                              .map((l, globalIdx) => ({ ...l, globalIdx }))
+                              .filter((l) => l.category === category);
+                            return (
+                              <div key={category}>
+                                <h4 className="font-medium text-slate-700 mb-2 text-sm flex items-center gap-2">
+                                  {catLines[0]?.type === "materiaal"
+                                    ? <Package className="w-4 h-4 text-blue-500" />
+                                    : <Wrench className="w-4 h-4 text-brand-500" />}
+                                  {category}
+                                </h4>
+                                <div className="space-y-2">
+                                  {/* Column headers — hidden on mobile */}
+                                  <div className="hidden sm:grid sm:grid-cols-[1fr_auto_80px_70px_90px_90px_32px] gap-2 px-1">
+                                    <span className="text-xs text-slate-400 font-medium">Omschrijving</span>
+                                    <span className="text-xs text-slate-400 font-medium">Type</span>
+                                    <span className="text-xs text-slate-400 font-medium text-right">Aantal</span>
+                                    <span className="text-xs text-slate-400 font-medium">Eenheid</span>
+                                    <span className="text-xs text-slate-400 font-medium text-right">Stukprijs</span>
+                                    <span className="text-xs text-slate-400 font-medium text-right">Totaal</span>
+                                    <span />
+                                  </div>
+                                  {catLines.map(({ globalIdx, ...line }) => {
+                                    const needsAttention = line.unit_price === 0;
+                                    return (
+                                      <div
+                                        key={globalIdx}
+                                        className={`rounded-lg bg-white overflow-x-auto ${needsAttention ? "border border-slate-200 border-l-4 border-l-orange-400" : "border border-slate-200"}`}
+                                      >
+                                        {/* Desktop: grid row */}
+                                        <div className="hidden sm:grid sm:grid-cols-[1fr_auto_80px_70px_90px_90px_32px] gap-2 items-center p-2">
+                                          <input
+                                            type="text"
+                                            value={line.description}
+                                            onChange={(e) => {
+                                              const updatedLines = result.lines.map((l, i) =>
+                                                i !== globalIdx ? l : { ...l, description: e.target.value }
+                                              );
+                                              setResult((prev) => prev ? { ...prev, lines: updatedLines } : prev);
+                                            }}
+                                            className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                                          />
+                                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${
+                                            line.type === "materiaal"
+                                              ? "bg-blue-100 text-blue-700"
+                                              : "bg-brand-100 text-brand-700"
+                                          }`}>
+                                            {line.type === "materiaal" ? "Materiaal" : "Arbeid"}
+                                          </span>
+                                          <input
+                                            type="number"
+                                            value={line.quantity}
+                                            min={0}
+                                            step="any"
+                                            onChange={(e) => {
+                                              const qty = parseFloat(e.target.value) || 0;
+                                              const updatedLines = result.lines.map((l, i) =>
+                                                i !== globalIdx ? l : { ...l, quantity: qty, total: Math.round(qty * l.unit_price * 100) / 100 }
+                                              );
+                                              setResult((prev) => prev ? { ...prev, lines: updatedLines, ...recalcTotalsFromLines(updatedLines, marginPct) } : prev);
+                                            }}
+                                            className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none text-right text-slate-800"
+                                          />
+                                          <input
+                                            type="text"
+                                            value={line.unit}
+                                            onChange={(e) => {
+                                              const updatedLines = result.lines.map((l, i) =>
+                                                i !== globalIdx ? l : { ...l, unit: e.target.value }
+                                              );
+                                              setResult((prev) => prev ? { ...prev, lines: updatedLines } : prev);
+                                            }}
+                                            className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                                          />
+                                          <input
+                                            type="number"
+                                            value={line.unit_price}
+                                            min={0}
+                                            step="any"
+                                            onChange={(e) => {
+                                              const price = parseFloat(e.target.value) || 0;
+                                              const updatedLines = result.lines.map((l, i) =>
+                                                i !== globalIdx ? l : { ...l, unit_price: price, total: Math.round(l.quantity * price * 100) / 100 }
+                                              );
+                                              setResult((prev) => prev ? { ...prev, lines: updatedLines, ...recalcTotalsFromLines(updatedLines, marginPct) } : prev);
+                                            }}
+                                            className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none text-right text-slate-800"
+                                          />
+                                          <span className="text-sm font-medium text-slate-800 text-right pr-1 whitespace-nowrap">
+                                            {formatCurrency(Math.round(line.quantity * line.unit_price * 100) / 100)}
+                                          </span>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              const updatedLines = result.lines.filter((_, i) => i !== globalIdx);
+                                              setResult((prev) => prev ? { ...prev, lines: updatedLines, ...recalcTotalsFromLines(updatedLines, marginPct) } : prev);
+                                            }}
+                                            className="p-1 text-slate-400 hover:text-red-500 transition"
+                                            title="Verwijder regel"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </button>
+                                        </div>
+
+                                        {/* Mobile: stacked layout */}
+                                        <div className="sm:hidden p-3 space-y-2">
+                                          <div className="flex items-center gap-2">
+                                            <input
+                                              type="text"
+                                              value={line.description}
+                                              onChange={(e) => {
+                                                const updatedLines = result.lines.map((l, i) =>
+                                                  i !== globalIdx ? l : { ...l, description: e.target.value }
+                                                );
+                                                setResult((prev) => prev ? { ...prev, lines: updatedLines } : prev);
+                                              }}
+                                              className="flex-1 px-2 py-1.5 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 outline-none text-slate-800"
+                                              placeholder="Omschrijving"
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const updatedLines = result.lines.filter((_, i) => i !== globalIdx);
+                                                setResult((prev) => prev ? { ...prev, lines: updatedLines, ...recalcTotalsFromLines(updatedLines, marginPct) } : prev);
+                                              }}
+                                              className="p-1.5 text-slate-400 hover:text-red-500 transition shrink-0"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          </div>
+                                          <div className="grid grid-cols-3 gap-2">
+                                            <div>
+                                              <label className="text-xs text-slate-400">Aantal</label>
+                                              <input
+                                                type="number"
+                                                value={line.quantity}
+                                                min={0}
+                                                step="any"
+                                                onChange={(e) => {
+                                                  const qty = parseFloat(e.target.value) || 0;
+                                                  const updatedLines = result.lines.map((l, i) =>
+                                                    i !== globalIdx ? l : { ...l, quantity: qty, total: Math.round(qty * l.unit_price * 100) / 100 }
+                                                  );
+                                                  setResult((prev) => prev ? { ...prev, lines: updatedLines, ...recalcTotalsFromLines(updatedLines, marginPct) } : prev);
+                                                }}
+                                                className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 outline-none text-right text-slate-800"
+                                              />
+                                            </div>
+                                            <div>
+                                              <label className="text-xs text-slate-400">Eenheid</label>
+                                              <input
+                                                type="text"
+                                                value={line.unit}
+                                                onChange={(e) => {
+                                                  const updatedLines = result.lines.map((l, i) =>
+                                                    i !== globalIdx ? l : { ...l, unit: e.target.value }
+                                                  );
+                                                  setResult((prev) => prev ? { ...prev, lines: updatedLines } : prev);
+                                                }}
+                                                className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 outline-none text-slate-800"
+                                              />
+                                            </div>
+                                            <div>
+                                              <label className="text-xs text-slate-400">Stukprijs</label>
+                                              <input
+                                                type="number"
+                                                value={line.unit_price}
+                                                min={0}
+                                                step="any"
+                                                onChange={(e) => {
+                                                  const price = parseFloat(e.target.value) || 0;
+                                                  const updatedLines = result.lines.map((l, i) =>
+                                                    i !== globalIdx ? l : { ...l, unit_price: price, total: Math.round(l.quantity * price * 100) / 100 }
+                                                  );
+                                                  setResult((prev) => prev ? { ...prev, lines: updatedLines, ...recalcTotalsFromLines(updatedLines, marginPct) } : prev);
+                                                }}
+                                                className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 outline-none text-right text-slate-800"
+                                              />
+                                            </div>
+                                          </div>
+                                          <div className="flex justify-between items-center text-sm">
+                                            <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                                              line.type === "materiaal" ? "bg-blue-100 text-blue-700" : "bg-brand-100 text-brand-700"
+                                            }`}>
+                                              {line.type === "materiaal" ? "Materiaal" : "Arbeid"}
+                                            </span>
+                                            <span className="font-medium text-slate-800">
+                                              {formatCurrency(Math.round(line.quantity * line.unit_price * 100) / 100)}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const defaultType = catLines[0]?.type ?? "arbeid";
+                                      const newLine: QuoteLine = {
+                                        category,
+                                        description: "",
+                                        type: defaultType,
+                                        quantity: 1,
+                                        unit: defaultType === "arbeid" ? "uur" : "st",
+                                        unit_price: 0,
+                                        total: 0,
+                                      };
+                                      const updatedLines = [...result.lines, newLine];
+                                      setResult((prev) => prev ? { ...prev, lines: updatedLines, ...recalcTotalsFromLines(updatedLines, marginPct) } : prev);
+                                    }}
+                                    className="flex items-center gap-1.5 text-xs text-brand-600 hover:text-brand-700 font-medium transition mt-1"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    Regel toevoegen
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Totals block */}
+                  {(() => {
+                    const t = recalcTotalsFromLines(result.lines, marginPct);
+                    return (
+                      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2">
+                        <div className="flex justify-between text-sm text-slate-600">
+                          <span className="flex items-center gap-1.5">
+                            <Package className="w-4 h-4 text-blue-500" /> Materialen
+                          </span>
+                          <span>{formatCurrency(t.subtotal_materials)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-slate-600">
+                          <span className="flex items-center gap-1.5">
+                            <Wrench className="w-4 h-4 text-brand-500" /> Arbeid
+                          </span>
+                          <span>{formatCurrency(t.subtotal_labor)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-slate-600">
+                          <span>Winstmarge ({marginPct}%)</span>
+                          <span>{formatCurrency(t.margin_amount)}</span>
+                        </div>
+                        <div className="border-t border-slate-300 pt-2 flex justify-between text-sm font-medium text-slate-700">
+                          <span>Totaal excl. BTW</span>
+                          <span>{formatCurrency(t.total_excl_btw)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-slate-600">
+                          <span>BTW (21%)</span>
+                          <span>{formatCurrency(t.btw_amount)}</span>
+                        </div>
+                        <div className="border-t border-slate-300 pt-2 flex justify-between text-lg font-bold text-slate-800">
+                          <span className="flex items-center gap-1.5">
+                            <Euro className="w-5 h-5 text-green-600" /> Totaal incl. BTW
+                          </span>
+                          <span className="text-green-700">{formatCurrency(t.total_incl_btw)}</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Notes */}
+                  {result.notes && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+                      <strong>Opmerkingen:</strong> {result.notes}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-slate-200">
                     <button
                       onClick={() => setCurrentStep(2)}
                       className="flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold px-5 py-2.5 rounded-lg transition text-sm md:text-base"
