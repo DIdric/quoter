@@ -693,14 +693,28 @@ function NewQuotePage() {
             if (data.json_data?.selectedModules) {
               setSelectedModules(data.json_data.selectedModules);
             }
+            if (data.json_data?.result) {
+              setResult(data.json_data.result as QuoteResult);
+            }
+            if (data.json_data?.display_mode) {
+              setDisplayMode(data.json_data.display_mode as "open" | "module" | "hoogover");
+            }
+            if (data.json_data?.language) {
+              setLanguage(data.json_data.language as string);
+            }
           } else {
             setForm((prev) => ({
               ...prev,
               client_name: data.client_name || "",
             }));
           }
-          // Jump straight to Aanpassen (step 1) when loading an existing project
-          setCurrentStep(1);
+          // Jump to the right step based on URL param or status
+          const stepParam = searchParams.get("step");
+          if (stepParam !== null) {
+            setCurrentStep(parseInt(stepParam, 10));
+          } else {
+            setCurrentStep(data.status === "final" ? 2 : 1);
+          }
         }
         setLoadingProject(false);
       });

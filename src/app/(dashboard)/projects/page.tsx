@@ -117,10 +117,17 @@ export default function ProjectsPage() {
               const lang = quote.json_data?.language;
               const langFlag = lang && lang !== "nl" ? LANGUAGE_FLAGS[lang] : null;
 
+              const hasResult = !!quote.json_data?.result;
+              const targetHref = quote.status === "final"
+                ? `/quotes/new?project=${quote.id}&step=2`
+                : hasResult
+                ? `/quotes/new?project=${quote.id}&step=1`
+                : `/quotes/new?project=${quote.id}&step=0`;
+
               return (
                 <Link
                   key={quote.id}
-                  href={`/projects/${quote.id}`}
+                  href={targetHref}
                   className="px-4 py-3 md:px-6 md:py-4 flex items-center justify-between hover:bg-slate-50 transition block"
                 >
                   <div className="min-w-0 flex-1">
