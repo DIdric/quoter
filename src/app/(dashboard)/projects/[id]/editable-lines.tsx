@@ -279,7 +279,14 @@ export function EditableQuoteLines({
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {categoryLines.map((line) => (
-                    <tr key={line._index} className="hover:bg-slate-50">
+                    <tr
+                      key={line._index}
+                      className={
+                        line.unit_price === 0
+                          ? "bg-orange-50 hover:bg-orange-100 border-l-2 border-l-orange-400"
+                          : "hover:bg-slate-50"
+                      }
+                    >
                       <td className="px-3 py-2 text-slate-800">
                         {editing ? (
                           <div className="flex items-center gap-1">
