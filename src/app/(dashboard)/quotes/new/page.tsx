@@ -840,8 +840,7 @@ function NewQuotePage() {
         existing_project_id: existingProjectId,
       }),
     });
-    const data = await res.json();
-    router.push(existingProjectId ? `/projects/${existingProjectId}` : `/projects/${data.id}`);
+    router.push("/projects");
   }
 
   async function handleSaveDraft() {
@@ -855,8 +854,7 @@ function NewQuotePage() {
         existing_project_id: existingProjectId,
       }),
     });
-    const data = await res.json();
-    router.push(existingProjectId ? `/projects/${existingProjectId}` : `/projects/${data.id}`);
+    router.push("/projects");
   }
 
   function handleRegenerate() {
@@ -884,13 +882,7 @@ function NewQuotePage() {
       {/* Header */}
       <div className="flex items-center gap-3 mb-6 md:mb-8">
         <button
-          onClick={() =>
-            router.push(
-              existingProjectId
-                ? `/projects/${existingProjectId}`
-                : "/projects"
-            )
-          }
+          onClick={() => router.push("/projects")}
           className="p-2 rounded-lg hover:bg-slate-200 text-slate-600 transition shrink-0"
         >
           <ArrowLeft className="w-5 h-5" />
