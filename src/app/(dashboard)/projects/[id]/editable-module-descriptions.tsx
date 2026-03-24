@@ -2,12 +2,23 @@
 
 import { useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 import { X, Plus } from "lucide-react";
 
 interface QuoteModule {
   name: string;
   intro: string;
   items: string[];
+}
+
+interface QuoteLine {
+  category: string;
+  description: string;
+  type: "arbeid" | "materiaal";
+  quantity: number;
+  unit: string;
+  unit_price: number;
+  total: number;
 }
 
 export function EditableModuleDescriptions({
@@ -22,16 +33,21 @@ export function EditableModuleDescriptions({
   const [localModules, setLocalModules] = useState<QuoteModule[]>(modules);
   const [savingField, setSavingField] = useState<string | null>(null);
   const supabase = createClient();
+  const router = useRouter();
+
+  const readQuoteData = useCallback(async () => {
+    const { data: quote } = await supabase
+      .from("quotes")
+      .select("json_data")
+      .eq("id", quoteId)
+      .eq("user_id", userId)
+      .single();
+    return quote;
+  }, [quoteId, userId, supabase]);
 
   const saveModules = useCallback(
     async (updated: QuoteModule[]) => {
-      const { data: quote } = await supabase
-        .from("quotes")
-        .select("json_data")
-        .eq("id", quoteId)
-        .eq("user_id", userId)
-        .single();
-
+      const quote = await readQuoteData();
       if (!quote) return;
 
       const jsonData = (quote.json_data as Record<string, unknown>) || {};
@@ -45,7 +61,7 @@ export function EditableModuleDescriptions({
         .eq("id", quoteId)
         .eq("user_id", userId);
     },
-    [quoteId, userId, supabase]
+    [quoteId, userId, supabase, readQuoteData]
   );
 
   const updateIntro = (modIndex: number, value: string) => {
@@ -68,26 +84,91 @@ export function EditableModuleDescriptions({
 
   const removeItem = useCallback(
     async (modIndex: number, itemIndex: number) => {
-      const updated = localModules.map((m, i) => {
+      const moduleName = localModules[modIndex].name;
+      const removedText = localModules[modIndex].items[itemIndex];
+
+      const updatedModules = localModules.map((m, i) => {
         if (i !== modIndex) return m;
         return { ...m, items: m.items.filter((_, j) => j !== itemIndex) };
       });
-      setLocalModules(updated);
-      await saveModules(updated);
+      setLocalModules(updatedModules);
+
+      const quote = await readQuoteData();
+      if (!quote) return;
+
+      const jsonData = (quote.json_data as Record<string, unknown>) || {};
+      const result = (jsonData.result as Record<string, unknown>) || {};
+      const currentLines = (result.lines as QuoteLine[]) || [];
+
+      // Remove matching price line (exact description match, same category)
+      const updatedLines = removedText
+        ? currentLines.filter(
+            (l) => !(l.category === moduleName && l.description === removedText)
+          )
+        : currentLines;
+
+      await supabase
+        .from("quotes")
+        .update({
+          json_data: {
+            ...jsonData,
+            result: { ...result, modules: updatedModules, lines: updatedLines },
+          },
+        })
+        .eq("id", quoteId)
+        .eq("user_id", userId);
+
+      router.refresh();
     },
-    [localModules, saveModules]
+    [localModules, quoteId, userId, supabase, readQuoteData, router]
   );
 
   const addItem = useCallback(
     async (modIndex: number) => {
-      const updated = localModules.map((m, i) => {
+      const moduleName = localModules[modIndex].name;
+
+      const updatedModules = localModules.map((m, i) => {
         if (i !== modIndex) return m;
         return { ...m, items: [...m.items, ""] };
       });
-      setLocalModules(updated);
-      await saveModules(updated);
+      setLocalModules(updatedModules);
+
+      const quote = await readQuoteData();
+      if (!quote) return;
+
+      const jsonData = (quote.json_data as Record<string, unknown>) || {};
+      const result = (jsonData.result as Record<string, unknown>) || {};
+      const currentLines = (result.lines as QuoteLine[]) || [];
+
+      // Add matching empty price line in the same category
+      const newLine: QuoteLine = {
+        category: moduleName,
+        description: "",
+        type: "arbeid",
+        quantity: 1,
+        unit: "uur",
+        unit_price: 0,
+        total: 0,
+      };
+
+      await supabase
+        .from("quotes")
+        .update({
+          json_data: {
+            ...jsonData,
+            result: {
+              ...result,
+              modules: updatedModules,
+              lines: [...currentLines, newLine],
+            },
+          },
+        })
+        .eq("id", quoteId)
+        .eq("user_id", userId);
+
+      router.refresh();
     },
-    [localModules, saveModules]
+    [localModules, quoteId, userId, supabase, readQuoteData, router]
   );
 
   const handleIntroBlur = useCallback(
