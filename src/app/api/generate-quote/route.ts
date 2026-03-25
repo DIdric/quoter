@@ -165,6 +165,7 @@ export async function POST(request: Request) {
   const hourlyRate = profile?.hourly_rate ?? 45;
   const marginPct = profile?.margin_percentage ?? 15;
   const businessName = profile?.business_name ?? "Mijn Bedrijf";
+  const estimationStyle: string = profile?.estimation_style ?? "realistisch";
 
   const language: string = body.language || "nl";
   const languageNames: Record<string, string> = {
@@ -243,11 +244,18 @@ ${body.ai_input}${translationInstruction}`;
         const client = new Anthropic();
         let fullText = "";
 
+        const labourEstimationSection = `\n\n## LABOUR ESTIMATION STYLE\n${estimationStyle === "scherp"
+          ? "Estimate labour hours on the LOW end — tight, efficient, no slack. Assume an experienced crew with no surprises."
+          : estimationStyle === "ruim"
+          ? "Estimate labour hours on the HIGH end — include buffer time for unexpected issues, access difficulties, and cleanup. Better to overestimate than underestimate."
+          : "Estimate labour hours realistically — market-standard for a skilled tradesperson. Not too tight, not too generous."
+        }`;
+
         const streamResponse = client.messages.stream({
           model: "claude-sonnet-4-5-20250929",
           max_tokens: 8192,
           messages: [{ role: "user", content: userMessage }],
-          system: SYSTEM_PROMPT,
+          system: SYSTEM_PROMPT + labourEstimationSection,
         });
 
         // Send progress events as SSE

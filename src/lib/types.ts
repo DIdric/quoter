@@ -27,6 +27,7 @@ export interface Profile {
   quote_number_prefix: string | null;
   default_display_mode: DisplayMode;
   default_language?: Language;
+  estimation_style?: string;
   keurmerken: Keurmerk[];
   subscription_tier: "free" | "pro" | "business";
   stripe_customer_id: string | null;

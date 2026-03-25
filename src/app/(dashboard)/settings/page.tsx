@@ -245,6 +245,7 @@ export default function SettingsPage() {
         quote_number_prefix: profile.quote_number_prefix,
         default_display_mode: profile.default_display_mode,
         default_language: profile.default_language ?? "nl",
+        estimation_style: profile.estimation_style ?? "realistisch",
         keurmerken: keurmerken,
       })
       .eq("id", user.id);
@@ -583,6 +584,33 @@ export default function SettingsPage() {
                 >
                   <span>{lang.flag}</span>
                   <span>{lang.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Werkinschatting */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">Werkinschatting</label>
+            <p className="text-xs text-slate-500">Bepaalt hoe ruim de AI arbeidsuren inschat bij het genereren van offertes.</p>
+            <div className="flex gap-2">
+              {[
+                { key: "scherp", label: "Scherp", desc: "Minimale uren" },
+                { key: "realistisch", label: "Realistisch", desc: "Marktconform" },
+                { key: "ruim", label: "Ruim", desc: "Met buffer" },
+              ].map(({ key, label, desc }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setProfile(prev => ({ ...prev, estimation_style: key }))}
+                  className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition text-center ${
+                    (profile.estimation_style ?? "realistisch") === key
+                      ? "bg-brand-500 text-white border-brand-500"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-brand-300"
+                  }`}
+                >
+                  <div>{label}</div>
+                  <div className={`text-xs font-normal mt-0.5 ${(profile.estimation_style ?? "realistisch") === key ? "text-white/80" : "text-slate-400"}`}>{desc}</div>
                 </button>
               ))}
             </div>
