@@ -14,27 +14,26 @@ import {
 import type { DefaultMaterial } from "@/lib/types";
 
 const CATEGORIES = [
-  "Sanitair",
-  "Elektra",
-  "Verwarming",
-  "Bouw",
-  "Dakwerk",
-  "Isolatie",
-  "Gereedschap",
   "Bevestiging",
+  "Bouw",
   "Buizen & Fittingen",
-  "Verf & Afwerking",
+  "Elektra",
+  "Isolatie & Afwerking",
   "Overig",
 ];
 
 const UNITS = ["stuk", "m", "m2", "m3", "kg", "liter", "doos", "zak", "rol", "set"];
 
+const PAGE_SIZE = 200;
+
 export default function AdminMaterialsPage() {
   const [materials, setMaterials] = useState<DefaultMaterial[]>([]);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [filterCategory, setFilterCategory] = useState("");
+  const [filterCategory, setFilterCategory] = useState("Bevestiging");
+  const [page, setPage] = useState(0);
   const [form, setForm] = useState({
     name: "",
     category: "Overig",
@@ -48,13 +47,25 @@ export default function AdminMaterialsPage() {
 
   useEffect(() => {
     loadMaterials();
-  }, []);
+  }, [filterCategory, page]);
 
   async function loadMaterials() {
-    const res = await fetch("/api/admin?action=default-materials");
+    setLoading(true);
+    const params = new URLSearchParams({
+      action: "default-materials",
+      page: String(page),
+    });
+    if (filterCategory) params.set("category", filterCategory);
+    const res = await fetch(`/api/admin?${params}`);
     const data = await res.json();
     setMaterials(data.materials ?? []);
+    setTotal(data.total ?? 0);
     setLoading(false);
+  }
+
+  function handleCategoryFilter(cat: string) {
+    setFilterCategory(cat);
+    setPage(0);
   }
 
   async function handleSave() {
@@ -76,7 +87,7 @@ export default function AdminMaterialsPage() {
 
     if (res.ok) {
       resetForm();
-      loadMaterials();
+      setPage(0);
     }
   }
 
@@ -87,7 +98,7 @@ export default function AdminMaterialsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "delete-material", id }),
     });
-    loadMaterials();
+    setPage(0);
   }
 
   function handleEdit(mat: DefaultMaterial) {
@@ -144,25 +155,13 @@ export default function AdminMaterialsPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  const filteredMaterials = filterCategory
-    ? materials.filter((m) => m.category === filterCategory)
-    : materials;
-
-  const categories = [...new Set(materials.map((m) => m.category))].sort();
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-      </div>
-    );
-  }
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-4 md:mb-6 gap-3 flex-wrap">
         <h1 className="text-xl md:text-2xl font-bold text-slate-800">
-          Standaard Materialen ({materials.length})
+          Standaard Materialen
         </h1>
         <div className="flex gap-2 md:gap-3">
           <label className="flex items-center gap-1.5 md:gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition cursor-pointer text-sm">
@@ -202,33 +201,21 @@ export default function AdminMaterialsPage() {
       </div>
 
       {/* Category filter */}
-      {categories.length > 1 && (
-        <div className="flex gap-2 mb-4 flex-wrap">
+      <div className="flex gap-2 mb-4 flex-wrap">
+        {CATEGORIES.map((cat) => (
           <button
-            onClick={() => setFilterCategory("")}
+            key={cat}
+            onClick={() => handleCategoryFilter(cat)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-              !filterCategory
+              filterCategory === cat
                 ? "bg-brand-500 text-white"
                 : "bg-white border border-slate-300 text-slate-600 hover:bg-slate-50"
             }`}
           >
-            Alles
+            {cat}
           </button>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setFilterCategory(cat)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                filterCategory === cat
-                  ? "bg-brand-500 text-white"
-                  : "bg-white border border-slate-300 text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
 
       {/* Add/Edit Form */}
       {showForm && (
@@ -334,9 +321,38 @@ export default function AdminMaterialsPage() {
         </div>
       )}
 
+      {/* Count + pagination */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm text-slate-500">
+          {loading ? "Laden..." : `${total.toLocaleString("nl-NL")} materialen${filterCategory ? ` in ${filterCategory}` : ""} — pagina ${page + 1} van ${Math.max(1, totalPages)}`}
+        </p>
+        {totalPages > 1 && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 transition"
+            >
+              ← Vorige
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page >= totalPages - 1}
+              className="px-3 py-1.5 text-sm rounded-lg border border-slate-300 bg-white hover:bg-slate-50 disabled:opacity-40 transition"
+            >
+              Volgende →
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Materials Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-        {filteredMaterials.length > 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+          </div>
+        ) : materials.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[650px]">
               <thead>
@@ -350,7 +366,7 @@ export default function AdminMaterialsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {filteredMaterials.map((mat) => (
+                {materials.map((mat) => (
                   <tr key={mat.id} className="hover:bg-slate-50 transition">
                     <td className="px-4 py-3 md:px-6 font-medium text-slate-800">
                       {mat.source_url ? (
