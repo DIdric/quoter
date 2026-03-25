@@ -591,9 +591,25 @@ function NewQuotePage() {
     setForm({ ...form, [field]: value });
   }
 
-  async function handlePhotoUpload(file: File) {
+  async function handlePhotoUpload(rawFile: File) {
     setPhotoUploading(true);
     setPhotoError(null);
+
+    // Convert HEIC/HEIF to JPEG in the browser before uploading
+    let file = rawFile;
+    if (rawFile.type === "image/heic" || rawFile.type === "image/heif" ||
+        rawFile.name.toLowerCase().endsWith(".heic") || rawFile.name.toLowerCase().endsWith(".heif")) {
+      try {
+        const heic2any = (await import("heic2any")).default;
+        const converted = await heic2any({ blob: rawFile, toType: "image/jpeg", quality: 0.85 });
+        const blob = Array.isArray(converted) ? converted[0] : converted;
+        file = new File([blob], rawFile.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
+      } catch {
+        setPhotoError("Kon de foto niet converteren. Probeer een JPEG of PNG.");
+        setPhotoUploading(false);
+        return;
+      }
+    }
 
     // Upload
     const formData = new FormData();
