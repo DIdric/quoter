@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { trackTokenUsage } from "@/lib/track-usage";
 
 const SYSTEM_PROMPT = `Je bent de Quoter-assistent. Quoter is een app waarmee aannemers en bouwers in Nederland snel professionele offertes genereren met behulp van AI.
 
@@ -92,7 +93,14 @@ export async function POST(request: Request) {
           );
         });
 
-        await streamResponse.finalMessage();
+        const finalMessage = await streamResponse.finalMessage();
+        await trackTokenUsage({
+          userId: user.id,
+          endpoint: "chat",
+          model: "claude-haiku-4-5-20251001",
+          inputTokens: finalMessage.usage.input_tokens,
+          outputTokens: finalMessage.usage.output_tokens,
+        });
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
         controller.close();
       } catch (error: unknown) {
