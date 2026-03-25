@@ -614,7 +614,7 @@ function NewQuotePage() {
     const analyzeRes = await fetch("/api/analyze-photo", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageUrl: uploadData.url }),
+      body: JSON.stringify({ imageUrl: uploadData.url, mimeType: file.type }),
     });
     const analyzeData = await analyzeRes.json();
 

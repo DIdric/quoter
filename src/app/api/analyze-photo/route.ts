@@ -2,7 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { trackTokenUsage } from "@/lib/track-usage";
 import { NextRequest, NextResponse } from "next/server";
-import sharp from "sharp";
+
+const SUPPORTED_TYPES: Record<string, "image/jpeg" | "image/png" | "image/gif" | "image/webp"> = {
+  "image/jpeg": "image/jpeg",
+  "image/jpg": "image/jpeg",
+  "image/png": "image/png",
+  "image/gif": "image/gif",
+  "image/webp": "image/webp",
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,19 +23,31 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { imageUrl } = body as { imageUrl: string };
+    const { imageUrl, mimeType } = body as { imageUrl: string; mimeType?: string };
 
     if (!imageUrl) {
       return NextResponse.json({ error: "Geen afbeeldingsURL opgegeven" }, { status: 400 });
     }
 
-    // Fetch image bytes and convert to JPEG (handles HEIC/HEIF from iPhone)
+    // Reject HEIC/HEIF upfront with helpful message
+    if (mimeType === "image/heic" || mimeType === "image/heif") {
+      return NextResponse.json(
+        {
+          error:
+            "HEIC-formaat wordt niet ondersteund. Zet je iPhone op JPEG via: Instellingen > Camera > Formaten > Meest compatibel",
+        },
+        { status: 415 }
+      );
+    }
+
+    // Fetch image and convert to base64
     const imageRes = await fetch(imageUrl);
+    const contentType = imageRes.headers.get("content-type") ?? mimeType ?? "image/jpeg";
+    const cleanType = contentType.split(";")[0].trim();
+    const supportedType = SUPPORTED_TYPES[cleanType] ?? "image/jpeg";
+
     const arrayBuffer = await imageRes.arrayBuffer();
-    const jpegBuffer = await sharp(Buffer.from(arrayBuffer))
-      .jpeg({ quality: 85 })
-      .toBuffer();
-    const base64Image = jpegBuffer.toString("base64");
+    const base64Image = Buffer.from(arrayBuffer).toString("base64");
 
     const client = new Anthropic();
     const response = await client.messages.create({
@@ -42,7 +61,7 @@ export async function POST(request: NextRequest) {
               type: "image",
               source: {
                 type: "base64",
-                media_type: "image/jpeg",
+                media_type: supportedType,
                 data: base64Image,
               },
             },
@@ -69,7 +88,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ description: responseText });
   } catch (err) {
-    console.error("[analyze-photo] Error:", err);
+    console.error("[analyze-photo] Error:", err instanceof Error ? err.message : err);
     return NextResponse.json(
       {
         error:
