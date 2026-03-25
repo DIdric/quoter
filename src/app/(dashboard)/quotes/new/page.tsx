@@ -75,6 +75,7 @@ interface QuoteModule {
 interface QuoteResult {
   quote_title: string;
   summary: string;
+  closing?: string;
   technical_description?: string;
   modules?: QuoteModule[];
   lines: QuoteLine[];
@@ -576,6 +577,11 @@ function QuotePreviewPanel({
           <span>{formatCurrency(t.total_incl_btw)}</span>
         </div>
       </div>
+
+      {/* closing */}
+      {result.closing && (
+        <p className="text-slate-700 mt-3">{result.closing}</p>
+      )}
 
       {/* f. Notes */}
       {result.notes && (
@@ -1703,6 +1709,18 @@ function NewQuotePage() {
                       </div>
                     );
                   })()}
+
+                  {/* Closing */}
+                  <div className="border border-slate-200 rounded-lg p-4 space-y-2">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Afsluiting</p>
+                    <textarea
+                      value={result.closing || ""}
+                      onChange={(e) => setResult(prev => prev ? { ...prev, closing: e.target.value } : prev)}
+                      rows={3}
+                      placeholder="Slottekst na de prijs..."
+                      className="w-full border border-slate-200 rounded-lg p-2 text-sm text-slate-700 resize-none focus:outline-none focus:ring-1 focus:ring-brand-400"
+                    />
+                  </div>
 
                   {/* Notes */}
                   {result.notes && (

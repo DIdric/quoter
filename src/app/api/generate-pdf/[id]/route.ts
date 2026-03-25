@@ -25,6 +25,7 @@ interface QuoteModuleDescription {
 interface QuoteResult {
   quote_title: string;
   summary: string;
+  closing?: string;
   technical_description?: string;
   modules?: QuoteModuleDescription[];
   lines: QuoteLine[];
@@ -590,6 +591,22 @@ export async function GET(
       align: "right",
     });
     y += 12;
+
+    // ============================================================
+    // CLOSING TEXT
+    // ============================================================
+    if (result.closing) {
+      if (y > 255) {
+        doc.addPage();
+        y = 20;
+      }
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(51, 65, 85);
+      const closingWrapped = doc.splitTextToSize(result.closing, pageWidth - margin * 2);
+      doc.text(closingWrapped, margin, y);
+      y += closingWrapped.length * 4 + 8;
+    }
 
     // ============================================================
     // NOTES
