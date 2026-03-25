@@ -30,6 +30,8 @@ import {
   Share2,
   Link as LinkIcon,
   CheckCircle,
+  Camera,
+  X,
 } from "lucide-react";
 import { VoiceInput } from "@/components/voice-input";
 import { CONSTRUCTION_MODULES, type ConstructionModule } from "@/lib/construction-modules";
@@ -450,6 +452,10 @@ function NewQuotePage() {
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [uploadedImagePath, setUploadedImagePath] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [profile, setProfile] = useState<{
     business_name: string | null;
     logo_url: string | null;
@@ -581,6 +587,50 @@ function NewQuotePage() {
 
   function updateForm(field: string, value: string) {
     setForm({ ...form, [field]: value });
+  }
+
+  async function handlePhotoUpload(file: File) {
+    setPhotoUploading(true);
+    setPhotoError(null);
+
+    // Upload
+    const formData = new FormData();
+    formData.append("file", file);
+    const uploadRes = await fetch("/api/upload-photo", { method: "POST", body: formData });
+    const uploadData = await uploadRes.json();
+
+    if (!uploadRes.ok) {
+      setPhotoError(uploadData.error || "Upload mislukt");
+      setPhotoUploading(false);
+      return;
+    }
+
+    setUploadedImageUrl(uploadData.url);
+    setUploadedImagePath(uploadData.path);
+
+    // Analyze
+    const analyzeRes = await fetch("/api/analyze-photo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageUrl: uploadData.url }),
+    });
+    const analyzeData = await analyzeRes.json();
+
+    if (!analyzeRes.ok) {
+      setPhotoError(analyzeData.error || "Analyse mislukt");
+      setPhotoUploading(false);
+      return;
+    }
+
+    // Append the analysis to the existing ai_input field
+    updateForm(
+      "ai_input",
+      form.ai_input
+        ? `${form.ai_input}\n\n[Foto-analyse]: ${analyzeData.description}`
+        : `[Foto-analyse]: ${analyzeData.description}`
+    );
+
+    setPhotoUploading(false);
   }
 
   function toggleModule(moduleId: string) {
@@ -940,6 +990,46 @@ function NewQuotePage() {
                       }
                     />
                   </div>
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    {/* Photo upload button */}
+                    <label className={`cursor-pointer flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium transition ${photoUploading ? "opacity-50 cursor-not-allowed" : "bg-white border-slate-200 text-slate-600 hover:border-brand-300"}`}>
+                      {photoUploading ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Foto analyseren...</>
+                      ) : (
+                        <><Camera className="w-4 h-4" /> Foto uploaden</>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/heic,image/heif"
+                        className="hidden"
+                        disabled={photoUploading}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handlePhotoUpload(file);
+                          e.target.value = ""; // reset so same file can be re-uploaded
+                        }}
+                      />
+                    </label>
+                  </div>
+                  {/* Thumbnail after successful upload */}
+                  {uploadedImageUrl && !photoUploading && (
+                    <div className="flex items-center gap-3 mt-2 p-2 bg-slate-50 rounded-lg border border-slate-200">
+                      <img src={uploadedImageUrl} alt="Geüploade foto" className="w-16 h-16 object-cover rounded" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-slate-600 font-medium">Foto geanalyseerd ✓</p>
+                        <p className="text-xs text-slate-400 truncate">Beschrijving toegevoegd aan invoerveld</p>
+                      </div>
+                      <button
+                        onClick={() => { setUploadedImageUrl(null); setUploadedImagePath(null); }}
+                        className="text-slate-400 hover:text-red-500 transition"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                  {photoError && (
+                    <p className="text-xs text-red-600 mt-1">{photoError}</p>
+                  )}
                   <p className="text-xs text-slate-400 mt-1">
                     Tip: Gebruik de microfoon om je opdracht in te spreken
                   </p>
