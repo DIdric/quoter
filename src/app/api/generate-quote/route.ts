@@ -73,7 +73,7 @@ Regels:
 - BTW is 21% over het totaal inclusief marge
 - Geef realistische schattingen - liever iets ruimer dan te krap
 - Als er bouwmodules zijn geselecteerd, gebruik de modulenamen als categorieën. Genereer 3-8 regels per module.
-- Wees beknopt in beschrijvingen
+- Elke regel MOET een specifieke, niet-lege description hebben. Bijvoorbeeld: "Waterleiding 15mm aanleggen", "Cementdekvloer 8cm storten", "Wandtegel 20x30cm mat wit", "Kozijn demonteren incl. afvoer". Nooit een lege string.
 - Genereer 3-5 relevante uitsluitingen voor dit projecttype. Gebruik vakjargon. Wees specifiek en concreet, niet generiek.
 - Geef alleen de JSON terug, geen andere tekst`;
 

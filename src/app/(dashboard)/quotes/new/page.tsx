@@ -1408,13 +1408,14 @@ function NewQuotePage() {
                                           <input
                                             type="text"
                                             value={line.description}
+                                            placeholder="Omschrijving"
                                             onChange={(e) => {
                                               const updatedLines = result.lines.map((l, i) =>
                                                 i !== globalIdx ? l : { ...l, description: e.target.value }
                                               );
                                               setResult((prev) => prev ? { ...prev, lines: updatedLines } : prev);
                                             }}
-                                            className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                                            className={`w-full px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800 ${!line.description ? "border-orange-300 bg-orange-50 placeholder-orange-400" : "border-slate-200"}`}
                                           />
                                           <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${
                                             line.type === "materiaal"
