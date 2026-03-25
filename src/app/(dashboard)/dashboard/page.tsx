@@ -103,8 +103,12 @@ export default async function DashboardPage({
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 mb-6">
           <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
           <div>
-            <p className="font-medium text-green-800">Welkom bij Pro! 🎉</p>
-            <p className="text-sm text-green-700">Je account is geüpgraded. Geniet van onbeperkte offertes.</p>
+            <p className="font-medium text-green-800">Welkom bij {tierLimits.label}! 🎉</p>
+            <p className="text-sm text-green-700">
+              {tierLimits.quotesPerMonth === -1
+                ? "Je hebt nu onbeperkte offertes."
+                : `Je hebt nu ${tierLimits.quotesPerMonth} offertes per maand.`}
+            </p>
           </div>
         </div>
       )}
