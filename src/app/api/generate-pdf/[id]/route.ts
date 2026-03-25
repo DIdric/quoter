@@ -368,6 +368,16 @@ export async function GET(
     doc.text(introWrapped, margin, y);
     y += introWrapped.length * 4 + 8;
 
+    // -- Project introduction (summary) --
+    if (result.summary) {
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(71, 85, 105);
+      const summaryWrapped = doc.splitTextToSize(result.summary, pageWidth - margin * 2);
+      doc.text(summaryWrapped, margin, y);
+      y += summaryWrapped.length * 4 + 8;
+    }
+
     // ============================================================
     // MODULE DESCRIPTIONS (all modes; hoogover skips bullet items)
     // ============================================================

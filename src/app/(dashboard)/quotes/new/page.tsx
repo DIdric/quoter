@@ -462,6 +462,13 @@ function QuotePreviewPanel({
         )}
       </div>
 
+      {/* Projectintroductie */}
+      {result.summary && (
+        <div>
+          <p className="text-slate-700 italic">{result.summary}</p>
+        </div>
+      )}
+
       {/* c. Technical description */}
       {result.modules && result.modules.length > 0 && (
         <div>
@@ -1322,7 +1329,13 @@ function NewQuotePage() {
                   {/* Header card */}
                   <div className="bg-brand-50 border border-brand-200 rounded-lg p-4">
                     <h3 className="text-lg font-bold text-slate-800">{result.quote_title}</h3>
-                    <p className="text-sm text-slate-600 mt-1">{result.summary}</p>
+                    <label className="block text-xs font-medium text-green-700 mt-2 mb-1">Projectintroductie</label>
+                    <textarea
+                      value={result.summary}
+                      onChange={(e) => setResult(prev => prev ? { ...prev, summary: e.target.value } : prev)}
+                      rows={3}
+                      className="w-full border border-green-200 rounded-lg p-2 text-sm text-slate-700 bg-green-50 resize-none focus:outline-none focus:ring-1 focus:ring-green-400"
+                    />
                     {result.estimated_days > 0 && (
                       <div className="flex items-center gap-1.5 mt-2 text-sm text-brand-700">
                         <Clock className="w-4 h-4" />
