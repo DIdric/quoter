@@ -1386,101 +1386,15 @@ function NewQuotePage() {
                                   {category}
                                 </h4>
                                 <div className="space-y-2">
-                                  {/* Column headers — hidden on mobile */}
-                                  <div className="hidden sm:grid sm:grid-cols-[minmax(120px,2fr)_auto_60px_60px_75px_75px_28px] gap-2 px-1">
-                                    <span className="text-xs text-slate-400 font-medium">Omschrijving</span>
-                                    <span className="text-xs text-slate-400 font-medium">Type</span>
-                                    <span className="text-xs text-slate-400 font-medium text-right">Aantal</span>
-                                    <span className="text-xs text-slate-400 font-medium">Eenheid</span>
-                                    <span className="text-xs text-slate-400 font-medium text-right">Stukprijs</span>
-                                    <span className="text-xs text-slate-400 font-medium text-right">Totaal</span>
-                                    <span />
-                                  </div>
                                   {catLines.map(({ globalIdx, ...line }) => {
                                     const needsAttention = line.unit_price === 0;
                                     return (
                                       <div
                                         key={globalIdx}
-                                        className={`rounded-lg bg-white overflow-x-auto ${needsAttention ? "border border-slate-200 border-l-4 border-l-orange-400" : "border border-slate-200"}`}
+                                        className={`rounded-lg bg-white ${needsAttention ? "border border-slate-200 border-l-4 border-l-orange-400" : "border border-slate-200"}`}
                                       >
-                                        {/* Desktop: grid row */}
-                                        <div className="hidden sm:grid sm:grid-cols-[minmax(120px,2fr)_auto_60px_60px_75px_75px_28px] gap-2 items-center p-2">
-                                          <input
-                                            type="text"
-                                            value={line.description}
-                                            placeholder="Omschrijving"
-                                            onChange={(e) => {
-                                              const updatedLines = result.lines.map((l, i) =>
-                                                i !== globalIdx ? l : { ...l, description: e.target.value }
-                                              );
-                                              setResult((prev) => prev ? { ...prev, lines: updatedLines } : prev);
-                                            }}
-                                            className={`w-full px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800 ${!line.description ? "border-orange-300 bg-orange-50 placeholder-orange-400" : "border-slate-200"}`}
-                                          />
-                                          <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${
-                                            line.type === "materiaal"
-                                              ? "bg-blue-100 text-blue-700"
-                                              : "bg-brand-100 text-brand-700"
-                                          }`}>
-                                            {line.type === "materiaal" ? "Materiaal" : "Arbeid"}
-                                          </span>
-                                          <input
-                                            type="number"
-                                            value={line.quantity}
-                                            min={0}
-                                            step="any"
-                                            onChange={(e) => {
-                                              const qty = parseFloat(e.target.value) || 0;
-                                              const updatedLines = result.lines.map((l, i) =>
-                                                i !== globalIdx ? l : { ...l, quantity: qty, total: Math.round(qty * l.unit_price * 100) / 100 }
-                                              );
-                                              setResult((prev) => prev ? { ...prev, lines: updatedLines, ...recalcTotalsFromLines(updatedLines, marginPct) } : prev);
-                                            }}
-                                            className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none text-right text-slate-800"
-                                          />
-                                          <input
-                                            type="text"
-                                            value={line.unit}
-                                            onChange={(e) => {
-                                              const updatedLines = result.lines.map((l, i) =>
-                                                i !== globalIdx ? l : { ...l, unit: e.target.value }
-                                              );
-                                              setResult((prev) => prev ? { ...prev, lines: updatedLines } : prev);
-                                            }}
-                                            className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
-                                          />
-                                          <input
-                                            type="number"
-                                            value={line.unit_price}
-                                            min={0}
-                                            step="any"
-                                            onChange={(e) => {
-                                              const price = parseFloat(e.target.value) || 0;
-                                              const updatedLines = result.lines.map((l, i) =>
-                                                i !== globalIdx ? l : { ...l, unit_price: price, total: Math.round(l.quantity * price * 100) / 100 }
-                                              );
-                                              setResult((prev) => prev ? { ...prev, lines: updatedLines, ...recalcTotalsFromLines(updatedLines, marginPct) } : prev);
-                                            }}
-                                            className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none text-right text-slate-800"
-                                          />
-                                          <span className="text-sm font-medium text-slate-800 text-right pr-1 whitespace-nowrap">
-                                            {formatCurrency(Math.round(line.quantity * line.unit_price * 100) / 100)}
-                                          </span>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              const updatedLines = result.lines.filter((_, i) => i !== globalIdx);
-                                              setResult((prev) => prev ? { ...prev, lines: updatedLines, ...recalcTotalsFromLines(updatedLines, marginPct) } : prev);
-                                            }}
-                                            className="p-1 text-slate-400 hover:text-red-500 transition"
-                                            title="Verwijder regel"
-                                          >
-                                            <Trash2 className="w-4 h-4" />
-                                          </button>
-                                        </div>
-
-                                        {/* Mobile: stacked layout */}
-                                        <div className="sm:hidden p-3 space-y-2">
+                                        {/* 2-regel layout — werkt op alle schermbreedtes */}
+                                        <div className="p-3 space-y-2">
                                           <div className="flex items-center gap-2">
                                             <input
                                               type="text"
@@ -1505,7 +1419,7 @@ function NewQuotePage() {
                                               <Trash2 className="w-4 h-4" />
                                             </button>
                                           </div>
-                                          <div className="grid grid-cols-3 gap-2">
+                                          <div className="grid grid-cols-4 gap-2">
                                             <div>
                                               <label className="text-xs text-slate-400">Aantal</label>
                                               <input
@@ -1554,16 +1468,16 @@ function NewQuotePage() {
                                                 className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 outline-none text-right text-slate-800"
                                               />
                                             </div>
-                                          </div>
-                                          <div className="flex justify-between items-center text-sm">
-                                            <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                                              line.type === "materiaal" ? "bg-blue-100 text-blue-700" : "bg-brand-100 text-brand-700"
-                                            }`}>
-                                              {line.type === "materiaal" ? "Materiaal" : "Arbeid"}
-                                            </span>
-                                            <span className="font-medium text-slate-800">
-                                              {formatCurrency(Math.round(line.quantity * line.unit_price * 100) / 100)}
-                                            </span>
+                                            <div className="flex flex-col justify-between">
+                                              <span className={`self-start inline-block px-2 py-0.5 rounded text-xs font-medium ${
+                                                line.type === "materiaal" ? "bg-blue-100 text-blue-700" : "bg-brand-100 text-brand-700"
+                                              }`}>
+                                                {line.type === "materiaal" ? "Materiaal" : "Arbeid"}
+                                              </span>
+                                              <span className="text-sm font-semibold text-slate-800 text-right">
+                                                {formatCurrency(Math.round(line.quantity * line.unit_price * 100) / 100)}
+                                              </span>
+                                            </div>
                                           </div>
                                         </div>
                                       </div>
