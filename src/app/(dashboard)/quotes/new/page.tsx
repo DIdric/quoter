@@ -1387,7 +1387,7 @@ function NewQuotePage() {
                                 </h4>
                                 <div className="space-y-2">
                                   {/* Column headers — hidden on mobile */}
-                                  <div className="hidden sm:grid sm:grid-cols-[1fr_auto_80px_70px_90px_90px_32px] gap-2 px-1">
+                                  <div className="hidden sm:grid sm:grid-cols-[minmax(120px,2fr)_auto_60px_60px_75px_75px_28px] gap-2 px-1">
                                     <span className="text-xs text-slate-400 font-medium">Omschrijving</span>
                                     <span className="text-xs text-slate-400 font-medium">Type</span>
                                     <span className="text-xs text-slate-400 font-medium text-right">Aantal</span>
@@ -1404,7 +1404,7 @@ function NewQuotePage() {
                                         className={`rounded-lg bg-white overflow-x-auto ${needsAttention ? "border border-slate-200 border-l-4 border-l-orange-400" : "border border-slate-200"}`}
                                       >
                                         {/* Desktop: grid row */}
-                                        <div className="hidden sm:grid sm:grid-cols-[1fr_auto_80px_70px_90px_90px_32px] gap-2 items-center p-2">
+                                        <div className="hidden sm:grid sm:grid-cols-[minmax(120px,2fr)_auto_60px_60px_75px_75px_28px] gap-2 items-center p-2">
                                           <input
                                             type="text"
                                             value={line.description}
