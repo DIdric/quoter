@@ -62,9 +62,10 @@ export async function POST(request: Request) {
   const session = await getStripe().checkout.sessions.create({
     customer: customerId,
     mode: "subscription",
+    payment_method_types: ["card", "ideal"],
     line_items: [{ price: plan.priceId, quantity: 1 }],
-    success_url: `${origin}/settings?checkout=success`,
-    cancel_url: `${origin}/settings?checkout=cancelled`,
+    success_url: `${origin}/dashboard?checkout=success`,
+    cancel_url: `${origin}/upgrade`,
     subscription_data: {
       metadata: {
         supabase_user_id: user.id,

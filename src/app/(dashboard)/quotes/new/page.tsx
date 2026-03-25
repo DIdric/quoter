@@ -456,6 +456,7 @@ function NewQuotePage() {
   const [uploadedImagePath, setUploadedImagePath] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [quotaError, setQuotaError] = useState<string | null>(null);
   const [profile, setProfile] = useState<{
     business_name: string | null;
     logo_url: string | null;
@@ -654,12 +655,9 @@ function NewQuotePage() {
       // Handle quota limit (non-streaming JSON response)
       if (response.status === 429) {
         const err = await response.json();
-        setResult({
-          error: err.message || "Limiet bereikt",
-        } as unknown as QuoteResult);
+        setQuotaError(err.reason || err.message || "Je maandlimiet is bereikt. Upgrade naar Pro voor meer offertes.");
         setLoading(false);
         setLoadingStage("");
-        setCurrentStep(1);
         return;
       }
 
@@ -1136,11 +1134,25 @@ function NewQuotePage() {
                 )}
               </div>
 
+              {/* Quota error / paywall block */}
+              {quotaError && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 text-center space-y-3">
+                  <p className="font-semibold text-amber-900">Maandlimiet bereikt</p>
+                  <p className="text-sm text-amber-700">{quotaError}</p>
+                  <a
+                    href="/upgrade"
+                    className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-5 py-2.5 rounded-lg transition text-sm"
+                  >
+                    Upgrade naar Pro →
+                  </a>
+                </div>
+              )}
+
               {/* Generate button */}
               <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <button
                   onClick={handleGenerate}
-                  disabled={!form.ai_input}
+                  disabled={!form.ai_input || !!quotaError}
                   className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold px-6 py-3 rounded-lg transition disabled:opacity-50 text-sm md:text-base"
                 >
                   <Sparkles className="w-4 h-4" />

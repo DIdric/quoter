@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Shield,
+  Zap,
 } from "lucide-react";
 
 const navItems = [
@@ -27,6 +28,7 @@ const navItems = [
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isFree, setIsFree] = useState(false);
   const pathname = usePathname();
   const supabase = createClient();
 
@@ -37,6 +39,20 @@ export default function Sidebar() {
         if (r.ok) setIsAdmin(true);
       })
       .catch(() => {});
+
+    // Check subscription tier
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("profiles")
+        .select("subscription_tier")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          const tier = data?.subscription_tier ?? "free";
+          setIsFree(tier === "free");
+        });
+    });
   });
 
   async function handleLogout() {
@@ -159,6 +175,20 @@ export default function Sidebar() {
             >
               <Shield className="w-5 h-5" />
               Admin Panel
+            </Link>
+          </div>
+        )}
+
+        {/* Upgrade link (free users only) */}
+        {isFree && (
+          <div className="px-3 mb-2">
+            <Link
+              href="/upgrade"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-500/10 text-brand-600 hover:bg-brand-500/20 font-medium text-sm transition"
+            >
+              <Zap className="w-4 h-4" />
+              Upgrade naar Pro
             </Link>
           </div>
         )}

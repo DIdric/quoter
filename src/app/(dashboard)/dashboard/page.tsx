@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { FileText, Clock, Euro, TrendingUp, Plus, Zap } from "lucide-react";
+import { FileText, Clock, Euro, TrendingUp, Plus, Zap, CheckCircle } from "lucide-react";
 import { TIER_LIMITS, type SubscriptionTier } from "@/lib/usage-limits";
 
 interface QuoteJsonData {
@@ -13,7 +13,12 @@ interface QuoteJsonData {
   };
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
+  const params = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -94,6 +99,16 @@ export default async function DashboardPage() {
 
   return (
     <div>
+      {params.checkout === "success" && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 mb-6">
+          <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
+          <div>
+            <p className="font-medium text-green-800">Welkom bij Pro! 🎉</p>
+            <p className="text-sm text-green-700">Je account is geüpgraded. Geniet van onbeperkte offertes.</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h1 className="text-xl md:text-2xl font-bold text-slate-800">
           Dashboard
