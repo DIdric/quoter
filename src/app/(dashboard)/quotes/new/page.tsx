@@ -26,6 +26,10 @@ import {
   Send,
   Trash2,
   Plus,
+  Download,
+  Share2,
+  Link as LinkIcon,
+  CheckCircle,
 } from "lucide-react";
 import { VoiceInput } from "@/components/voice-input";
 import { CONSTRUCTION_MODULES, type ConstructionModule } from "@/lib/construction-modules";
@@ -624,6 +628,12 @@ function NewQuotePage() {
   const [marginPct, setMarginPct] = useState(15);
   const [displayMode, setDisplayMode] = useState<"open" | "module" | "hoogover">("open");
   const [activeTab, setActiveTab] = useState<"Bewerken" | "Preview">("Bewerken");
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedQuoteId, setSavedQuoteId] = useState<string | null>(null);
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [profile, setProfile] = useState<{
     business_name: string | null;
     logo_url: string | null;
@@ -679,6 +689,7 @@ function NewQuotePage() {
       .then(({ data }) => {
         if (data) {
           setExistingProjectId(data.id);
+          setSavedQuoteId(data.id);
           const savedForm = data.json_data?.form;
           if (savedForm) {
             setForm({
@@ -860,6 +871,72 @@ function NewQuotePage() {
   function handleRegenerate() {
     setResult(null);
     setCurrentStep(0);
+  }
+
+  async function handleAdvanceToSend() {
+    setIsSaving(true);
+    try {
+      const res = await fetch("/api/save-quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_name: form.client_name,
+          status: "final",
+          json_data: { form, result, selectedModules, language, display_mode: displayMode },
+          existing_project_id: existingProjectId,
+        }),
+      });
+      const data = await res.json();
+      if (data.id) {
+        setSavedQuoteId(data.id);
+        setExistingProjectId(data.id);
+      }
+      setCurrentStep(2);
+    } catch {
+      // Still advance even if save fails
+      setCurrentStep(2);
+    }
+    setIsSaving(false);
+  }
+
+  async function handleDownloadPdf() {
+    if (!savedQuoteId) return;
+    setDownloading(true);
+    try {
+      const res = await fetch(`/api/generate-pdf/${savedQuoteId}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.headers.get("Content-Disposition")?.match(/filename="(.+)"/)?.[1] || "offerte.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      // ignore
+    }
+    setDownloading(false);
+  }
+
+  async function handleShare() {
+    if (!savedQuoteId) return;
+    setSharing(true);
+    try {
+      let token = shareToken;
+      if (!token) {
+        token = crypto.randomUUID();
+        await supabase.from("quotes").update({ share_token: token }).eq("id", savedQuoteId);
+        setShareToken(token);
+      }
+      const url = `${window.location.origin}/share/${token}`;
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch {
+      // ignore
+    }
+    setSharing(false);
   }
 
   const hasError = result && ("error" in result && result.error);
@@ -1623,11 +1700,21 @@ function NewQuotePage() {
 
                   <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t border-slate-200">
                     <button
-                      onClick={() => setCurrentStep(2)}
-                      className="flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold px-5 py-2.5 rounded-lg transition text-sm md:text-base"
+                      onClick={handleAdvanceToSend}
+                      disabled={isSaving}
+                      className="flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold px-5 py-2.5 rounded-lg transition text-sm md:text-base disabled:opacity-70"
                     >
-                      Verder naar versturen
-                      <ArrowRight className="w-4 h-4" />
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Opslaan...
+                        </>
+                      ) : (
+                        <>
+                          Verder naar versturen
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
                     </button>
                     <button
                       onClick={handleRegenerate}
@@ -1712,11 +1799,11 @@ function NewQuotePage() {
           {currentStep === 2 && (
             <div className="flex flex-col sm:flex-row gap-0 min-h-[600px]">
 
-              {/* LEFT: Send options */}
+              {/* LEFT: Versturen & bewaren */}
               <div className="sm:w-1/2 sm:border-r border-slate-200 sm:pr-6 space-y-6">
-                <h2 className="text-xl font-bold text-slate-800">Offerte definitief</h2>
+                <h2 className="text-xl font-bold text-slate-800">Versturen &amp; bewaren</h2>
 
-                {/* Summary */}
+                {/* A. Summary card */}
                 <div className="bg-slate-50 border border-slate-200 rounded-lg p-5 space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-500">Klant</span>
@@ -1738,56 +1825,93 @@ function NewQuotePage() {
                   )}
                 </div>
 
-                {/* Style picker */}
+                {/* B. PDF Download */}
                 <div>
-                  <p className="text-xs text-slate-500 mb-2">Weergavestijl</p>
-                  <div className="flex gap-2">
-                    {[
-                      { key: "open", label: "Gedetailleerd" },
-                      { key: "module", label: "Per module" },
-                      { key: "hoogover", label: "Hoogover" },
-                    ].map(({ key, label }) => (
-                      <button
-                        key={key}
-                        onClick={() => setDisplayMode(key as "open" | "module" | "hoogover")}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                          displayMode === key
-                            ? "bg-brand-500 text-white border-brand-500"
-                            : "bg-white text-slate-600 border-slate-200 hover:border-brand-300"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                  <h3 className="text-sm font-semibold text-slate-700 mb-2">PDF downloaden</h3>
+                  <button
+                    onClick={handleDownloadPdf}
+                    disabled={!savedQuoteId || downloading}
+                    className="flex items-center gap-2 bg-white border border-slate-200 hover:border-brand-300 text-slate-700 font-medium px-4 py-2.5 rounded-lg transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {downloading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4" />
+                    )}
+                    Download PDF
+                  </button>
+                  {!savedQuoteId && (
+                    <p className="text-xs text-slate-400 mt-1">Offerte wordt opgeslagen bij het doorgaan naar stap 3.</p>
+                  )}
+                </div>
+
+                {/* C. Share link */}
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-700 mb-2">Deelbare link</h3>
+                  <button
+                    onClick={handleShare}
+                    disabled={!savedQuoteId || sharing}
+                    className="flex items-center gap-2 bg-white border border-slate-200 hover:border-brand-300 text-slate-700 font-medium px-4 py-2.5 rounded-lg transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {sharing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : copied ? (
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <Share2 className="w-4 h-4" />
+                    )}
+                    {copied ? "Link gekopieerd!" : "Kopieer deelbare link"}
+                  </button>
+                  {shareToken && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <LinkIcon className="w-4 h-4 text-slate-400 shrink-0" />
+                      <input
+                        type="text"
+                        readOnly
+                        value={`${typeof window !== "undefined" ? window.location.origin : ""}/share/${shareToken}`}
+                        className="flex-1 px-2 py-1 text-xs border border-slate-200 rounded bg-slate-50 text-slate-600 outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* D. Email */}
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-700 mb-2">Versturen per e-mail</h3>
+                  <div className="space-y-2">
+                    <input
+                      type="email"
+                      defaultValue={form.client_email}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
+                      placeholder="E-mailadres klant"
+                    />
+                    <a
+                      href={`mailto:${form.client_email}?subject=Offerte ${result?.quote_title || form.project_title}&body=Beste ${form.client_name},%0A%0AHierbij stuur ik u de offerte voor ${result?.quote_title || form.project_title}.%0A%0AMet vriendelijke groet`}
+                      className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2.5 rounded-lg transition text-sm w-full justify-center"
+                    >
+                      <Send className="w-4 h-4" />
+                      Verstuur per e-mail
+                    </a>
                   </div>
                 </div>
 
-                {/* Action buttons */}
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={handleSaveQuote}
-                    className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-5 py-3 rounded-lg transition text-sm md:text-base"
-                  >
-                    <Send className="w-4 h-4" />
-                    Opslaan &amp; naar project →
-                  </button>
+                {/* E. Back + save draft */}
+                <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
                   <button
                     onClick={handleSaveDraft}
-                    className="flex items-center justify-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 font-medium px-4 py-3 rounded-lg transition text-sm md:text-base border border-slate-200"
+                    className="flex items-center justify-center gap-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 font-medium px-4 py-2.5 rounded-lg transition text-sm border border-slate-200"
                   >
                     <FileText className="w-4 h-4" />
                     Opslaan als concept
                   </button>
+                  <button
+                    onClick={() => setCurrentStep(1)}
+                    className="flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm transition justify-center py-1"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Terug naar aanpassen
+                  </button>
                 </div>
-
-                {/* Back link */}
-                <button
-                  onClick={() => setCurrentStep(1)}
-                  className="flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm transition"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Terug naar aanpassen
-                </button>
               </div>
 
               {/* RIGHT: Final preview */}
