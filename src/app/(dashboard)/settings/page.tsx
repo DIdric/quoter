@@ -246,6 +246,7 @@ export default function SettingsPage() {
         default_display_mode: profile.default_display_mode,
         default_language: profile.default_language ?? "nl",
         estimation_style: profile.estimation_style ?? "realistisch",
+        tone_style: profile.tone_style ?? "persoonlijk",
         keurmerken: keurmerken,
       })
       .eq("id", user.id);
@@ -584,6 +585,32 @@ export default function SettingsPage() {
                 >
                   <span>{lang.flag}</span>
                   <span>{lang.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Spreektoon */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-700">Spreektoon</label>
+            <p className="text-xs text-slate-500">Bepaalt de toon van de intro en afsluiting in je offertes.</p>
+            <div className="flex gap-2">
+              {[
+                { key: "persoonlijk", label: "Persoonlijk", desc: "Voornaam, direct, lokaal" },
+                { key: "professioneel", label: "Professioneel", desc: "Beleefd, iets formeler" },
+              ].map(({ key, label, desc }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setProfile(prev => ({ ...prev, tone_style: key }))}
+                  className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition text-center ${
+                    (profile.tone_style ?? "persoonlijk") === key
+                      ? "bg-brand-500 text-white border-brand-500"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-brand-300"
+                  }`}
+                >
+                  <div>{label}</div>
+                  <div className={`text-xs font-normal mt-0.5 ${(profile.tone_style ?? "persoonlijk") === key ? "text-white/80" : "text-slate-400"}`}>{desc}</div>
                 </button>
               ))}
             </div>

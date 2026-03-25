@@ -166,6 +166,7 @@ export async function POST(request: Request) {
   const marginPct = profile?.margin_percentage ?? 15;
   const businessName = profile?.business_name ?? "Mijn Bedrijf";
   const estimationStyle: string = profile?.estimation_style ?? "realistisch";
+  const toneStyle: string = profile?.tone_style ?? "persoonlijk";
 
   const language: string = body.language || "nl";
   const languageNames: Record<string, string> = {
@@ -251,11 +252,15 @@ ${body.ai_input}${translationInstruction}`;
           : "Estimate labour hours realistically — market-standard for a skilled tradesperson. Not too tight, not too generous."
         }`;
 
+        const toneSection = toneStyle === "professioneel"
+          ? `\n\n## TONE — PROFESSIONAL\nWrite in a polite, slightly formal tone. Use the client's full name or "u". Keep the DOSE structure but phrase it professionally. Avoid slang or overly casual language. Still be specific and concrete — no corporate vagueness.`
+          : `\n\n## TONE — PERSONAL\nWrite in a direct, warm, first-name basis tone. Address the client by first name where possible. Be local and specific. Confident but human. This is the default Small Builder Voice.`;
+
         const streamResponse = client.messages.stream({
           model: "claude-sonnet-4-5-20250929",
           max_tokens: 8192,
           messages: [{ role: "user", content: userMessage }],
-          system: SYSTEM_PROMPT + labourEstimationSection,
+          system: SYSTEM_PROMPT + labourEstimationSection + toneSection,
         });
 
         // Send progress events as SSE

@@ -28,6 +28,7 @@ export interface Profile {
   default_display_mode: DisplayMode;
   default_language?: Language;
   estimation_style?: string;
+  tone_style?: string;
   keurmerken: Keurmerk[];
   subscription_tier: "free" | "pro" | "business";
   stripe_customer_id: string | null;
