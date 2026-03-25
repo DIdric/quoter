@@ -684,10 +684,6 @@ export async function GET(
       margin,
       y
     );
-    y += 5;
-    doc.text(labels.closing1, margin, y);
-    y += 5;
-    doc.text(labels.closing2, margin, y);
     y += 8;
 
     doc.setFont("helvetica", "bold");

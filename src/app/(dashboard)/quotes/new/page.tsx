@@ -90,6 +90,7 @@ interface QuoteResult {
   validation_warnings?: string[];
   error?: string;
   message?: string;
+  display_mode?: "open" | "module" | "hoogover";
 }
 
 function formatCurrency(amount: number) {
@@ -832,6 +833,9 @@ function NewQuotePage() {
               setLoadingStage(event.stage);
             } else if (event.type === "result") {
               setResult(event.data);
+              if (event.data.display_mode) {
+                setDisplayMode(event.data.display_mode as "open" | "module" | "hoogover");
+              }
             } else if (event.type === "error") {
               setResult({
                 error: event.error,
