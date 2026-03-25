@@ -1,8 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 
-// Cost per token (Claude Sonnet 4.5 pricing)
+// Cost per token (Anthropic pricing)
 const PRICING: Record<string, { input: number; output: number }> = {
   "claude-sonnet-4-5-20250929": { input: 3 / 1_000_000, output: 15 / 1_000_000 },
+  "claude-haiku-4-5-20251001": { input: 0.8 / 1_000_000, output: 4 / 1_000_000 },
 };
 
 const DEFAULT_PRICING = { input: 3 / 1_000_000, output: 15 / 1_000_000 };

@@ -115,204 +115,6 @@ function recalcTotalsFromLines(lines: QuoteLine[], marginPct: number) {
   return { subtotal_materials, subtotal_labor, margin_amount, total_excl_btw, btw_amount, total_incl_btw };
 }
 
-function QuoteDisplay({ quote }: { quote: QuoteResult }) {
-  const categories = [...new Set(quote.lines.map((l) => l.category))];
-  const totals = recalcTotalsFromLines(quote.lines, 15);
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-brand-50 border border-brand-200 rounded-lg p-4">
-        <h3 className="text-lg font-bold text-slate-800">
-          {quote.quote_title}
-        </h3>
-        <p className="text-sm text-slate-600 mt-1">{quote.summary}</p>
-        {quote.estimated_days > 0 && (
-          <div className="flex items-center gap-1.5 mt-2 text-sm text-brand-700">
-            <Clock className="w-4 h-4" />
-            Geschatte doorlooptijd: {quote.estimated_days} werkdag
-            {quote.estimated_days !== 1 ? "en" : ""}
-          </div>
-        )}
-      </div>
-
-      {/* Validation warnings */}
-      {quote.validation_warnings && quote.validation_warnings.length > 0 && (
-        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
-          <div className="flex items-start gap-2">
-            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold text-amber-800 text-sm mb-1">
-                Let op: niet alle werkzaamheden hebben een prijsregel
-              </p>
-              <ul className="space-y-0.5">
-                {quote.validation_warnings.map((w, i) => (
-                  <li key={i} className="text-sm text-amber-700">• {w}</li>
-                ))}
-              </ul>
-              <p className="text-xs text-amber-600 mt-2">
-                Je kunt de offerte alsnog opslaan. Controleer of de ontbrekende posten verwerkt zijn in andere categorieën.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Technical description */}
-      {quote.technical_description && (
-        <div className="bg-white border border-slate-200 rounded-lg p-4">
-          <h4 className="font-semibold text-slate-800 mb-2">
-            Omschrijving werkzaamheden
-          </h4>
-          <p className="text-sm text-slate-600 whitespace-pre-line">
-            {quote.technical_description}
-          </p>
-        </div>
-      )}
-
-      {/* Modules with intros */}
-      {quote.modules && quote.modules.length > 0 && (
-        <div className="space-y-4">
-          <h4 className="font-semibold text-slate-800">
-            Technische omschrijving per module
-          </h4>
-          {quote.modules.map((mod, i) => (
-            <div
-              key={i}
-              className="bg-slate-50 border border-slate-200 rounded-lg p-4"
-            >
-              <h5 className="font-medium text-slate-700 mb-1">{mod.name}</h5>
-              <p className="text-sm text-slate-600 mb-2">{mod.intro}</p>
-              <ul className="text-sm text-slate-500 space-y-0.5">
-                {mod.items.map((item, j) => (
-                  <li key={j} className="flex items-start gap-2">
-                    <span className="text-slate-400 mt-1 shrink-0">•</span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Lines grouped by category */}
-      {categories.map((category) => {
-        const categoryLines = quote.lines.filter(
-          (l) => l.category === category
-        );
-        return (
-          <div key={category}>
-            <h4 className="font-semibold text-slate-700 mb-2 flex items-center gap-2">
-              {categoryLines[0]?.type === "materiaal" ? (
-                <Package className="w-4 h-4 text-blue-500" />
-              ) : (
-                <Wrench className="w-4 h-4 text-brand-500" />
-              )}
-              {category}
-            </h4>
-            <div className="bg-white border border-slate-200 rounded-lg overflow-x-auto">
-              <table className="w-full text-sm min-w-[500px]">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="text-left px-3 py-2 text-slate-600 font-medium">
-                      Omschrijving
-                    </th>
-                    <th className="text-center px-3 py-2 text-slate-600 font-medium w-16">
-                      Type
-                    </th>
-                    <th className="text-right px-3 py-2 text-slate-600 font-medium w-20">
-                      Aantal
-                    </th>
-                    <th className="text-right px-3 py-2 text-slate-600 font-medium w-24">
-                      Prijs
-                    </th>
-                    <th className="text-right px-3 py-2 text-slate-600 font-medium w-24">
-                      Totaal
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {categoryLines.map((line, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
-                      <td className="px-3 py-2 text-slate-800">
-                        {line.description}
-                      </td>
-                      <td className="px-3 py-2 text-center">
-                        <span
-                          className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${
-                            line.type === "materiaal"
-                              ? "bg-blue-100 text-blue-700"
-                              : "bg-brand-100 text-brand-700"
-                          }`}
-                        >
-                          {line.type === "materiaal" ? "Mat" : "Arbeid"}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-right text-slate-600">
-                        {line.quantity} {line.unit}
-                      </td>
-                      <td className="px-3 py-2 text-right text-slate-600">
-                        {formatCurrency(line.unit_price)}
-                      </td>
-                      <td className="px-3 py-2 text-right font-medium text-slate-800">
-                        {formatCurrency(Math.round(line.quantity * line.unit_price * 100) / 100)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-      })}
-
-      {/* Totals */}
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2">
-        <div className="flex justify-between text-sm text-slate-600">
-          <span className="flex items-center gap-1.5">
-            <Package className="w-4 h-4 text-blue-500" /> Materialen
-          </span>
-          <span>{formatCurrency(totals.subtotal_materials)}</span>
-        </div>
-        <div className="flex justify-between text-sm text-slate-600">
-          <span className="flex items-center gap-1.5">
-            <Wrench className="w-4 h-4 text-brand-500" /> Arbeid
-          </span>
-          <span>{formatCurrency(totals.subtotal_labor)}</span>
-        </div>
-        <div className="flex justify-between text-sm text-slate-600">
-          <span>Winstmarge</span>
-          <span>{formatCurrency(totals.margin_amount)}</span>
-        </div>
-        <div className="border-t border-slate-300 pt-2 flex justify-between text-sm font-medium text-slate-700">
-          <span>Totaal excl. BTW</span>
-          <span>{formatCurrency(totals.total_excl_btw)}</span>
-        </div>
-        <div className="flex justify-between text-sm text-slate-600">
-          <span>BTW (21%)</span>
-          <span>{formatCurrency(totals.btw_amount)}</span>
-        </div>
-        <div className="border-t border-slate-300 pt-2 flex justify-between text-lg font-bold text-slate-800">
-          <span className="flex items-center gap-1.5">
-            <Euro className="w-5 h-5 text-green-600" /> Totaal incl. BTW
-          </span>
-          <span className="text-green-700">
-            {formatCurrency(totals.total_incl_btw)}
-          </span>
-        </div>
-      </div>
-
-      {/* Notes */}
-      {quote.notes && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
-          <strong>Opmerkingen:</strong> {quote.notes}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // Step indicator: 3 numbered circles with connecting lines
 function StepIndicator({
   currentStep,
@@ -697,7 +499,7 @@ function NewQuotePage() {
     setLoadingProject(true);
     supabase
       .from("quotes")
-      .select("*")
+      .select("id, status, client_name, json_data")
       .eq("id", projectId)
       .single()
       .then(({ data }) => {
@@ -857,22 +659,8 @@ function NewQuotePage() {
     setCurrentStep(1);
   }
 
-  async function handleSaveQuote() {
-    const res = await fetch("/api/save-quote", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        client_name: form.client_name,
-        status: "draft",
-        json_data: { form, result, selectedModules, language, display_mode: displayMode },
-        existing_project_id: existingProjectId,
-      }),
-    });
-    router.push("/projects");
-  }
-
   async function handleSaveDraft() {
-    const res = await fetch("/api/save-quote", {
+    await fetch("/api/save-quote", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

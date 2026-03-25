@@ -31,6 +31,7 @@ export async function POST(request: Request) {
         .from("quotes")
         .update({
           client_name,
+          status: status || "draft",
           json_data,
         })
         .eq("id", existing_project_id)

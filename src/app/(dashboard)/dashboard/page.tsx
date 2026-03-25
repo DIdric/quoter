@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
-import { FileText, Package, Clock, Euro, TrendingUp, Plus, Zap } from "lucide-react";
+import { FileText, Clock, Euro, TrendingUp, Plus, Zap } from "lucide-react";
 import { TIER_LIMITS, type SubscriptionTier } from "@/lib/usage-limits";
 
 interface QuoteJsonData {

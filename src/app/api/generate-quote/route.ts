@@ -146,7 +146,7 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("*")
+    .select("hourly_rate, margin_percentage, business_name, estimation_style, tone_style")
     .eq("id", user.id)
     .single();
 
