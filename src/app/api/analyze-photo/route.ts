@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { trackTokenUsage } from "@/lib/track-usage";
 import { NextRequest, NextResponse } from "next/server";
+import sharp from "sharp";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,6 +22,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Geen afbeeldingsURL opgegeven" }, { status: 400 });
     }
 
+    // Fetch image bytes and convert to JPEG (handles HEIC/HEIF from iPhone)
+    const imageRes = await fetch(imageUrl);
+    const arrayBuffer = await imageRes.arrayBuffer();
+    const jpegBuffer = await sharp(Buffer.from(arrayBuffer))
+      .jpeg({ quality: 85 })
+      .toBuffer();
+    const base64Image = jpegBuffer.toString("base64");
+
     const client = new Anthropic();
     const response = await client.messages.create({
       model: "claude-sonnet-4-5-20250929",
@@ -32,8 +41,9 @@ export async function POST(request: NextRequest) {
             {
               type: "image",
               source: {
-                type: "url",
-                url: imageUrl,
+                type: "base64",
+                media_type: "image/jpeg",
+                data: base64Image,
               },
             },
             {
