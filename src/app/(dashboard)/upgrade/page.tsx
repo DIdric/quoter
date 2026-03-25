@@ -44,9 +44,9 @@ export default function UpgradePage() {
     }
   }
 
-  const plans: Array<{ id: PlanId; badge?: string }> = [
-    { id: "pro" },
-    { id: "business", badge: "Meest gekozen" },
+  const plans: Array<{ id: PlanId; badge?: string; highlight?: boolean }> = [
+    { id: "pro", badge: "Aanbevolen", highlight: true },
+    { id: "business" },
   ];
 
   return (
@@ -54,11 +54,11 @@ export default function UpgradePage() {
       {/* Back link */}
       <div className="mb-8">
         <Link
-          href="/dashboard"
+          href="/settings"
           className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
         >
           <ArrowLeft className="w-4 h-4" />
-          Terug naar dashboard
+          Terug naar instellingen
         </Link>
       </div>
 
@@ -74,7 +74,7 @@ export default function UpgradePage() {
 
       {/* Plan cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {plans.map(({ id, badge }) => {
+        {plans.map(({ id, badge, highlight }) => {
           const plan = PLANS[id];
           const isCurrent = currentTier === id;
 
@@ -82,12 +82,12 @@ export default function UpgradePage() {
             <div
               key={id}
               className={`relative bg-white rounded-2xl border-2 p-6 shadow-sm flex flex-col ${
-                badge
+                highlight
                   ? "border-brand-500"
                   : "border-slate-200"
               }`}
             >
-              {/* Most popular badge */}
+              {/* Badge */}
               {badge && (
                 <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
                   <span className="bg-brand-500 text-white text-xs font-semibold px-4 py-1 rounded-full whitespace-nowrap">
@@ -99,7 +99,7 @@ export default function UpgradePage() {
               {/* Plan name & price */}
               <div className="mb-5">
                 <div className="flex items-center gap-2 mb-1">
-                  <Zap className="w-5 h-5 text-brand-500" />
+                  <Zap className={`w-5 h-5 ${highlight ? "text-brand-500" : "text-slate-400"}`} />
                   <h2 className="text-xl font-bold text-slate-800">{plan.name}</h2>
                 </div>
                 <div className="flex items-baseline gap-1">
@@ -129,7 +129,11 @@ export default function UpgradePage() {
                 <button
                   onClick={() => handleUpgrade(id)}
                   disabled={loadingPlan !== null}
-                  className="w-full bg-brand-500 hover:bg-brand-600 disabled:opacity-60 text-white font-semibold py-2.5 rounded-lg transition text-sm"
+                  className={`w-full font-semibold py-2.5 rounded-lg transition text-sm disabled:opacity-60 ${
+                    highlight
+                      ? "bg-brand-500 hover:bg-brand-600 text-white"
+                      : "bg-slate-800 hover:bg-slate-900 text-white"
+                  }`}
                 >
                   {loadingPlan === id ? "Moment..." : `Upgrade naar ${plan.name}`}
                 </button>
@@ -139,7 +143,7 @@ export default function UpgradePage() {
         })}
       </div>
 
-      {/* Free tier note */}
+      {/* Footer note */}
       <p className="text-center text-xs text-slate-400 mt-8">
         Heb je al een betaald abonnement?{" "}
         <Link href="/settings" className="underline hover:text-slate-600 transition">

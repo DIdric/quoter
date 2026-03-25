@@ -457,6 +457,7 @@ function NewQuotePage() {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [quotaError, setQuotaError] = useState<string | null>(null);
+  const [quotaInfo, setQuotaInfo] = useState<{ tier: string; quotesUsed: number; quotesLimit: number } | null>(null);
   const [profile, setProfile] = useState<{
     business_name: string | null;
     logo_url: string | null;
@@ -655,7 +656,14 @@ function NewQuotePage() {
       // Handle quota limit (non-streaming JSON response)
       if (response.status === 429) {
         const err = await response.json();
-        setQuotaError(err.reason || err.message || "Je maandlimiet is bereikt. Upgrade naar Pro voor meer offertes.");
+        setQuotaError(err.message || "Je maandlimiet is bereikt.");
+        if (err.quota) {
+          setQuotaInfo({
+            tier: err.quota.tier,
+            quotesUsed: err.quota.quotesUsed,
+            quotesLimit: err.quota.quotesLimit,
+          });
+        }
         setLoading(false);
         setLoadingStage("");
         return;
@@ -1137,13 +1145,22 @@ function NewQuotePage() {
               {/* Quota error / paywall block */}
               {quotaError && (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 text-center space-y-3">
-                  <p className="font-semibold text-amber-900">Maandlimiet bereikt</p>
-                  <p className="text-sm text-amber-700">{quotaError}</p>
+                  <p className="font-semibold text-amber-900">Je maandlimiet is bereikt</p>
+                  {quotaInfo ? (
+                    <p className="text-sm text-amber-700">
+                      Je hebt {quotaInfo.quotesUsed} van {quotaInfo.quotesLimit} offertes gebruikt deze maand.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-amber-700">{quotaError}</p>
+                  )}
+                  {(!quotaInfo || quotaInfo.tier === "free") && (
+                    <p className="text-xs text-amber-600">Upgrade naar Pro voor 50 offertes per maand</p>
+                  )}
                   <a
                     href="/upgrade"
                     className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-5 py-2.5 rounded-lg transition text-sm"
                   >
-                    Upgrade naar Pro →
+                    Upgrade nu →
                   </a>
                 </div>
               )}

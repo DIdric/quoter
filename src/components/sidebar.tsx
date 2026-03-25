@@ -29,6 +29,8 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isFree, setIsFree] = useState(false);
+  const [quotesUsed, setQuotesUsed] = useState<number | null>(null);
+  const [quotesLimit, setQuotesLimit] = useState<number>(10);
   const pathname = usePathname();
   const supabase = createClient();
 
@@ -40,7 +42,7 @@ export default function Sidebar() {
       })
       .catch(() => {});
 
-    // Check subscription tier
+    // Check subscription tier and usage
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase
@@ -50,7 +52,25 @@ export default function Sidebar() {
         .single()
         .then(({ data }) => {
           const tier = data?.subscription_tier ?? "free";
-          setIsFree(tier === "free");
+          const showNudge = tier === "free" || tier === "pro";
+          setIsFree(showNudge);
+          // Set quota limit based on tier
+          setQuotesLimit(tier === "free" ? 10 : tier === "pro" ? 50 : -1);
+
+          if (showNudge) {
+            // Load quotes used this month
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            supabase
+              .from("token_usage")
+              .select("*", { count: "exact", head: true })
+              .eq("user_id", user.id)
+              .eq("endpoint", "generate-quote")
+              .gte("created_at", monthStart)
+              .then(({ count }) => {
+                setQuotesUsed(count ?? 0);
+              });
+          }
         });
     });
   });
@@ -179,16 +199,21 @@ export default function Sidebar() {
           </div>
         )}
 
-        {/* Upgrade link (free users only) */}
+        {/* Upgrade nudge (free / pro users) */}
         {isFree && (
           <div className="px-3 mb-2">
+            {quotesUsed !== null && (
+              <p className="text-xs text-slate-400 px-3 mb-1.5">
+                {quotesUsed} / {quotesLimit} offertes deze maand
+              </p>
+            )}
             <Link
               href="/upgrade"
               onClick={() => setMobileOpen(false)}
               className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-500/10 text-brand-600 hover:bg-brand-500/20 font-medium text-sm transition"
             >
               <Zap className="w-4 h-4" />
-              Upgrade naar Pro
+              Upgrade
             </Link>
           </div>
         )}
