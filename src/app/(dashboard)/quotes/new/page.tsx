@@ -488,8 +488,8 @@ function QuotePreviewPanel({
 
       {/* d. Price section */}
       {displayMode === "open" && (
-        <div>
-          <table className="w-full text-xs border-collapse">
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse min-w-[320px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="text-left py-1 px-2 font-medium text-slate-600">Omschrijving</th>
@@ -517,8 +517,8 @@ function QuotePreviewPanel({
       )}
 
       {displayMode === "module" && (
-        <div>
-          <table className="w-full text-xs border-collapse">
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs border-collapse min-w-[200px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200">
                 <th className="text-left py-1 px-2 font-medium text-slate-600">Module</th>
@@ -1742,7 +1742,7 @@ function NewQuotePage() {
                 </div>{/* end left edit panel */}
 
                 {/* RIGHT: Preview panel */}
-                <div className={`sm:w-1/2 sm:pl-6 ${activeTab !== "Preview" ? "hidden sm:block" : ""}`}>
+                <div className={`sm:w-1/2 sm:pl-6 min-w-0 overflow-hidden ${activeTab !== "Preview" ? "hidden sm:block" : ""}`}>
                   {/* Style picker — sticky */}
                   <div className="sticky top-0 z-10 bg-white pb-3 border-b border-slate-200 mb-4">
                     <p className="text-xs text-slate-500 mb-2">Weergavestijl</p>
