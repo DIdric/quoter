@@ -57,10 +57,22 @@ export async function GET(request: Request) {
     );
     const totalRequests = usageData?.length ?? 0;
 
+    // Tier breakdown
+    const { data: tierData } = await service
+      .from("profiles")
+      .select("subscription_tier");
+
+    const tierCounts = { free: 0, pro: 0, business: 0 };
+    (tierData ?? []).forEach((p) => {
+      const t = p.subscription_tier as keyof typeof tierCounts;
+      if (t in tierCounts) tierCounts[t]++;
+    });
+
     return NextResponse.json({
       totalUsers: totalUsers ?? 0,
       totalQuotes: totalQuotes ?? 0,
       totalDefaultMaterials: totalMaterials ?? 0,
+      tierCounts,
       last30Days: {
         totalTokens,
         totalCost: Math.round(totalCost * 100) / 100,
@@ -209,6 +221,19 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const service = getServiceClient();
+
+  if (body.action === "update-user-tier") {
+    const { userId, tier } = body;
+    if (!userId || !["free", "pro", "business"].includes(tier)) {
+      return NextResponse.json({ error: "Invalid userId or tier" }, { status: 400 });
+    }
+    const { error } = await service
+      .from("profiles")
+      .update({ subscription_tier: tier })
+      .eq("id", userId);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true });
+  }
 
   if (body.action === "upsert-material") {
     const { id, name, category, unit, cost_price, source, source_url, article_number } =
