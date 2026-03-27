@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     const client = new Anthropic();
 
     const message = await client.messages.create({
-      model: "claude-sonnet-4-5-20250929",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 256,
       system: `Je bent een bouwexpert. Gegeven een projectbeschrijving, geef je terug welke bouwmodules relevant zijn.
 
@@ -64,7 +64,7 @@ Geen uitleg, alleen de JSON array.`,
     await trackTokenUsage({
       userId: user.id,
       endpoint: "suggest-modules",
-      model: "claude-sonnet-4-5-20250929",
+      model: "claude-haiku-4-5-20251001",
       inputTokens: message.usage.input_tokens,
       outputTokens: message.usage.output_tokens,
     }).catch((e) => console.error("[suggest-modules] Token tracking failed:", e));
