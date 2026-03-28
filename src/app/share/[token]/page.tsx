@@ -243,8 +243,8 @@ export default async function SharedQuotePage({
           )}
         </div>
 
-        {/* Technical Description per Module */}
-        {result.modules && result.modules.length > 0 && (
+        {/* Technical Description per Module — alleen bij open smaak */}
+        {displayMode === "open" && result.modules && result.modules.length > 0 && (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 mb-6">
             <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">
               Technische omschrijving werkzaamheden
