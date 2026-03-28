@@ -55,6 +55,7 @@ interface QuoteJsonData {
     project_location?: string;
   };
   result?: QuoteResult;
+  display_mode?: "open" | "module" | "hoogover";
 }
 
 function formatCurrency(amount: number): string {
@@ -100,12 +101,21 @@ export default async function SharedQuotePage({
   const jsonData = quote.json_data as QuoteJsonData | null;
   const form = jsonData?.form;
   const result = jsonData?.result;
+  const displayMode = jsonData?.display_mode ?? "open";
 
   if (!result) {
     notFound();
   }
 
   const categories = [...new Set(result.lines.map((l) => l.category))];
+
+  // Per category: bereken subtotaal
+  const categoryTotals = categories.map((cat) => ({
+    name: cat,
+    total: result.lines
+      .filter((l) => l.category === cat)
+      .reduce((sum, l) => sum + l.total, 0),
+  }));
 
   const quoteDate = new Date(quote.created_at);
   const validityDays = profile?.quote_validity_days || 30;
@@ -255,90 +265,103 @@ export default async function SharedQuotePage({
           </div>
         )}
 
-        {/* Quote Lines Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">
-                    Omschrijving
-                  </th>
-                  <th className="text-center px-3 py-3 font-semibold text-slate-600">
-                    Type
-                  </th>
-                  <th className="text-right px-3 py-3 font-semibold text-slate-600">
-                    Aantal
-                  </th>
-                  <th className="text-right px-3 py-3 font-semibold text-slate-600">
-                    Prijs
-                  </th>
-                  <th className="text-right px-4 py-3 font-semibold text-slate-600">
-                    Totaal
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {categories.map((category) => (
-                  <tr key={category}>
-                    <td
-                      colSpan={5}
-                      className="px-4 py-2 bg-slate-50 font-semibold text-slate-700 text-xs uppercase tracking-wide"
-                    >
-                      {category}
-                    </td>
+        {/* Quote Lines — weergave op basis van display_mode */}
+
+        {/* OPEN: volledige regelspecificatie */}
+        {displayMode === "open" && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left px-4 py-3 font-semibold text-slate-600">Omschrijving</th>
+                    <th className="text-center px-3 py-3 font-semibold text-slate-600">Type</th>
+                    <th className="text-right px-3 py-3 font-semibold text-slate-600">Aantal</th>
+                    <th className="text-right px-3 py-3 font-semibold text-slate-600">Prijs</th>
+                    <th className="text-right px-4 py-3 font-semibold text-slate-600">Totaal</th>
                   </tr>
-                )).flatMap((catRow, catIdx) => [
-                  catRow,
-                  ...result.lines
-                    .filter((l) => l.category === categories[catIdx])
-                    .map((line, idx) => (
-                      <tr
-                        key={`${categories[catIdx]}-${idx}`}
-                        className="border-b border-slate-100"
-                      >
-                        <td className="px-4 py-2.5 text-slate-700">
-                          {line.description}
-                        </td>
-                        <td className="px-3 py-2.5 text-center text-slate-500">
-                          {line.type === "materiaal" ? "Materiaal" : "Arbeid"}
-                        </td>
-                        <td className="px-3 py-2.5 text-right text-slate-600">
-                          {line.quantity} {line.unit}
-                        </td>
-                        <td className="px-3 py-2.5 text-right text-slate-600">
-                          {formatCurrency(line.unit_price)}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-medium text-slate-700">
-                          {formatCurrency(line.total)}
-                        </td>
-                      </tr>
-                    )),
-                ])}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {categories.map((category) => (
+                    <tr key={category}>
+                      <td colSpan={5} className="px-4 py-2 bg-slate-50 font-semibold text-slate-700 text-xs uppercase tracking-wide">
+                        {category}
+                      </td>
+                    </tr>
+                  )).flatMap((catRow, catIdx) => [
+                    catRow,
+                    ...result.lines
+                      .filter((l) => l.category === categories[catIdx])
+                      .map((line, idx) => (
+                        <tr key={`${categories[catIdx]}-${idx}`} className="border-b border-slate-100">
+                          <td className="px-4 py-2.5 text-slate-700">{line.description}</td>
+                          <td className="px-3 py-2.5 text-center text-slate-500">
+                            {line.type === "materiaal" ? "Materiaal" : "Arbeid"}
+                          </td>
+                          <td className="px-3 py-2.5 text-right text-slate-600">{line.quantity} {line.unit}</td>
+                          <td className="px-3 py-2.5 text-right text-slate-600">{formatCurrency(line.unit_price)}</td>
+                          <td className="px-4 py-2.5 text-right font-medium text-slate-700">{formatCurrency(line.total)}</td>
+                        </tr>
+                      )),
+                  ])}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* MODULE: subtotaal per categorie */}
+        {displayMode === "module" && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left px-4 py-3 font-semibold text-slate-600">Onderdeel</th>
+                    <th className="text-right px-4 py-3 font-semibold text-slate-600">Bedrag</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categoryTotals.map((cat, idx) => (
+                    <tr key={idx} className="border-b border-slate-100">
+                      <td className="px-4 py-3 text-slate-700 font-medium">{cat.name}</td>
+                      <td className="px-4 py-3 text-right font-medium text-slate-700">{formatCurrency(cat.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* HOOGOVER: geen regelspecificatie, alleen totaalblok */}
+        {displayMode === "hoogover" && (
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 mb-6">
+            <p className="text-sm text-slate-500 mb-3">
+              Deze offerte is op hoofdlijnen opgesteld. De totaalprijs omvat alle benodigde materialen en arbeid.
+            </p>
+          </div>
+        )}
 
         {/* Totals */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 md:p-6 mb-6">
           <div className="max-w-xs ml-auto space-y-2 text-sm">
-            <div className="flex justify-between text-slate-600">
-              <span className="flex items-center gap-1.5">
-                <Package className="w-4 h-4 text-blue-500" /> Materialen
-              </span>
-              <span>{formatCurrency(result.subtotal_materials)}</span>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span className="flex items-center gap-1.5">
-                <Wrench className="w-4 h-4 text-brand-500" /> Arbeid
-              </span>
-              <span>{formatCurrency(result.subtotal_labor)}</span>
-            </div>
-            <div className="flex justify-between text-slate-600">
-              <span>Winstmarge</span>
-              <span>{formatCurrency(result.margin_amount)}</span>
-            </div>
+            {displayMode !== "hoogover" && (
+              <>
+                <div className="flex justify-between text-slate-600">
+                  <span className="flex items-center gap-1.5">
+                    <Package className="w-4 h-4 text-blue-500" /> Materialen
+                  </span>
+                  <span>{formatCurrency(result.subtotal_materials)}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span className="flex items-center gap-1.5">
+                    <Wrench className="w-4 h-4 text-brand-500" /> Arbeid
+                  </span>
+                  <span>{formatCurrency(result.subtotal_labor)}</span>
+                </div>
+              </>
+            )}
             <div className="border-t border-slate-200 pt-2 flex justify-between font-medium text-slate-700">
               <span>Totaal excl. BTW</span>
               <span>{formatCurrency(result.total_excl_btw)}</span>
