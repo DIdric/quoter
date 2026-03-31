@@ -1,7 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Activity } from "lucide-react";
+import { Loader2, Activity, FileText } from "lucide-react";
+
+interface QuoteFeedItem {
+  id: string;
+  user_id: string;
+  business_name: string;
+  client_name: string | null;
+  quote_number: string | null;
+  status: string;
+  created_at: string;
+}
 
 interface UsageByDay {
   [date: string]: { tokens: number; cost: number; requests: number };
@@ -14,18 +24,20 @@ interface UsageByUser {
 export default function AdminUsagePage() {
   const [byDay, setByDay] = useState<UsageByDay>({});
   const [byUser, setByUser] = useState<UsageByUser>({});
+  const [quotesFeed, setQuotesFeed] = useState<QuoteFeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(30);
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/admin?action=usage&days=${days}`)
-      .then((r) => r.json())
-      .then((d) => {
-        setByDay(d.byDay ?? {});
-        setByUser(d.byUser ?? {});
-      })
-      .finally(() => setLoading(false));
+    Promise.all([
+      fetch(`/api/admin?action=usage&days=${days}`).then((r) => r.json()),
+      fetch(`/api/admin?action=quotes-feed&days=${days}`).then((r) => r.json()),
+    ]).then(([usage, feed]) => {
+      setByDay(usage.byDay ?? {});
+      setByUser(usage.byUser ?? {});
+      setQuotesFeed(feed.quotes ?? []);
+    }).finally(() => setLoading(false));
   }, [days]);
 
   const sortedDays = Object.entries(byDay).sort(([a], [b]) => b.localeCompare(a));
@@ -162,6 +174,57 @@ export default function AdminUsagePage() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Quotes feed */}
+      <div className="mt-6 bg-white rounded-xl shadow-sm border border-slate-200">
+        <div className="px-4 py-4 md:px-6 border-b border-slate-200 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-800">Offerte-activiteit</h2>
+          <span className="text-sm text-slate-500">{quotesFeed.length} offertes</span>
+        </div>
+        {quotesFeed.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[550px]">
+              <thead>
+                <tr className="border-b border-slate-200">
+                  <th className="text-left px-4 py-2 md:px-6 text-sm font-medium text-slate-500">Tijdstip</th>
+                  <th className="text-left px-4 py-2 md:px-6 text-sm font-medium text-slate-500">Gebruiker</th>
+                  <th className="text-left px-4 py-2 md:px-6 text-sm font-medium text-slate-500">Klant</th>
+                  <th className="text-left px-4 py-2 md:px-6 text-sm font-medium text-slate-500">Nummer</th>
+                  <th className="text-left px-4 py-2 md:px-6 text-sm font-medium text-slate-500">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {quotesFeed.map((q) => (
+                  <tr key={q.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-2.5 md:px-6 text-sm text-slate-500 whitespace-nowrap">
+                      {new Date(q.created_at).toLocaleString("nl-NL", {
+                        day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+                      })}
+                    </td>
+                    <td className="px-4 py-2.5 md:px-6 text-sm font-medium text-slate-800">{q.business_name}</td>
+                    <td className="px-4 py-2.5 md:px-6 text-sm text-slate-600">{q.client_name || "—"}</td>
+                    <td className="px-4 py-2.5 md:px-6 text-sm text-slate-500">{q.quote_number || "—"}</td>
+                    <td className="px-4 py-2.5 md:px-6">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                        q.status === "final" ? "bg-green-100 text-green-700" :
+                        q.status === "completed" ? "bg-blue-100 text-blue-700" :
+                        "bg-slate-100 text-slate-600"
+                      }`}>
+                        {q.status === "final" ? "Definitief" : q.status === "completed" ? "Afgerond" : "Concept"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="px-6 py-8 text-center text-slate-500">
+            <FileText className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+            <p>Geen offertes in deze periode</p>
+          </div>
+        )}
       </div>
     </div>
   );
