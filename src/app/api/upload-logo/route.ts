@@ -34,12 +34,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Geen bestand geselecteerd" }, { status: 400 });
     }
 
+    const ALLOWED_TYPES: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/svg+xml": "svg",
+    };
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
+    if (!ALLOWED_TYPES[file.type]) {
+      return NextResponse.json({ error: "Alleen JPG, PNG, WebP of SVG toegestaan" }, { status: 415 });
+    }
+    if (file.size > MAX_SIZE) {
+      return NextResponse.json({ error: "Bestand mag maximaal 5MB zijn" }, { status: 413 });
+    }
+
     const admin = getServiceClient();
 
     // Auto-create bucket if it doesn't exist
     await ensureBucketExists(admin);
 
-    const fileExt = file.name.split(".").pop()?.toLowerCase() || "png";
+    const fileExt = ALLOWED_TYPES[file.type];
     const filePath = `${user.id}/logo.${fileExt}`;
 
     const arrayBuffer = await file.arrayBuffer();
@@ -49,7 +64,7 @@ export async function POST(request: NextRequest) {
       .from("logos")
       .upload(filePath, buffer, {
         upsert: true,
-        contentType: file.type,
+        contentType: ALLOWED_TYPES[file.type] === "svg" ? "image/svg+xml" : file.type,
       });
 
     if (error) {
