@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Profile, DisplayMode, Keurmerk, Language } from "@/lib/types";
-import { Save, Loader2, Upload, X, Image as ImageIcon, Zap, Check, ExternalLink, Lock, Award } from "lucide-react";
+import { Save, Loader2, Upload, X, Image as ImageIcon, Zap, Check, ExternalLink, Lock, Award, AlertCircle } from "lucide-react";
+import { getProfileCompletion } from "@/lib/profile-complete";
 
 const PRESET_KEURMERKEN = [
   "Bouwend Nederland",
@@ -268,9 +269,67 @@ export default function SettingsPage() {
     );
   }
 
+  const completion = !loading ? getProfileCompletion(profile) : null;
+
+  const REQUIRED_FIELD_LABELS: Record<string, string> = {
+    business_name: "Bedrijfsnaam",
+    business_address: "Adres",
+    business_postal_code: "Postcode",
+    business_city: "Plaatsnaam",
+    business_phone: "Telefoonnummer",
+    business_email: "E-mailadres",
+    kvk_number: "KVK-nummer",
+    hourly_rate: "Uurtarief",
+    margin_percentage: "Marge",
+  };
+
+  const missingLabels = completion && !completion.isComplete
+    ? (["business_name","business_address","business_postal_code","business_city","business_phone","business_email","kvk_number","hourly_rate","margin_percentage"] as const)
+        .filter((f) => {
+          const v = profile[f];
+          if (v === null || v === undefined) return true;
+          if (typeof v === "string") return v.trim() === "";
+          if (typeof v === "number") return v <= 0;
+          return false;
+        })
+        .map((f) => REQUIRED_FIELD_LABELS[f])
+    : [];
+
   return (
     <div>
       <h1 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 md:mb-6">Instellingen</h1>
+
+      {completion && !completion.isComplete && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-5 max-w-2xl">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-orange-500 shrink-0" />
+              <span className="text-sm font-medium text-orange-800">
+                Profiel {completion.percentage}% compleet
+              </span>
+            </div>
+          </div>
+          <div className="w-full bg-orange-200 rounded-full h-1.5 mb-3">
+            <div
+              className="h-1.5 bg-orange-500 rounded-full transition-all"
+              style={{ width: `${completion.percentage}%` }}
+            />
+          </div>
+          {missingLabels.length > 0 && (
+            <p className="text-xs text-orange-700">
+              Nog in te vullen:{" "}
+              <span className="font-medium">{missingLabels.join(", ")}</span>
+            </p>
+          )}
+        </div>
+      )}
+
+      {completion?.isComplete && (
+        <div className="bg-green-50 border border-green-200 rounded-xl p-3 mb-5 max-w-2xl flex items-center gap-2">
+          <Check className="w-4 h-4 text-green-600 shrink-0" />
+          <span className="text-sm font-medium text-green-800">Profiel volledig ingevuld</span>
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 max-w-2xl">
         <div className="p-4 md:p-6 border-b border-slate-200">
@@ -351,7 +410,7 @@ export default function SettingsPage() {
                 setProfile({ ...profile, business_name: e.target.value })
               }
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
-              placeholder="Jouw Bedrijf B.V."
+              placeholder="Bedrijfsnaam B.V."
             />
           </div>
 
@@ -367,7 +426,7 @@ export default function SettingsPage() {
                 setProfile({ ...profile, business_address: e.target.value })
               }
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
-              placeholder="Kaasjeskruidstraat 13"
+              placeholder="Straatnaam en huisnummer"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -382,7 +441,7 @@ export default function SettingsPage() {
                   setProfile({ ...profile, business_postal_code: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
-                placeholder="1032LS"
+                placeholder="1234 AB"
               />
             </div>
             <div>
@@ -414,7 +473,7 @@ export default function SettingsPage() {
                   setProfile({ ...profile, business_phone: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
-                placeholder="020-1234567"
+                placeholder="06-12345678"
               />
             </div>
             <div>
@@ -428,7 +487,7 @@ export default function SettingsPage() {
                   setProfile({ ...profile, business_email: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
-                placeholder="info@jouwbedrijf.nl"
+                placeholder="info@bedrijf.nl"
               />
             </div>
           </div>
@@ -460,7 +519,7 @@ export default function SettingsPage() {
                   setProfile({ ...profile, btw_number: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
-                placeholder="NL001234567B01"
+                placeholder="NL123456789B01"
               />
             </div>
           </div>
@@ -476,7 +535,7 @@ export default function SettingsPage() {
                 setProfile({ ...profile, iban: e.target.value })
               }
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
-              placeholder="NL32 ABNA 0464 9587 17"
+              placeholder="NL91 ABNA 0417 1643 00"
             />
           </div>
 
