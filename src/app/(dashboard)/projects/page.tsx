@@ -80,7 +80,7 @@ export default function ProjectsPage() {
     <div>
       <div className="flex items-center justify-between mb-4 md:mb-6">
         <h1 className="text-xl md:text-2xl font-bold text-slate-800">
-          Projecten
+          Offertes
         </h1>
         <Link
           href="/quotes/new"

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, Loader2 } from "lucide-react";
+import { Users, Loader2, ChevronDown } from "lucide-react";
+
+type Tier = "free" | "pro" | "business";
 
 interface UserData {
   id: string;
@@ -9,10 +11,76 @@ interface UserData {
   business_email: string | null;
   business_city: string | null;
   auth_email: string | null;
+  subscription_tier: Tier;
   created_at: string;
   quote_count: number;
   total_tokens: number;
   total_cost: number;
+}
+
+const TIER_STYLES: Record<Tier, string> = {
+  free: "bg-slate-100 text-slate-600",
+  pro: "bg-blue-100 text-blue-700",
+  business: "bg-amber-100 text-amber-700",
+};
+
+function TierBadge({ tier }: { tier: Tier }) {
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${TIER_STYLES[tier] ?? TIER_STYLES.free}`}>
+      {tier}
+    </span>
+  );
+}
+
+function TierSelect({ userId, current, onChanged }: { userId: string; current: Tier; onChanged: (t: Tier) => void }) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function changeTier(tier: Tier) {
+    if (tier === current) { setOpen(false); return; }
+    setSaving(true);
+    setOpen(false);
+    await fetch("/api/admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "update-user-tier", userId, tier }),
+    });
+    onChanged(tier);
+    setSaving(false);
+  }
+
+  return (
+    <div className="relative inline-block">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        disabled={saving}
+        className="flex items-center gap-1 group"
+      >
+        <TierBadge tier={current} />
+        {saving ? (
+          <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
+        ) : (
+          <ChevronDown className="w-3 h-3 text-slate-400 opacity-0 group-hover:opacity-100 transition" />
+        )}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute left-0 top-full mt-1 z-20 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[110px]">
+            {(["free", "pro", "business"] as Tier[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => changeTier(t)}
+                className={`flex items-center gap-2 w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 transition ${t === current ? "font-medium" : ""}`}
+              >
+                <TierBadge tier={t} />
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 export default function AdminUsersPage() {
@@ -25,6 +93,10 @@ export default function AdminUsersPage() {
       .then((d) => setUsers(d.users ?? []))
       .finally(() => setLoading(false));
   }, []);
+
+  function handleTierChanged(userId: string, tier: Tier) {
+    setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, subscription_tier: tier } : u));
+  }
 
   if (loading) {
     return (
@@ -45,7 +117,7 @@ export default function AdminUsersPage() {
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
         {users.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[650px]">
+            <table className="w-full min-w-[750px]">
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
@@ -53,6 +125,9 @@ export default function AdminUsersPage() {
                   </th>
                   <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
                     E-mail
+                  </th>
+                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
+                    Tier
                   </th>
                   <th className="text-right px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
                     Offertes
@@ -90,6 +165,13 @@ export default function AdminUsersPage() {
                           Zakelijk: {user.business_email}
                         </div>
                       )}
+                    </td>
+                    <td className="px-4 py-3 md:px-6 md:py-4">
+                      <TierSelect
+                        userId={user.id}
+                        current={user.subscription_tier ?? "free"}
+                        onChanged={(t) => handleTierChanged(user.id, t)}
+                      />
                     </td>
                     <td className="px-4 py-3 md:px-6 md:py-4 text-right text-slate-800">
                       {user.quote_count}
