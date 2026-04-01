@@ -13,14 +13,8 @@ const nextConfig: NextConfig = {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },
   async redirects() {
-    return [
-      {
-        source: "/:path*",
-        has: [{ type: "host", value: "quoter.didric.nl" }],
-        destination: "https://quoter.nu/:path*",
-        permanent: true,
-      },
-    ];
+    // Redirect opnieuw inschakelen zodra DNS van quoter.nu actief is
+    return [];
   },
 };
 
