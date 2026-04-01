@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getProfileCompletion } from "@/lib/profile-complete";
 import {
   LayoutDashboard,
   FolderOpen,
@@ -31,6 +32,7 @@ export default function Sidebar() {
   const [isFree, setIsFree] = useState(false);
   const [quotesUsed, setQuotesUsed] = useState<number | null>(null);
   const [quotesLimit, setQuotesLimit] = useState<number>(10);
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
   const pathname = usePathname();
   const supabase = createClient();
 
@@ -47,7 +49,7 @@ export default function Sidebar() {
       if (!user) return;
       supabase
         .from("profiles")
-        .select("subscription_tier")
+        .select("*")
         .eq("id", user.id)
         .single()
         .then(({ data }) => {
@@ -56,6 +58,11 @@ export default function Sidebar() {
           setIsFree(showNudge);
           // Set quota limit based on tier
           setQuotesLimit(tier === "free" ? 10 : tier === "pro" ? 50 : -1);
+          // Check if profile is complete
+          if (data) {
+            const { isComplete } = getProfileCompletion(data);
+            setProfileIncomplete(!isComplete);
+          }
 
           if (showNudge) {
             // Load quotes used this month
@@ -167,6 +174,7 @@ export default function Sidebar() {
         <nav className="flex-1 px-3 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
+            const showBadge = item.href === "/settings" && profileIncomplete;
             return (
               <Link
                 key={item.href}
@@ -179,7 +187,10 @@ export default function Sidebar() {
                 }`}
               >
                 <item.icon className="w-5 h-5" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {showBadge && (
+                  <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
+                )}
               </Link>
             );
           })}

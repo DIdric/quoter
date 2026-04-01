@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { FileText, Clock, Euro, TrendingUp, Plus, Zap, CheckCircle } from "lucide-react";
 import { TIER_LIMITS, type SubscriptionTier } from "@/lib/usage-limits";
+import { ProfileCompletionBanner } from "@/components/profile-completion-banner";
 
 interface QuoteJsonData {
   form?: {
@@ -99,6 +100,8 @@ export default async function DashboardPage({
 
   return (
     <div>
+      <ProfileCompletionBanner />
+
       {params.checkout === "success" && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3 mb-6">
           <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
