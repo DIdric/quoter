@@ -340,14 +340,14 @@ ${body.ai_input}${translationInstruction}`;
           quoteData.total_excl_btw = totalExclBtw;
           quoteData.btw_amount = btwAmount;
           quoteData.total_incl_btw = totalInclBtw;
-        }
 
-        // Sync closing text price with recalculated total
-        if (typeof quoteData.closing === "string" && totalInclBtw > 0) {
-          quoteData.closing = quoteData.closing.replace(
-            /€\s?[\d.,]+/g,
-            `€${totalInclBtw.toLocaleString("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-          );
+          // Sync closing text price with recalculated total
+          if (typeof quoteData.closing === "string" && totalInclBtw > 0) {
+            quoteData.closing = quoteData.closing.replace(
+              /€\s?[\d.,]+/g,
+              `€${totalInclBtw.toLocaleString("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            );
+          }
         }
 
         // Store language
