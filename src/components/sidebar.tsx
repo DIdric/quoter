@@ -20,7 +20,7 @@ import {
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/projects", label: "Projecten", icon: FolderOpen },
+  { href: "/projects", label: "Offertes", icon: FolderOpen },
   { href: "/materials", label: "Materialen", icon: Package },
   { href: "/settings", label: "Instellingen", icon: Settings },
 ];

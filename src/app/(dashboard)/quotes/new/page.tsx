@@ -434,6 +434,9 @@ function NewQuotePage() {
     client_name: "",
     client_email: "",
     client_phone: "",
+    client_address: "",
+    client_postal_code: "",
+    client_city: "",
     project_title: "",
     project_description: "",
     project_location: "",
@@ -452,6 +455,7 @@ function NewQuotePage() {
   const [copied, setCopied] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [whatsappSharing, setWhatsappSharing] = useState(false);
+  const [emailOpened, setEmailOpened] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
   const [uploadedImagePath, setUploadedImagePath] = useState<string | null>(null);
@@ -950,6 +954,44 @@ function NewQuotePage() {
                     />
                   </div>
                 </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-3">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Adres <span className="text-slate-400 font-normal">(optioneel)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={form.client_address}
+                      onChange={(e) => updateForm("client_address", e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                      placeholder="Hoofdstraat 1"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Postcode
+                    </label>
+                    <input
+                      type="text"
+                      value={form.client_postal_code}
+                      onChange={(e) => updateForm("client_postal_code", e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                      placeholder="1234 AB"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                      Plaats
+                    </label>
+                    <input
+                      type="text"
+                      value={form.client_city}
+                      onChange={(e) => updateForm("client_city", e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none text-slate-800"
+                      placeholder="Amsterdam"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Divider */}
@@ -1001,7 +1043,7 @@ function NewQuotePage() {
                       onChange={(e) => updateForm("project_description", e.target.value)}
                       rows={3}
                       className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none resize-none text-slate-800"
-                      placeholder="Beschrijf het project..."
+                      placeholder="Korte omschrijving die op de offerte verschijnt (bijv. locatie, omvang, bijzonderheden)"
                     />
                     <VoiceInput
                       className="absolute top-2 right-2"
@@ -1782,13 +1824,22 @@ function NewQuotePage() {
                       className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                       placeholder="E-mailadres klant"
                     />
-                    <a
-                      href={`mailto:${form.client_email}?subject=Offerte ${result?.quote_title || form.project_title}&body=Beste ${form.client_name},%0A%0AHierbij stuur ik u de offerte voor ${result?.quote_title || form.project_title}.%0A%0AMet vriendelijke groet`}
+                    <button
+                      onClick={() => {
+                        const subject = encodeURIComponent(`Offerte ${result?.quote_title || form.project_title}`);
+                        const body = encodeURIComponent(`Beste ${form.client_name},\n\nHierbij stuur ik u de offerte voor ${result?.quote_title || form.project_title}.${shareToken ? `\n\nBekijk de offerte online: ${window.location.origin}/share/${shareToken}` : ""}\n\nMet vriendelijke groet`);
+                        window.location.href = `mailto:${form.client_email}?subject=${subject}&body=${body}`;
+                        setEmailOpened(true);
+                        setTimeout(() => setEmailOpened(false), 4000);
+                      }}
                       className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2.5 rounded-lg transition text-sm w-full justify-center"
                     >
-                      <Send className="w-4 h-4" />
-                      Verstuur per e-mail
-                    </a>
+                      {emailOpened ? (
+                        <><CheckCircle className="w-4 h-4" /> E-mail app geopend</>
+                      ) : (
+                        <><Send className="w-4 h-4" /> Verstuur per e-mail</>
+                      )}
+                    </button>
                   </div>
                 </div>
 

@@ -32,6 +32,7 @@ interface QuoteModuleDescription {
 interface QuoteResult {
   quote_title: string;
   summary: string;
+  closing?: string;
   technical_description?: string;
   modules?: QuoteModuleDescription[];
   lines: QuoteLine[];
@@ -50,6 +51,9 @@ interface QuoteJsonData {
     client_name?: string;
     client_email?: string;
     client_phone?: string;
+    client_address?: string;
+    client_postal_code?: string;
+    client_city?: string;
     project_title?: string;
     project_description?: string;
     project_location?: string;
@@ -186,6 +190,17 @@ export default async function SharedQuotePage({
                 <div className="flex items-center gap-2 text-slate-600 text-sm">
                   <Phone className="w-4 h-4 text-slate-400" />
                   {form.client_phone}
+                </div>
+              )}
+              {form?.client_address && (
+                <div className="flex items-start gap-2 text-slate-600 text-sm">
+                  <MapPin className="w-4 h-4 text-slate-400 mt-0.5" />
+                  <span>
+                    {form.client_address}
+                    {(form.client_postal_code || form.client_city) && (
+                      <><br />{[form.client_postal_code, form.client_city].filter(Boolean).join(" ")}</>
+                    )}
+                  </span>
                 </div>
               )}
             </div>
@@ -366,13 +381,14 @@ export default async function SharedQuotePage({
           <p className="text-sm text-slate-600">
             Deze offerte is geldig tot <span className="font-medium text-slate-700">{formatDateNL(expiryDate)}</span>.
           </p>
-          <p className="text-sm text-slate-600 mt-2">
-            Wij vertrouwen erop u hiermee een passende aanbieding te hebben gedaan.
-          </p>
-          <p className="text-sm text-slate-600 mt-2">Met vriendelijke groet,</p>
-          <p className="text-sm font-semibold text-slate-700 mt-1">
-            {profile?.business_name}
-          </p>
+          {result.closing ? (
+            <p className="text-sm text-slate-600 mt-2 whitespace-pre-line">{result.closing}</p>
+          ) : (
+            <>
+              <p className="text-sm text-slate-600 mt-2">Met vriendelijke groet,</p>
+              <p className="text-sm font-semibold text-slate-700 mt-1">{profile?.business_name}</p>
+            </>
+          )}
         </div>
 
         {/* Footer */}
