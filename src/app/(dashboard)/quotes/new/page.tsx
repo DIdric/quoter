@@ -1295,7 +1295,7 @@ function NewQuotePage() {
               <div className="flex flex-col sm:flex-row gap-0 min-h-[600px]">
 
                 {/* LEFT: Edit panel */}
-                <div className={`sm:w-1/2 sm:border-r border-slate-200 sm:pr-6 space-y-4 ${activeTab !== "Bewerken" ? "hidden sm:block" : ""}`}>
+                <div className={`sm:w-1/2 sm:border-r border-slate-200 sm:pr-6 space-y-5 sm:space-y-4 ${activeTab !== "Bewerken" ? "hidden sm:block" : ""}`}>
                   <h2 className="text-lg font-semibold text-slate-800">
                     Gegenereerde offerte
                   </h2>
@@ -1438,7 +1438,7 @@ function NewQuotePage() {
                         <div className="bg-slate-50 px-4 py-3 border-b border-slate-200">
                           <h3 className="font-semibold text-slate-800 text-sm">Prijsoverzicht</h3>
                         </div>
-                        <div className="p-4 space-y-6">
+                        <div className="p-4 space-y-8 sm:space-y-6">
                           {categories.map((category) => {
                             const catLines = result.lines
                               .map((l, globalIdx) => ({ ...l, globalIdx }))
@@ -1460,7 +1460,7 @@ function NewQuotePage() {
                                         className={`rounded-lg bg-white ${needsAttention ? "border border-slate-200 border-l-4 border-l-orange-400" : "border border-slate-200"}`}
                                       >
                                         {/* 2-regel layout — werkt op alle schermbreedtes */}
-                                        <div className="p-3 space-y-2">
+                                        <div className="p-3 space-y-3">
                                           <div className="flex items-center gap-2">
                                             <input
                                               type="text"
@@ -1485,7 +1485,7 @@ function NewQuotePage() {
                                               <Trash2 className="w-4 h-4" />
                                             </button>
                                           </div>
-                                          <div className="grid grid-cols-4 gap-2">
+                                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                             <div>
                                               <label className="text-xs text-slate-400">Aantal</label>
                                               <input
@@ -1534,13 +1534,13 @@ function NewQuotePage() {
                                                 className="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:ring-1 focus:ring-brand-500 outline-none text-right text-slate-800"
                                               />
                                             </div>
-                                            <div className="flex flex-col justify-between">
+                                            <div className="flex flex-col justify-between gap-1">
                                               <span className={`self-start inline-block px-2 py-0.5 rounded text-xs font-medium ${
                                                 line.type === "materiaal" ? "bg-blue-100 text-blue-700" : "bg-brand-100 text-brand-700"
                                               }`}>
                                                 {line.type === "materiaal" ? "Materiaal" : "Arbeid"}
                                               </span>
-                                              <span className="text-sm font-semibold text-slate-800 text-right">
+                                              <span className="text-base font-semibold text-slate-800 text-right">
                                                 {formatCurrency(Math.round(line.quantity * line.unit_price * 100) / 100)}
                                               </span>
                                             </div>
