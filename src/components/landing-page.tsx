@@ -118,28 +118,9 @@ export function LandingPage() {
           border-bottom: 1px solid rgba(58,222,106,0.12);
         }
         .lp-nav-logo {
-          font-family: var(--font-display), 'Instrument Sans', sans-serif;
-          font-size: 22px;
-          font-weight: 700;
-          color: var(--white);
-          text-decoration: none;
-          letter-spacing: -0.5px;
           display: flex;
           align-items: center;
-          gap: 8px;
-        }
-        .lp-q-mark {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          width: 32px;
-          height: 32px;
-          background: var(--green);
-          color: var(--black);
-          border-radius: 8px;
-          font-size: 18px;
-          font-weight: 700;
-          line-height: 1;
+          text-decoration: none;
         }
         .lp-nav-cta {
           background: var(--green);
@@ -859,14 +840,8 @@ export function LandingPage() {
           gap: 20px;
         }
         .lp-footer-logo {
-          font-family: var(--font-display), 'Instrument Sans', sans-serif;
-          font-size: 17px;
-          font-weight: 700;
-          color: var(--white);
           display: flex;
           align-items: center;
-          gap: 6px;
-          letter-spacing: -0.3px;
         }
         .lp-footer-links {
           display: flex;
@@ -900,8 +875,7 @@ export function LandingPage() {
         {/* NAV */}
         <nav className={`lp-nav${scrolled ? ' scrolled' : ''}`}>
           <a href="/" className="lp-nav-logo">
-            <span className="lp-q-mark">Q</span>
-            Quoter
+            <img src="/Logo Quoter.svg" alt="Quoter" style={{ height: 28 }} />
           </a>
           <div className="lp-nav-right">
             <Link href="/login" className="lp-nav-login">Inloggen</Link>
@@ -1151,8 +1125,7 @@ export function LandingPage() {
         {/* FOOTER */}
         <footer className="lp-footer">
           <div className="lp-footer-logo">
-            <span className="lp-q-mark">Q</span>
-            Quoter
+            <img src="/Logo Quoter.svg" alt="Quoter" style={{ height: 24 }} />
           </div>
           <div className="lp-footer-links">
             <a href="mailto:hallo@quoter.nl">hallo@quoter.nl</a>
