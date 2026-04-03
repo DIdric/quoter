@@ -347,6 +347,31 @@ export function LandingPage() {
           .lp-stat-pill { text-align: left; flex: 1; min-width: 120px; }
         }
 
+        /* ── VIDEO ── */
+        .lp-video {
+          background: var(--black);
+          padding: 0 48px 100px;
+        }
+        .lp-video-wrap {
+          max-width: 900px;
+          margin: 0 auto;
+          border-radius: 16px;
+          overflow: hidden;
+          border: 1px solid rgba(58,222,106,0.15);
+          box-shadow: 0 0 60px rgba(58,222,106,0.06);
+          aspect-ratio: 16 / 9;
+          background: #0d0d0d;
+        }
+        .lp-video-wrap iframe {
+          width: 100%;
+          height: 100%;
+          display: block;
+          border: none;
+        }
+        @media (max-width: 640px) {
+          .lp-video { padding: 0 16px 64px; }
+        }
+
         /* ── PIJN ── */
         .lp-pijn {
           background: var(--black);
@@ -1096,6 +1121,18 @@ export function LandingPage() {
               <span className="lp-stat-number">€0</span>
               <span className="lp-stat-label">meerwerk onbetaald</span>
             </div>
+          </div>
+        </section>
+
+        {/* VIDEO */}
+        <section className="lp-video">
+          <div className="lp-video-wrap">
+            <iframe
+              src="https://www.youtube.com/embed/Ivh4KHIH3Pk"
+              title="Quoter introductievideo"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </div>
         </section>
 
