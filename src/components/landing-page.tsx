@@ -1290,7 +1290,7 @@ export function LandingPage() {
                   <li>Marge-inzicht per project</li>
                   <li>Prioriteit support</li>
                 </ul>
-                <Link href="#partner" className="lp-plan-cta solid">Pro starten &rarr;</Link>
+                <a href={process.env.NEXT_PUBLIC_STRIPE_PRO_PAYMENT_LINK ?? '#partner'} className="lp-plan-cta solid">Pro starten &rarr;</a>
               </div>
             </div>
           </div>
