@@ -122,18 +122,14 @@ export function LandingPage() {
           inset: 0;
           background-image: url('/spencer-davis-SVfXlChg9HI-unsplash.jpg');
           background-size: cover;
-          background-position: center 40%;
+          background-position: center 35%;
         }
         .lp-hero-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(
-            to bottom,
-            rgba(17,17,17,0.0) 0%,
-            rgba(17,17,17,0.0) 30%,
-            rgba(17,17,17,0.55) 60%,
-            rgba(17,17,17,0.97) 100%
-          );
+          background:
+            linear-gradient(to right, rgba(17,17,17,0.82) 0%, rgba(17,17,17,0.35) 55%, rgba(17,17,17,0.05) 100%),
+            linear-gradient(to top, rgba(17,17,17,0.96) 0%, rgba(17,17,17,0.0) 50%);
         }
         .lp-hero-content {
           position: relative;
