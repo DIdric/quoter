@@ -193,8 +193,9 @@ export function LandingPage() {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
-          justify-content: flex-end;
-          padding: 0 48px 80px;
+          justify-content: center;
+          align-items: center;
+          padding: 0 48px;
           overflow: hidden;
         }
         .lp-hero-bg {
@@ -208,13 +209,13 @@ export function LandingPage() {
           position: absolute;
           inset: 0;
           background:
-            linear-gradient(to right, rgba(17,17,17,0.82) 0%, rgba(17,17,17,0.35) 55%, rgba(17,17,17,0.05) 100%),
-            linear-gradient(to top, rgba(17,17,17,0.96) 0%, rgba(17,17,17,0.0) 50%);
+            linear-gradient(to bottom, rgba(17,17,17,0.45) 0%, rgba(17,17,17,0.55) 50%, rgba(17,17,17,0.88) 100%);
         }
         .lp-hero-content {
           position: relative;
           z-index: 2;
-          max-width: 760px;
+          max-width: 720px;
+          text-align: center;
           opacity: 0;
           transform: translateY(28px);
           animation: lpFadeUp 0.9s ease 0.3s forwards;
@@ -231,7 +232,7 @@ export function LandingPage() {
           border: 1px solid rgba(58,222,106,0.25);
           padding: 6px 14px;
           border-radius: 100px;
-          margin-bottom: 28px;
+          margin: 0 auto 28px;
           text-transform: uppercase;
         }
         .lp-dot {
@@ -254,17 +255,17 @@ export function LandingPage() {
           font-style: normal;
           color: var(--green);
         }
-        .lp-hero-sub {
-          font-size: clamp(16px, 2vw, 20px);
-          color: rgba(255,255,255,0.72);
-          font-weight: 300;
-          max-width: 520px;
-          line-height: 1.55;
+        .lp-hero-subtitle {
+          font-size: clamp(18px, 2.2vw, 24px);
+          color: rgba(255,255,255,0.9);
+          font-weight: 400;
+          line-height: 1.4;
           margin-bottom: 40px;
         }
         .lp-hero-actions {
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 16px;
           flex-wrap: wrap;
         }
@@ -1069,9 +1070,8 @@ export function LandingPage() {
             <h1 className="lp-h1">
               Je avond<br />is van <em>jou.</em>
             </h1>
-            <p className="lp-hero-sub">
-              Voor de vakman die briljant is in bouwen — maar verdrinkt in offertes,
-              nacalculaties en vergeten meerwerk. Quoter maakt je offerte in 10 minuten.
+            <p className="lp-hero-subtitle">
+              Quoter maakt je offerte in 10 minuten.
             </p>
             <div className="lp-hero-actions">
               <a href="#partner" className="lp-btn-primary">
