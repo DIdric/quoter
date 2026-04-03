@@ -1125,21 +1125,21 @@ export function LandingPage() {
             <div className="lp-steps">
               <div className="lp-step">
                 <div className="lp-step-num">01</div>
-                <div className="lp-step-title">Stuur een foto of PDF</div>
-                <p className="lp-step-desc">Een foto van de tekening, een voice-memo van de bouwplaats of een PDF. Dat is alles wat Quoter nodig heeft.</p>
-                <div className="lp-step-detail">→ Foto / Spraak / PDF</div>
+                <div className="lp-step-title">Omschrijven</div>
+                <p className="lp-step-desc">Klik op 'Nieuwe offerte'. Typ of spreek in voor wie de offerte is en geef een omschrijving van het project — gewoon in mensentaal. Je kan ook een foto of tekening uploaden. De A.I. selecteert automatisch de juiste modules. Klik op genereren.</p>
+                <div className="lp-step-detail">→ Tekst / Spraak / Foto</div>
               </div>
               <div className="lp-step">
                 <div className="lp-step-num">02</div>
-                <div className="lp-step-title">AI maakt de offerte</div>
-                <p className="lp-step-desc">Binnen 10 minuten staat er een volledige, professionele offerte klaar — inclusief materialen, uren en marge.</p>
-                <div className="lp-step-detail">→ ~10 minuten</div>
+                <div className="lp-step-title">Aanpassen</div>
+                <p className="lp-step-desc">De A.I. heeft al het harde werk gedaan — er staat direct een complete offerte klaar. Pas links aan wat je wilt, zie rechts de preview. Kies uit drie smaken: gedetailleerd, per module of hoogover.</p>
+                <div className="lp-step-detail">→ Gedetailleerd / Per module / Hoogover</div>
               </div>
               <div className="lp-step">
                 <div className="lp-step-num">03</div>
-                <div className="lp-step-title">Aanpassen &amp; versturen</div>
-                <p className="lp-step-desc">Alles is bewerkbaar. Logo erbij, uitsluitingen toevoegen, en met één klik versturen naar je klant.</p>
-                <div className="lp-step-detail">→ PDF / Link / Dashboard</div>
+                <div className="lp-step-title">Versturen</div>
+                <p className="lp-step-desc">Download de PDF, deel een link, of stuur direct via e-mail of WhatsApp. Je offerte wordt automatisch opgeslagen zodat je er altijd bij kan.</p>
+                <div className="lp-step-detail">→ PDF / Link / E-mail / WhatsApp</div>
               </div>
             </div>
           </div>
