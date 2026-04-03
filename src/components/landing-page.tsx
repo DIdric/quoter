@@ -148,7 +148,7 @@ export function LandingPage() {
           font-family: var(--font-display), 'Instrument Sans', sans-serif;
           font-weight: 600;
           font-size: 14px;
-          padding: 10px 22px;
+          padding: 10px 20px;
           border-radius: 8px;
           text-decoration: none;
           transition: opacity 0.2s;
@@ -156,24 +156,29 @@ export function LandingPage() {
         }
         .lp-nav-cta:hover { opacity: 0.85; }
         .lp-nav-login {
-          color: rgba(255,255,255,0.7);
+          background: var(--black);
+          color: var(--white);
           font-family: var(--font-display), 'Instrument Sans', sans-serif;
-          font-weight: 500;
+          font-weight: 600;
           font-size: 14px;
-          text-decoration: none;
-          transition: color 0.2s;
+          padding: 10px 20px;
+          border-radius: 8px;
+          border: 1px solid rgba(255,255,255,0.15);
+          cursor: pointer;
+          transition: border-color 0.2s;
+          white-space: nowrap;
         }
-        .lp-nav-login:hover { color: var(--white); }
+        .lp-nav-login:hover { border-color: rgba(255,255,255,0.4); }
         .lp-nav-right {
           display: flex;
           align-items: center;
-          gap: 20px;
+          gap: 10px;
         }
 
-        @media (max-width: 640px) {
-          .lp-nav { padding: 16px 20px; }
-          .lp-nav-cta { display: none; }
-          .lp-nav-login { display: none; }
+        @media (max-width: 480px) {
+          .lp-nav { padding: 12px 16px; }
+          .lp-nav-login { padding: 8px 14px; font-size: 13px; }
+          .lp-nav-cta { padding: 8px 14px; font-size: 13px; }
         }
 
         /* ── HERO ── */
