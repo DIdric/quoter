@@ -29,6 +29,23 @@ export function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
+  useEffect(() => {
+    const items = document.querySelectorAll('.lp-pijn-item')
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry, i) => {
+          if (entry.isIntersecting) {
+            setTimeout(() => entry.target.classList.add('visible'), i * 120)
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.15 }
+    )
+    items.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <>
       <style>{`
@@ -266,6 +283,82 @@ export function LandingPage() {
           .lp-stat-pill { text-align: left; flex: 1; min-width: 120px; }
         }
 
+        /* ── PIJN ── */
+        .lp-pijn {
+          background: var(--black);
+          padding: 100px 48px;
+        }
+        .lp-pijn-inner {
+          max-width: 1100px;
+          margin: 0 auto;
+        }
+        .lp-section-label {
+          font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+          font-size: 11px;
+          letter-spacing: 0.12em;
+          color: var(--green);
+          text-transform: uppercase;
+          margin-bottom: 20px;
+          display: block;
+        }
+        .lp-h2 {
+          font-family: var(--font-display), 'Instrument Sans', sans-serif;
+          font-size: clamp(32px, 4.5vw, 56px);
+          font-weight: 700;
+          letter-spacing: -1.5px;
+          line-height: 1.1;
+          margin-bottom: 60px;
+          color: var(--white);
+        }
+        .lp-h2 .accent { color: var(--green); }
+        .lp-pijn-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 2px;
+        }
+        .lp-pijn-item {
+          background: #161616;
+          padding: 36px 32px;
+          border-top: 2px solid transparent;
+          transition: border-color 0.3s, background 0.3s;
+          opacity: 0;
+          transform: translateY(20px);
+          transition: border-color 0.3s, background 0.3s, opacity 0.5s ease, transform 0.5s ease;
+        }
+        .lp-pijn-item.visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .lp-pijn-item:hover {
+          border-color: var(--green);
+          background: #1c1c1c;
+        }
+        .lp-pijn-num {
+          font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+          font-size: 11px;
+          color: var(--veldsteen);
+          letter-spacing: 0.1em;
+          margin-bottom: 20px;
+          display: block;
+        }
+        .lp-pijn-title {
+          font-family: var(--font-display), 'Instrument Sans', sans-serif;
+          font-size: 20px;
+          font-weight: 600;
+          color: var(--white);
+          margin-bottom: 12px;
+          letter-spacing: -0.3px;
+        }
+        .lp-pijn-desc {
+          font-size: 15px;
+          color: rgba(255,255,255,0.5);
+          line-height: 1.6;
+        }
+        @media (max-width: 768px) {
+          .lp-pijn { padding: 80px 20px; }
+          .lp-pijn-grid { grid-template-columns: 1fr; gap: 2px; }
+        }
+
         /* ── ANIMATIONS ── */
         @keyframes lpFadeUp {
           to { opacity: 1; transform: translateY(0); }
@@ -329,6 +422,34 @@ export function LandingPage() {
             <div className="lp-stat-pill">
               <span className="lp-stat-number">€0</span>
               <span className="lp-stat-label">meerwerk onbetaald</span>
+            </div>
+          </div>
+        </section>
+
+        {/* HET PROBLEEM */}
+        <section className="lp-pijn">
+          <div className="lp-pijn-inner">
+            <span className="lp-section-label">Het probleem</span>
+            <h2 className="lp-h2">
+              Je bouwt de mooiste klussen.<br />
+              Het <span className="accent">papierwerk</span> vreet je avond op.
+            </h2>
+            <div className="lp-pijn-grid">
+              <div className="lp-pijn-item">
+                <span className="lp-pijn-num">01</span>
+                <div className="lp-pijn-title">Offertes tot 23:00</div>
+                <p className="lp-pijn-desc">Je bent al uren thuis maar bent nog niet klaar. Elk project opnieuw maten invoeren, prijzen opzoeken, netjes opmaken.</p>
+              </div>
+              <div className="lp-pijn-item">
+                <span className="lp-pijn-num">02</span>
+                <div className="lp-pijn-title">Vergeten meerwerk</div>
+                <p className="lp-pijn-desc">Die extra wand, die onverwachte fundering — mondeling afgesproken op de bouw, vergeten te factureren. Geld dat gewoon verdwijnt.</p>
+              </div>
+              <div className="lp-pijn-item">
+                <span className="lp-pijn-num">03</span>
+                <div className="lp-pijn-title">Geen grip op marge</div>
+                <p className="lp-pijn-desc">Je weet pas na de kwartaalaangifte of je project winstgevend was. Tegen die tijd kun je er niets meer aan doen.</p>
+              </div>
             </div>
           </div>
         </section>
