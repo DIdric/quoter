@@ -4,6 +4,9 @@ export const metadata: Metadata = {
   title: "Privacybeleid Quoter – Hoe wij omgaan met jouw gegevens",
   description:
     "Quoter respecteert jouw privacy. In dit privacybeleid leggen we in begrijpelijke taal uit welke gegevens we verzamelen, waarom we dat doen en hoe we daarmee omgaan.",
+  alternates: {
+    canonical: "https://quoter.nu/privacy",
+  },
 };
 
 export default function PrivacyPage() {
