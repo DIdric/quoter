@@ -209,7 +209,7 @@ export function LandingPage() {
           position: absolute;
           inset: 0;
           background:
-            linear-gradient(to bottom, rgba(17,17,17,0.45) 0%, rgba(17,17,17,0.55) 50%, rgba(17,17,17,0.88) 100%);
+            linear-gradient(to bottom, rgba(17,17,17,0.45) 0%, rgba(17,17,17,0.55) 60%, rgba(17,17,17,1) 100%);
         }
         .lp-hero-content {
           position: relative;
@@ -350,7 +350,7 @@ export function LandingPage() {
         /* ── VIDEO ── */
         .lp-video {
           background: var(--black);
-          padding: 0 48px 100px;
+          padding: 80px 48px 100px;
         }
         .lp-video-wrap {
           max-width: 900px;
