@@ -36,6 +36,8 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/auth") &&
     !request.nextUrl.pathname.startsWith("/share") &&
+    !request.nextUrl.pathname.startsWith("/privacy") &&
+    !request.nextUrl.pathname.startsWith("/voorwaarden") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/webhook")
   ) {
     const url = request.nextUrl.clone();
