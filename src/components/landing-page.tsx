@@ -1302,7 +1302,7 @@ export function LandingPage() {
             <img src="/Logo Quoter.svg" alt="Quoter" style={{ height: 24 }} />
           </div>
           <div className="lp-footer-links">
-            <a href="mailto:hallo@quoter.nl">hallo@quoter.nl</a>
+            <a href="mailto:support@quoter.nu">support@quoter.nu</a>
             <a href="/privacy">Privacy</a>
             <a href="/voorwaarden">Voorwaarden</a>
           </div>

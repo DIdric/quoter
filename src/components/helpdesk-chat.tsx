@@ -105,7 +105,7 @@ export function HelpdeskChat() {
         updated[updated.length - 1] = {
           role: "assistant",
           content:
-            "Er ging iets mis. Probeer het opnieuw of stuur een mail naar [support@quoter.nl](mailto:support@quoter.nl).",
+            "Er ging iets mis. Probeer het opnieuw of stuur een mail naar [support@quoter.nu](mailto:support@quoter.nu).",
         };
         return updated;
       });
@@ -215,8 +215,8 @@ export function HelpdeskChat() {
           {/* Escalation footer */}
           <p className="text-xs text-slate-400 text-center pb-2">
             Geen antwoord?{" "}
-            <a href="mailto:support@quoter.nl" className="text-brand-500 hover:underline">
-              support@quoter.nl
+            <a href="mailto:support@quoter.nu" className="text-brand-500 hover:underline">
+              support@quoter.nu
             </a>
           </p>
         </div>
