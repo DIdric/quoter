@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { CONSTRUCTION_MODULES } from "@/lib/construction-modules";
+import { trackTokenUsage } from "@/lib/track-usage";
+import { checkUsageQuota } from "@/lib/usage-limits";
 
 const moduleIds = CONSTRUCTION_MODULES.map((m) => m.id);
 const moduleList = CONSTRUCTION_MODULES.map(
@@ -16,6 +18,12 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Check usage quota (shared with generate-quote)
+  const quota = await checkUsageQuota(user.id);
+  if (!quota.allowed) {
+    return NextResponse.json({ suggested: [], quota: { tier: quota.tier, reason: quota.reason } });
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -35,7 +43,7 @@ export async function POST(request: Request) {
     const client = new Anthropic();
 
     const message = await client.messages.create({
-      model: "claude-sonnet-4-5-20250929",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 256,
       system: `Je bent een bouwexpert. Gegeven een projectbeschrijving, geef je terug welke bouwmodules relevant zijn.
 
@@ -51,6 +59,15 @@ Geen uitleg, alleen de JSON array.`,
         },
       ],
     });
+
+    // Track token usage
+    await trackTokenUsage({
+      userId: user.id,
+      endpoint: "suggest-modules",
+      model: "claude-haiku-4-5-20251001",
+      inputTokens: message.usage.input_tokens,
+      outputTokens: message.usage.output_tokens,
+    }).catch((e) => console.error("[suggest-modules] Token tracking failed:", e));
 
     const textBlock = message.content.find((block) => block.type === "text");
     if (!textBlock || textBlock.type !== "text") {

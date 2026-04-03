@@ -12,6 +12,7 @@ import {
   X,
   Check,
   Loader2,
+  FileCode2,
 } from "lucide-react";
 
 export default function MaterialsPage() {
@@ -20,7 +21,11 @@ export default function MaterialsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", unit: "stuk", cost_price: "" });
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<{ imported: number; skipped: number; supplier?: string } | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const xmlInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -28,9 +33,12 @@ export default function MaterialsPage() {
   }, []);
 
   async function loadMaterials() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
     const { data } = await supabase
       .from("materials")
       .select("*")
+      .eq("user_id", user.id)
       .order("name");
     setMaterials(data ?? []);
     setLoading(false);
@@ -48,7 +56,7 @@ export default function MaterialsPage() {
     };
 
     if (editingId) {
-      await supabase.from("materials").update(payload).eq("id", editingId);
+      await supabase.from("materials").update(payload).eq("id", editingId).eq("user_id", user.id);
     } else {
       await supabase.from("materials").insert(payload);
     }
@@ -61,7 +69,9 @@ export default function MaterialsPage() {
 
   async function handleDelete(id: string) {
     if (!confirm("Weet je zeker dat je dit materiaal wilt verwijderen?")) return;
-    await supabase.from("materials").delete().eq("id", id);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("materials").delete().eq("id", id).eq("user_id", user.id);
     loadMaterials();
   }
 
@@ -137,7 +147,8 @@ export default function MaterialsPage() {
         await supabase
           .from("materials")
           .update({ unit: item.unit, cost_price: item.cost_price })
-          .eq("id", item.id);
+          .eq("id", item.id)
+          .eq("user_id", user.id);
       }
 
       // Insert new materials
@@ -150,6 +161,71 @@ export default function MaterialsPage() {
 
     // Reset file input
     if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  async function handleXmlUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setUploadError(null);
+    setUploadResult(null);
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setUploading(false); return; }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/api/parse-pricelist", { method: "POST", body: formData });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setUploadError(data.error ?? "Verwerking mislukt");
+      setUploading(false);
+      if (xmlInputRef.current) xmlInputRef.current.value = "";
+      return;
+    }
+
+    // Upsert parsed products into materials table
+    const { data: existing } = await supabase
+      .from("materials")
+      .select("id, name")
+      .eq("user_id", user.id);
+
+    const existingMap = new Map(
+      (existing ?? []).map((m: { id: string; name: string }) => [m.name.toLowerCase(), m.id])
+    );
+
+    interface ParsedProduct { name: string; unit: string; price_excl_vat: number; }
+    const toUpdate: { id: string; unit: string; cost_price: number }[] = [];
+    const toInsert: { name: string; unit: string; cost_price: number; user_id: string }[] = [];
+
+    for (const p of data.products as ParsedProduct[]) {
+      const existingId = existingMap.get(p.name.toLowerCase());
+      if (existingId) {
+        toUpdate.push({ id: existingId, unit: p.unit, cost_price: p.price_excl_vat });
+      } else {
+        toInsert.push({ name: p.name, unit: p.unit, cost_price: p.price_excl_vat, user_id: user.id });
+      }
+    }
+
+    for (const item of toUpdate) {
+      await supabase.from("materials").update({ unit: item.unit, cost_price: item.cost_price })
+        .eq("id", item.id).eq("user_id", user.id);
+    }
+    if (toInsert.length > 0) {
+      await supabase.from("materials").insert(toInsert);
+    }
+
+    setUploadResult({
+      imported: data.imported,
+      skipped: data.skipped,
+      supplier: data.supplier_name || undefined,
+    });
+    setUploading(false);
+    if (xmlInputRef.current) xmlInputRef.current.value = "";
+    loadMaterials();
   }
 
   if (loading) {
@@ -167,9 +243,23 @@ export default function MaterialsPage() {
           Materialen
         </h1>
         <div className="flex gap-2 md:gap-3">
+          {/* DICO XML upload */}
+          <label className={`flex items-center gap-1.5 md:gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition cursor-pointer text-sm md:text-base ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
+            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCode2 className="w-4 h-4" />}
+            <span className="hidden sm:inline">DICO XML</span>
+            <span className="sm:hidden">XML</span>
+            <input
+              ref={xmlInputRef}
+              type="file"
+              accept=".xml"
+              onChange={handleXmlUpload}
+              className="hidden"
+            />
+          </label>
+          {/* CSV upload */}
           <label className="flex items-center gap-1.5 md:gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium px-3 py-2 md:px-4 md:py-2.5 rounded-lg transition cursor-pointer text-sm md:text-base">
             <Upload className="w-4 h-4" />
-            <span className="hidden sm:inline">CSV Uploaden</span>
+            <span className="hidden sm:inline">CSV</span>
             <span className="sm:hidden">CSV</span>
             <input
               ref={fileInputRef}
@@ -193,13 +283,42 @@ export default function MaterialsPage() {
         </div>
       </div>
 
+      {/* DICO info banner */}
+      <div className="bg-brand-50 border border-brand-200 rounded-lg p-3 md:p-4 mb-3 md:mb-4 text-xs md:text-sm text-brand-800">
+        <p className="font-semibold mb-1">Vraag je artikelbestand op bij je groothandel en upload het hier.</p>
+        <p className="text-brand-700">
+          Ondersteund: <strong>.xml</strong> (DICO / S@les-in-de-Bouw — Bouwmaat, Warmteservice, TU, Rexel){" "}
+          en <strong>.csv</strong>. Vraag het XML-bestand eenmalig op bij de klantenservice van je groothandel.
+        </p>
+      </div>
+
+      {/* Upload result / error */}
+      {uploadResult && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3 text-sm text-green-800 flex items-start justify-between gap-2">
+          <span>
+            <strong>{uploadResult.imported} artikelen</strong> geïmporteerd
+            {uploadResult.supplier ? ` van ${uploadResult.supplier}` : ""}.
+            {uploadResult.skipped > 0 && ` (${uploadResult.skipped} overgeslagen — ontbrekende prijs of naam)`}
+          </span>
+          <button onClick={() => setUploadResult(null)} className="shrink-0 text-green-600 hover:text-green-800">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+      {uploadError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3 text-sm text-red-700 flex items-start justify-between gap-2">
+          <span>{uploadError}</span>
+          <button onClick={() => setUploadError(null)} className="shrink-0 text-red-500 hover:text-red-700">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* CSV Format Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4 mb-4 md:mb-6 text-xs md:text-sm text-blue-700">
+      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 md:p-4 mb-4 md:mb-6 text-xs text-slate-500">
         <strong>CSV formaat:</strong> naam;eenheid;kostprijs (bijv:{" "}
-        <code className="bg-blue-100 px-1 rounded">
-          Schroeven M8;doos;12,50
-        </code>
-        ) — Komma-gescheiden bestanden werken ook.
+        <code className="bg-slate-100 px-1 rounded">Schroeven M8;doos;12,50</code>
+        ) — komma-gescheiden werkt ook.
       </div>
 
       {/* Add/Edit Form */}
@@ -337,7 +456,7 @@ export default function MaterialsPage() {
             <Package className="w-12 h-12 mx-auto mb-3 text-slate-300" />
             <p>Nog geen materialen toegevoegd</p>
             <p className="text-sm mt-1">
-              Voeg materialen toe of upload een CSV-bestand
+              Upload een DICO XML-bestand van je groothandel, een CSV, of voeg artikelen handmatig toe
             </p>
           </div>
         )}

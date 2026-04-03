@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getProfileCompletion } from "@/lib/profile-complete";
 import {
   LayoutDashboard,
   FolderOpen,
@@ -14,19 +15,72 @@ import {
   Plus,
   Menu,
   X,
+  Shield,
+  Zap,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/projects", label: "Projecten", icon: FolderOpen },
+  { href: "/projects", label: "Offertes", icon: FolderOpen },
   { href: "/materials", label: "Materialen", icon: Package },
   { href: "/settings", label: "Instellingen", icon: Settings },
 ];
 
 export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isFree, setIsFree] = useState(false);
+  const [quotesUsed, setQuotesUsed] = useState<number | null>(null);
+  const [quotesLimit, setQuotesLimit] = useState<number>(10);
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
   const pathname = usePathname();
   const supabase = createClient();
+
+  useState(() => {
+    // Check admin status on mount
+    fetch("/api/admin?action=dashboard")
+      .then((r) => {
+        if (r.ok) setIsAdmin(true);
+      })
+      .catch(() => {});
+
+    // Check subscription tier and usage
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          const tier = data?.subscription_tier ?? "free";
+          const showNudge = tier === "free" || tier === "pro";
+          setIsFree(showNudge);
+          // Set quota limit based on tier
+          setQuotesLimit(tier === "free" ? 10 : tier === "pro" ? 50 : -1);
+          // Check if profile is complete
+          if (data) {
+            const { isComplete } = getProfileCompletion(data);
+            setProfileIncomplete(!isComplete);
+          }
+
+          if (showNudge) {
+            // Load quotes used this month
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            supabase
+              .from("token_usage")
+              .select("*", { count: "exact", head: true })
+              .eq("user_id", user.id)
+              .eq("endpoint", "generate-quote")
+              .gte("created_at", monthStart)
+              .then(({ count }) => {
+                setQuotesUsed(count ?? 0);
+              });
+          }
+        });
+    });
+  });
 
   async function handleLogout() {
     await supabase.auth.signOut();
@@ -120,6 +174,7 @@ export default function Sidebar() {
         <nav className="flex-1 px-3 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
+            const showBadge = item.href === "/settings" && profileIncomplete;
             return (
               <Link
                 key={item.href}
@@ -132,11 +187,47 @@ export default function Sidebar() {
                 }`}
               >
                 <item.icon className="w-5 h-5" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {showBadge && (
+                  <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
+                )}
               </Link>
             );
           })}
         </nav>
+
+        {/* Admin link */}
+        {isAdmin && (
+          <div className="px-3 mt-4">
+            <Link
+              href="/admin"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-slate-800 transition"
+            >
+              <Shield className="w-5 h-5" />
+              Admin Panel
+            </Link>
+          </div>
+        )}
+
+        {/* Upgrade nudge (free / pro users) */}
+        {isFree && (
+          <div className="px-3 mb-2">
+            {quotesUsed !== null && (
+              <p className="text-xs text-slate-400 px-3 mb-1.5">
+                {quotesUsed} / {quotesLimit} offertes deze maand
+              </p>
+            )}
+            <Link
+              href="/upgrade"
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-500/10 text-brand-600 hover:bg-brand-500/20 font-medium text-sm transition"
+            >
+              <Zap className="w-4 h-4" />
+              Upgrade
+            </Link>
+          </div>
+        )}
 
         {/* Logout */}
         <div className="p-4 border-t border-slate-700">

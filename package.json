@@ -13,12 +13,14 @@
     "@fontsource-variable/inter": "^5.2.8",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
+    "heic2any": "^0.0.4",
     "jspdf": "^4.1.0",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.564.0",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "stripe": "^20.4.1",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
