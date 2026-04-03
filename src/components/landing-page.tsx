@@ -177,8 +177,14 @@ export function LandingPage() {
 
         @media (max-width: 640px) {
           .lp-nav { padding: 12px 16px; }
-          .lp-nav-login { display: none; }
-          .lp-nav-cta { padding: 8px 16px; font-size: 13px; }
+          .lp-nav-login { padding: 8px 12px; font-size: 13px; }
+          .lp-nav-cta { padding: 8px 12px; font-size: 13px; }
+        }
+        @media (max-width: 380px) {
+          .lp-nav { padding: 10px 12px; }
+          .lp-nav-right { gap: 6px; }
+          .lp-nav-login { padding: 7px 8px; font-size: 12px; }
+          .lp-nav-cta { padding: 7px 8px; font-size: 12px; }
         }
 
         /* ── HERO ── */
