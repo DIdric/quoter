@@ -1074,9 +1074,9 @@ export function LandingPage() {
               nacalculaties en vergeten meerwerk. Quoter maakt je offerte in 10 minuten.
             </p>
             <div className="lp-hero-actions">
-              <Link href="/auth/signup" className="lp-btn-primary">
+              <a href="#partner" className="lp-btn-primary">
                 Gratis testen &rarr;
-              </Link>
+              </a>
               <a href="#hoe" className="lp-btn-ghost">
                 Hoe het werkt
               </a>
@@ -1274,7 +1274,7 @@ export function LandingPage() {
                   <li>PDF download</li>
                   <li>Deelbare link</li>
                 </ul>
-                <Link href="/auth/signup" className="lp-plan-cta outline">Gratis starten</Link>
+                <a href="#partner" className="lp-plan-cta outline">Gratis starten</a>
               </div>
               <div className="lp-plan featured">
                 <div className="lp-plan-name">
