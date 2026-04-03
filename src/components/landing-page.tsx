@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Instrument_Sans, Work_Sans, IBM_Plex_Mono } from 'next/font/google'
+import { createClient } from '@/lib/supabase/client'
 
 const displayFont = Instrument_Sans({
   subsets: ['latin'],
@@ -24,6 +25,25 @@ export function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
   const [formSubmitted, setFormSubmitted] = useState(false)
   const [formData, setFormData] = useState({ name: '', company: '', email: '', phone: '', info: '' })
+  const [loginOpen, setLoginOpen] = useState(false)
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [loginError, setLoginError] = useState('')
+  const [loginLoading, setLoginLoading] = useState(false)
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    setLoginLoading(true)
+    setLoginError('')
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword })
+    if (error) {
+      setLoginError('E-mailadres of wachtwoord klopt niet.')
+      setLoginLoading(false)
+    } else {
+      window.location.href = '/dashboard'
+    }
+  }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60)
@@ -859,6 +879,91 @@ export function LandingPage() {
           .lp-footer { padding: 32px 20px; flex-direction: column; align-items: flex-start; }
         }
 
+        /* ── LOGIN MODAL ── */
+        .lp-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.7);
+          backdrop-filter: blur(4px);
+          z-index: 200;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+          animation: lpFadeIn 0.15s ease;
+        }
+        @keyframes lpFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .lp-modal {
+          background: #161616;
+          border: 1px solid #2a2a2a;
+          border-radius: 16px;
+          padding: 40px;
+          width: 100%;
+          max-width: 400px;
+          position: relative;
+          animation: lpSlideUp 0.2s ease;
+        }
+        @keyframes lpSlideUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .lp-modal-close {
+          position: absolute;
+          top: 16px; right: 16px;
+          background: none;
+          border: none;
+          color: var(--veldsteen);
+          font-size: 20px;
+          cursor: pointer;
+          line-height: 1;
+          padding: 4px 8px;
+          transition: color 0.2s;
+        }
+        .lp-modal-close:hover { color: var(--white); }
+        .lp-modal-logo { margin-bottom: 28px; }
+        .lp-modal h3 {
+          font-family: var(--font-display), 'Instrument Sans', sans-serif;
+          font-size: 22px;
+          font-weight: 700;
+          color: var(--white);
+          letter-spacing: -0.5px;
+          margin-bottom: 6px;
+        }
+        .lp-modal-sub {
+          font-size: 14px;
+          color: var(--veldsteen);
+          margin-bottom: 28px;
+        }
+        .lp-modal-label {
+          display: block;
+          font-size: 13px;
+          color: rgba(255,255,255,0.6);
+          margin-bottom: 6px;
+        }
+        .lp-modal-error {
+          font-size: 13px;
+          color: #f87171;
+          margin-bottom: 16px;
+          padding: 10px 14px;
+          background: rgba(248,113,113,0.1);
+          border: 1px solid rgba(248,113,113,0.2);
+          border-radius: 8px;
+        }
+        .lp-modal-footer {
+          margin-top: 20px;
+          text-align: center;
+          font-size: 13px;
+          color: var(--veldsteen);
+        }
+        .lp-modal-footer a {
+          color: var(--green);
+          text-decoration: none;
+        }
+        .lp-modal-footer a:hover { text-decoration: underline; }
+
         /* ── ANIMATIONS ── */
         @keyframes lpFadeUp {
           to { opacity: 1; transform: translateY(0); }
@@ -872,13 +977,64 @@ export function LandingPage() {
       <div
         className={`lp-root ${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
       >
+        {/* LOGIN MODAL */}
+        {loginOpen && (
+          <div className="lp-modal-backdrop" onClick={() => setLoginOpen(false)}>
+            <div className="lp-modal" onClick={e => e.stopPropagation()}>
+              <button className="lp-modal-close" onClick={() => setLoginOpen(false)}>×</button>
+              <div className="lp-modal-logo">
+                <img src="/Logo Quoter.svg" alt="Quoter" style={{ height: 26 }} />
+              </div>
+              <h3>Welkom terug</h3>
+              <p className="lp-modal-sub">Log in op je account</p>
+              <form onSubmit={handleLogin}>
+                {loginError && <div className="lp-modal-error">{loginError}</div>}
+                <div className="lp-form-group">
+                  <label className="lp-modal-label">E-mailadres</label>
+                  <input
+                    type="email"
+                    placeholder="naam@bedrijf.nl"
+                    value={loginEmail}
+                    onChange={e => setLoginEmail(e.target.value)}
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div className="lp-form-group">
+                  <label className="lp-modal-label">Wachtwoord</label>
+                  <input
+                    type="password"
+                    placeholder="••••••••"
+                    value={loginPassword}
+                    onChange={e => setLoginPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="lp-form-submit"
+                  disabled={loginLoading}
+                  style={{ marginTop: 8 }}
+                >
+                  {loginLoading ? 'Bezig...' : 'Inloggen →'}
+                </button>
+              </form>
+              <div className="lp-modal-footer">
+                <a href="/auth/reset-password">Wachtwoord vergeten?</a>
+                &nbsp;·&nbsp;
+                Nog geen account? <a href="#partner" onClick={() => setLoginOpen(false)}>Aanmelden</a>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* NAV */}
         <nav className={`lp-nav${scrolled ? ' scrolled' : ''}`}>
           <a href="/" className="lp-nav-logo">
             <img src="/Logo Quoter.svg" alt="Quoter" style={{ height: 28 }} />
           </a>
           <div className="lp-nav-right">
-            <Link href="/login" className="lp-nav-login">Inloggen</Link>
+            <button onClick={() => setLoginOpen(true)} className="lp-nav-login">Inloggen</button>
             <a href="#partner" className="lp-nav-cta">Aanmelden &rarr;</a>
           </div>
         </nav>
