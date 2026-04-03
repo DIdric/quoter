@@ -504,6 +504,12 @@ export function LandingPage() {
           letter-spacing: 0.07em;
           text-transform: uppercase;
         }
+        .lp-hoe-closing {
+          margin-top: 48px;
+          font-size: 17px;
+          color: #888;
+          text-align: center;
+        }
         @media (max-width: 768px) {
           .lp-hoe { padding: 80px 20px; border-radius: 12px 12px 0 0; }
           .lp-steps { grid-template-columns: 1fr; gap: 40px; }
@@ -1132,22 +1138,23 @@ export function LandingPage() {
               <div className="lp-step">
                 <div className="lp-step-num">01</div>
                 <div className="lp-step-title">Omschrijven</div>
-                <p className="lp-step-desc">Klik op 'Nieuwe offerte'. Typ of spreek in voor wie de offerte is en geef een omschrijving van het project — gewoon in mensentaal. Je kan ook een foto of tekening uploaden. De A.I. selecteert automatisch de juiste modules. Klik op genereren.</p>
+                <p className="lp-step-desc">Klik op 'Nieuwe offerte'. Typ of spreek in voor wie de offerte is en geef een omschrijving van het project — gewoon in mensentaal. Je kan ook een foto of tekening uploaden. De A.I. selecteert al automatisch de juiste modules. Klik op genereren.</p>
                 <div className="lp-step-detail">→ Tekst / Spraak / Foto</div>
               </div>
               <div className="lp-step">
                 <div className="lp-step-num">02</div>
                 <div className="lp-step-title">Aanpassen</div>
-                <p className="lp-step-desc">De A.I. heeft al het harde werk gedaan — er staat direct een complete offerte klaar. Pas links aan wat je wilt, zie rechts de preview. Kies uit drie smaken: gedetailleerd, per module of hoogover.</p>
+                <p className="lp-step-desc">De A.I. heeft al het harde werk gedaan — er staat al een hele offerte in concept klaar. Pas links aan wat je wilt veranderen totdat hij helemaal klopt. Rechts zie je de preview hoe de offerte eruit ziet. Kies uit 3 smaken: gedetailleerd, per module of hoogover.</p>
                 <div className="lp-step-detail">→ Gedetailleerd / Per module / Hoogover</div>
               </div>
               <div className="lp-step">
                 <div className="lp-step-num">03</div>
                 <div className="lp-step-title">Versturen</div>
-                <p className="lp-step-desc">Download de PDF, deel een link, of stuur direct via e-mail of WhatsApp. Je offerte wordt automatisch opgeslagen zodat je er altijd bij kan.</p>
+                <p className="lp-step-desc">Je kan nu direct je offerte versturen. Download de PDF of deel een link, of stuur hem direct via mail of WhatsApp. Je offerte wordt automatisch opgeslagen zodat je er later altijd weer bij kan.</p>
                 <div className="lp-step-detail">→ PDF / Link / E-mail / WhatsApp</div>
               </div>
             </div>
+            <p className="lp-hoe-closing">Dat is alles. Zo makkelijk is het met Quoter.</p>
           </div>
         </section>
 
