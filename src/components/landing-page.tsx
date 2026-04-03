@@ -120,11 +120,9 @@ export function LandingPage() {
         .lp-hero-bg {
           position: absolute;
           inset: 0;
-          background:
-            radial-gradient(ellipse 80% 60% at 60% 40%, rgba(26,122,60,0.18) 0%, transparent 70%),
-            linear-gradient(160deg, #1a1a1a 0%, #111111 40%, #0d130d 100%);
+          background-image: url('/spencer-davis-SVfXlChg9HI-unsplash.jpg');
           background-size: cover;
-          background-position: center 30%;
+          background-position: center 40%;
         }
         .lp-hero-overlay {
           position: absolute;
