@@ -140,7 +140,17 @@ export function LandingPage() {
         .lp-nav-logo {
           display: flex;
           align-items: center;
+          gap: 12px;
           text-decoration: none;
+        }
+        .lp-nav-tagline {
+          font-size: 13px;
+          font-weight: 400;
+          color: rgba(255,255,255,0.55);
+          white-space: nowrap;
+        }
+        @media (max-width: 768px) {
+          .lp-nav-tagline { display: none; }
         }
         .lp-nav-cta {
           background: var(--green);
@@ -1075,6 +1085,7 @@ export function LandingPage() {
         <nav className={`lp-nav${scrolled ? ' scrolled' : ''}`}>
           <a href="/" className="lp-nav-logo">
             <img src="/Logo Quoter.svg" alt="Quoter" style={{ height: 28 }} />
+            <span className="lp-nav-tagline">Professionele Offertes voor Aannemers</span>
           </a>
           <div className="lp-nav-right">
             <button onClick={() => setLoginOpen(true)} className="lp-nav-login">Inloggen</button>
