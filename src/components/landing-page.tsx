@@ -46,6 +46,23 @@ export function LandingPage() {
     return () => observer.disconnect()
   }, [])
 
+  useEffect(() => {
+    const steps = document.querySelectorAll('.lp-step')
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry, i) => {
+          if (entry.isIntersecting) {
+            setTimeout(() => entry.target.classList.add('visible'), i * 150)
+            observer.unobserve(entry.target)
+          }
+        })
+      },
+      { threshold: 0.15 }
+    )
+    steps.forEach((el) => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <>
       <style>{`
@@ -359,6 +376,94 @@ export function LandingPage() {
           .lp-pijn-grid { grid-template-columns: 1fr; gap: 2px; }
         }
 
+        /* ── HOE HET WERKT ── */
+        .lp-hoe {
+          background: var(--beton);
+          border-radius: 20px 20px 0 0;
+          padding: 100px 48px;
+          margin-top: -20px;
+        }
+        .lp-hoe-inner {
+          max-width: 1100px;
+          margin: 0 auto;
+        }
+        .lp-hoe .lp-section-label { color: var(--diepgroen); }
+        .lp-hoe-h2 {
+          font-family: var(--font-display), 'Instrument Sans', sans-serif;
+          font-size: clamp(32px, 4.5vw, 56px);
+          font-weight: 700;
+          letter-spacing: -1.5px;
+          line-height: 1.1;
+          margin-bottom: 60px;
+          color: var(--black);
+        }
+        .lp-hoe-h2 .accent { color: var(--diepgroen); }
+        .lp-steps {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 48px;
+          position: relative;
+        }
+        .lp-steps::before {
+          content: '';
+          position: absolute;
+          top: 24px;
+          left: calc(16.67% + 8px);
+          right: calc(16.67% + 8px);
+          height: 1px;
+          background: rgba(0,0,0,0.15);
+        }
+        .lp-step {
+          opacity: 0;
+          transform: translateY(20px);
+          transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .lp-step.visible {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .lp-step-num {
+          width: 48px; height: 48px;
+          border-radius: 50%;
+          background: var(--black);
+          color: var(--green);
+          font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+          font-size: 14px;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-bottom: 24px;
+          position: relative;
+          z-index: 1;
+        }
+        .lp-step-title {
+          font-family: var(--font-display), 'Instrument Sans', sans-serif;
+          font-size: 20px;
+          font-weight: 700;
+          color: var(--black);
+          margin-bottom: 12px;
+          letter-spacing: -0.4px;
+        }
+        .lp-step-desc {
+          font-size: 15px;
+          color: #555;
+          line-height: 1.65;
+          margin-bottom: 16px;
+        }
+        .lp-step-detail {
+          font-family: var(--font-mono), 'IBM Plex Mono', monospace;
+          font-size: 11px;
+          color: var(--diepgroen);
+          letter-spacing: 0.07em;
+          text-transform: uppercase;
+        }
+        @media (max-width: 768px) {
+          .lp-hoe { padding: 80px 20px; border-radius: 12px 12px 0 0; }
+          .lp-steps { grid-template-columns: 1fr; gap: 40px; }
+          .lp-steps::before { display: none; }
+        }
+
         /* ── ANIMATIONS ── */
         @keyframes lpFadeUp {
           to { opacity: 1; transform: translateY(0); }
@@ -449,6 +554,36 @@ export function LandingPage() {
                 <span className="lp-pijn-num">03</span>
                 <div className="lp-pijn-title">Geen grip op marge</div>
                 <p className="lp-pijn-desc">Je weet pas na de kwartaalaangifte of je project winstgevend was. Tegen die tijd kun je er niets meer aan doen.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        {/* HOE HET WERKT */}
+        <section id="hoe" className="lp-hoe">
+          <div className="lp-hoe-inner">
+            <span className="lp-section-label">Hoe het werkt</span>
+            <h2 className="lp-hoe-h2">
+              Drie stappen.<br />
+              <span className="accent">Offerte verstuurd.</span>
+            </h2>
+            <div className="lp-steps">
+              <div className="lp-step">
+                <div className="lp-step-num">01</div>
+                <div className="lp-step-title">Stuur een foto of PDF</div>
+                <p className="lp-step-desc">Een foto van de tekening, een voice-memo van de bouwplaats of een PDF. Dat is alles wat Quoter nodig heeft.</p>
+                <div className="lp-step-detail">→ Foto / Spraak / PDF</div>
+              </div>
+              <div className="lp-step">
+                <div className="lp-step-num">02</div>
+                <div className="lp-step-title">AI maakt de offerte</div>
+                <p className="lp-step-desc">Binnen 10 minuten staat er een volledige, professionele offerte klaar — inclusief materialen, uren en marge.</p>
+                <div className="lp-step-detail">→ ~10 minuten</div>
+              </div>
+              <div className="lp-step">
+                <div className="lp-step-num">03</div>
+                <div className="lp-step-title">Aanpassen &amp; versturen</div>
+                <p className="lp-step-desc">Alles is bewerkbaar. Logo erbij, uitsluitingen toevoegen, en met één klik versturen naar je klant.</p>
+                <div className="lp-step-detail">→ PDF / Link / Dashboard</div>
               </div>
             </div>
           </div>
