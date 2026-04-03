@@ -11,6 +11,16 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#0EC541",
     icons: [
       {
+        src: "/Quoter Bug 92.png",
+        sizes: "192x192",
+        type: "image/png",
+      },
+      {
+        src: "/Quoter Bug 520.png",
+        sizes: "512x512",
+        type: "image/png",
+      },
+      {
         src: "/Bug Quoter.svg",
         sizes: "any",
         type: "image/svg+xml",
