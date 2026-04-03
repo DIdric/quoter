@@ -154,10 +154,25 @@ export function LandingPage() {
           white-space: nowrap;
         }
         .lp-nav-cta:hover { opacity: 0.85; }
+        .lp-nav-login {
+          color: rgba(255,255,255,0.7);
+          font-family: var(--font-display), 'Instrument Sans', sans-serif;
+          font-weight: 500;
+          font-size: 14px;
+          text-decoration: none;
+          transition: color 0.2s;
+        }
+        .lp-nav-login:hover { color: var(--white); }
+        .lp-nav-right {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+        }
 
         @media (max-width: 640px) {
           .lp-nav { padding: 16px 20px; }
           .lp-nav-cta { display: none; }
+          .lp-nav-login { display: none; }
         }
 
         /* ── HERO ── */
@@ -888,9 +903,10 @@ export function LandingPage() {
             <span className="lp-q-mark">Q</span>
             Quoter
           </a>
-          <a href="#partner" className="lp-nav-cta">
-            Design Partner worden &rarr;
-          </a>
+          <div className="lp-nav-right">
+            <Link href="/login" className="lp-nav-login">Inloggen</Link>
+            <a href="#partner" className="lp-nav-cta">Aanmelden &rarr;</a>
+          </div>
         </nav>
 
         {/* HERO */}
