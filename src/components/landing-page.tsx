@@ -1139,7 +1139,7 @@ export function LandingPage() {
         <section className="lp-video">
           <div className="lp-video-wrap">
             <iframe
-              src="https://www.youtube.com/embed/Ivh4KHIH3Pk"
+              src="https://www.youtube.com/embed/qEENL22jlco"
               title="Quoter introductievideo"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
