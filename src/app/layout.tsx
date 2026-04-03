@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Quoter - Professionele Offertes voor Aannemers",
   description:
     "Genereer professionele offertes met AI. Beheer materialen, bereken kosten en maak indruk op je klanten.",
+  icons: {
+    icon: "/Bug Quoter.svg",
+  },
 };
 
 export default function RootLayout({
