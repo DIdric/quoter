@@ -457,7 +457,6 @@ function NewQuotePage() {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [quotaModal, setQuotaModal] = useState<{ show: boolean; referralCode: string | null; message: string | null }>({ show: false, referralCode: null, message: null });
-  const [copied, setCopied] = useState(false);
   const [profile, setProfile] = useState<{
     business_name: string | null;
     logo_url: string | null;
