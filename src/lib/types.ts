@@ -38,6 +38,7 @@ export interface Profile {
   free_quotes_used: number;
   lead_score: number;
   whatsapp_number: string | null;
+  whatsapp_opt_in: boolean;
   referral_count: number;
 }
 

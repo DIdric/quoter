@@ -18,6 +18,7 @@ function LoginForm() {
   const [businessName, setBusinessName] = useState("");
   const [businessCity, setBusinessCity] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [whatsappOptIn, setWhatsappOptIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -96,6 +97,7 @@ function LoginForm() {
         };
         if (whatsappNumber.trim()) {
           profileUpdate.whatsapp_number = whatsappNumber.trim();
+          profileUpdate.whatsapp_opt_in = whatsappOptIn;
         }
 
         await supabase.from("profiles").upsert(profileUpdate);
@@ -259,12 +261,27 @@ function LoginForm() {
                     <input
                       type="tel"
                       value={whatsappNumber}
-                      onChange={(e) => setWhatsappNumber(e.target.value)}
+                      onChange={(e) => {
+                        setWhatsappNumber(e.target.value);
+                        if (!e.target.value) setWhatsappOptIn(false);
+                      }}
                       className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-slate-800"
                       placeholder="+31 6 12345678"
                     />
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">Voor updates via WhatsApp</p>
+                  {whatsappNumber.trim() && (
+                    <label className="flex items-start gap-2 mt-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={whatsappOptIn}
+                        onChange={(e) => setWhatsappOptIn(e.target.checked)}
+                        className="mt-0.5 accent-brand-500"
+                      />
+                      <span className="text-xs text-slate-600">
+                        Ja, stuur me updates over mijn offertes via WhatsApp
+                      </span>
+                    </label>
+                  )}
                 </div>
               </>
             )}
