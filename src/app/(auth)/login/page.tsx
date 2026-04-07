@@ -19,6 +19,7 @@ function LoginForm() {
   const [businessCity, setBusinessCity] = useState("");
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [whatsappOptIn, setWhatsappOptIn] = useState(false);
+  const [emailOptIn, setEmailOptIn] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -94,6 +95,7 @@ function LoginForm() {
           business_name: businessName.trim(),
           business_city: businessCity.trim() || null,
           lead_score: leadScore,
+          email_opt_in: emailOptIn,
         };
         if (whatsappNumber.trim()) {
           profileUpdate.whatsapp_number = whatsappNumber.trim();
@@ -283,6 +285,18 @@ function LoginForm() {
                     </label>
                   )}
                 </div>
+
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={emailOptIn}
+                    onChange={(e) => setEmailOptIn(e.target.checked)}
+                    className="mt-0.5 accent-brand-500"
+                  />
+                  <span className="text-xs text-slate-600">
+                    Ja, stuur me tips en updates over Quoter per e-mail
+                  </span>
+                </label>
               </>
             )}
 

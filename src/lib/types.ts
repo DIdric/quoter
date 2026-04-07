@@ -39,6 +39,7 @@ export interface Profile {
   lead_score: number;
   whatsapp_number: string | null;
   whatsapp_opt_in: boolean;
+  email_opt_in: boolean;
   referral_count: number;
 }
 
