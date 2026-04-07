@@ -122,15 +122,16 @@ export async function POST(request: Request) {
   if (!quota.allowed) {
     return Response.json(
       {
-        error: "Limiet bereikt",
+        error: "QUOTA_EXCEEDED",
         message: quota.reason,
         quota: {
           tier: quota.tier,
           quotesUsed: quota.quotesUsed,
-          quotesLimit: quota.limits.quotesPerMonth,
+          quotesLimit: quota.totalLimit,
+          referralCode: quota.referralCode,
         },
       },
-      { status: 429 }
+      { status: 403 }
     );
   }
 

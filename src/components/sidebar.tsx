@@ -29,8 +29,9 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isFree, setIsFree] = useState(false);
+  const [isPro, setIsPro] = useState(false);
   const [quotesUsed, setQuotesUsed] = useState<number | null>(null);
-  const [quotesLimit, setQuotesLimit] = useState<number>(10);
+  const [quotesLimit, setQuotesLimit] = useState<number>(3);
   const pathname = usePathname();
   const supabase = createClient();
 
@@ -47,18 +48,22 @@ export default function Sidebar() {
       if (!user) return;
       supabase
         .from("profiles")
-        .select("subscription_tier")
+        .select("subscription_tier, free_quotes_used, referral_credits")
         .eq("id", user.id)
         .single()
         .then(({ data }) => {
           const tier = data?.subscription_tier ?? "free";
-          const showNudge = tier === "free" || tier === "pro";
-          setIsFree(showNudge);
-          // Set quota limit based on tier
-          setQuotesLimit(tier === "free" ? 10 : tier === "pro" ? 50 : -1);
+          setIsFree(tier === "free");
+          setIsPro(tier === "pro");
 
-          if (showNudge) {
-            // Load quotes used this month
+          if (tier === "free") {
+            // Lifetime quota: 3 base + min(referral_credits, 6)
+            const extra = Math.min(data?.referral_credits ?? 0, 6);
+            setQuotesLimit(3 + extra);
+            setQuotesUsed(data?.free_quotes_used ?? 0);
+          } else if (tier === "pro") {
+            // Monthly quota from token_usage
+            setQuotesLimit(50);
             const now = new Date();
             const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
             supabase
@@ -200,11 +205,11 @@ export default function Sidebar() {
         )}
 
         {/* Upgrade nudge (free / pro users) */}
-        {isFree && (
+        {(isFree || isPro) && (
           <div className="px-3 mb-2">
             {quotesUsed !== null && (
               <p className="text-xs text-slate-400 px-3 mb-1.5">
-                {quotesUsed} / {quotesLimit} offertes deze maand
+                {quotesUsed} / {quotesLimit} offertes{isFree ? "" : " deze maand"}
               </p>
             )}
             <Link

@@ -456,8 +456,8 @@ function NewQuotePage() {
   const [uploadedImagePath, setUploadedImagePath] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
-  const [quotaError, setQuotaError] = useState<string | null>(null);
-  const [quotaInfo, setQuotaInfo] = useState<{ tier: string; quotesUsed: number; quotesLimit: number } | null>(null);
+  const [quotaModal, setQuotaModal] = useState<{ show: boolean; referralCode: string | null; message: string | null }>({ show: false, referralCode: null, message: null });
+  const [copied, setCopied] = useState(false);
   const [profile, setProfile] = useState<{
     business_name: string | null;
     logo_url: string | null;
@@ -670,19 +670,18 @@ function NewQuotePage() {
       });
 
       // Handle quota limit (non-streaming JSON response)
-      if (response.status === 429) {
+      if (response.status === 403) {
         const err = await response.json();
-        setQuotaError(err.message || "Je maandlimiet is bereikt.");
-        if (err.quota) {
-          setQuotaInfo({
-            tier: err.quota.tier,
-            quotesUsed: err.quota.quotesUsed,
-            quotesLimit: err.quota.quotesLimit,
+        if (err.error === "QUOTA_EXCEEDED") {
+          setQuotaModal({
+            show: true,
+            referralCode: err.quota?.referralCode ?? null,
+            message: err.message ?? null,
           });
+          setLoading(false);
+          setLoadingStage("");
+          return;
         }
-        setLoading(false);
-        setLoadingStage("");
-        return;
       }
 
       const reader = response.body?.getReader();
@@ -1158,25 +1157,15 @@ function NewQuotePage() {
                 )}
               </div>
 
-              {/* Quota error / paywall block */}
-              {quotaError && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-5 text-center space-y-3">
-                  <p className="font-semibold text-amber-900">Je maandlimiet is bereikt</p>
-                  {quotaInfo ? (
-                    <p className="text-sm text-amber-700">
-                      Je hebt {quotaInfo.quotesUsed} van {quotaInfo.quotesLimit} offertes gebruikt deze maand.
-                    </p>
-                  ) : (
-                    <p className="text-sm text-amber-700">{quotaError}</p>
-                  )}
-                  {(!quotaInfo || quotaInfo.tier === "free") && (
-                    <p className="text-xs text-amber-600">Upgrade naar Pro voor 50 offertes per maand</p>
-                  )}
+              {/* Quota exceeded — inline nudge shown after modal is dismissed */}
+              {quotaModal.show === false && quotaModal.referralCode !== null && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between gap-4">
+                  <p className="text-sm text-amber-800 font-medium">Je gratis offertes zijn op.</p>
                   <a
                     href="/upgrade"
-                    className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-medium px-5 py-2.5 rounded-lg transition text-sm"
+                    className="shrink-0 text-sm bg-brand-500 hover:bg-brand-600 text-white font-medium px-4 py-2 rounded-lg transition"
                   >
-                    Upgrade nu →
+                    Upgrade →
                   </a>
                 </div>
               )}
@@ -1185,7 +1174,7 @@ function NewQuotePage() {
               <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center gap-3">
                 <button
                   onClick={handleGenerate}
-                  disabled={!form.ai_input || !!quotaError}
+                  disabled={!form.ai_input || quotaModal.referralCode !== null}
                   className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold px-6 py-3 rounded-lg transition disabled:opacity-50 text-sm md:text-base"
                 >
                   <Sparkles className="w-4 h-4" />
@@ -1809,6 +1798,59 @@ function NewQuotePage() {
 
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── Quota Exceeded Modal ─────────────────────────────── */}
+      {quotaModal.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 space-y-5">
+            <div className="text-center space-y-2">
+              <div className="text-4xl">🏗️</div>
+              <h2 className="text-xl font-bold text-slate-800">Je gratis offertes zijn op</h2>
+              <p className="text-slate-500 text-sm">
+                {quotaModal.message ?? "Je hebt je 3 gratis offertes gebruikt."}
+              </p>
+            </div>
+
+            {quotaModal.referralCode && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-slate-700 text-center">
+                  Nodig een collega uit → jij krijgt 3 extra gratis
+                </p>
+                <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                  <span className="flex-1 text-sm text-slate-700 font-mono truncate">
+                    quoter.nu/ref/{quotaModal.referralCode}
+                  </span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(`https://quoter.nu/ref/${quotaModal.referralCode}`);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                    }}
+                    className="shrink-0 text-xs font-medium text-brand-600 hover:text-brand-700 transition"
+                  >
+                    {copied ? "Gekopieerd!" : "Kopieer"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-3">
+              <a
+                href="/upgrade"
+                className="w-full text-center bg-brand-500 hover:bg-brand-600 text-white font-semibold py-3 rounded-lg transition text-sm"
+              >
+                Ga Pro → €49/maand, onbeperkt offertes
+              </a>
+              <button
+                onClick={() => setQuotaModal((m) => ({ ...m, show: false }))}
+                className="w-full text-center text-slate-500 hover:text-slate-700 text-sm py-2 transition"
+              >
+                Sluiten
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

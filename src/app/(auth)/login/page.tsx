@@ -1,17 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Mail, Lock, ArrowRight, Loader2, Building2, MapPin } from "lucide-react";
+import { Mail, Lock, ArrowRight, Loader2, Building2, MapPin, Phone } from "lucide-react";
 
-export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true);
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const refCode = searchParams.get("ref");
+  const defaultToSignup = searchParams.get("signup") === "1";
+
+  const [isLogin, setIsLogin] = useState(!defaultToSignup);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [businessCity, setBusinessCity] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -73,15 +79,53 @@ export default function LoginPage() {
       });
       if (error) {
         setError(error.message);
-      } else {
-        // Update profile with business name if user was created
-        if (signUpData.user) {
-          await supabase.from("profiles").upsert({
-            id: signUpData.user.id,
-            business_name: businessName.trim(),
-            business_city: businessCity.trim() || null,
-          });
+      } else if (signUpData.user) {
+        // Calculate lead score from available signup data
+        let leadScore = 0;
+        if (businessCity.trim()) leadScore += 10;     // regio
+        if (whatsappNumber.trim()) leadScore += 15;   // whatsapp kanaal
+        if (refCode) leadScore += 25;                 // referral bron (warm lead)
+        else leadScore += 10;                         // organic bron
+
+        // Update own profile with extra signup data
+        const profileUpdate: Record<string, unknown> = {
+          id: signUpData.user.id,
+          business_name: businessName.trim(),
+          business_city: businessCity.trim() || null,
+          lead_score: leadScore,
+        };
+        if (whatsappNumber.trim()) {
+          profileUpdate.whatsapp_number = whatsappNumber.trim();
         }
+
+        await supabase.from("profiles").upsert(profileUpdate);
+
+        // Process referral: credit the referrer if ref code is valid
+        if (refCode) {
+          const { data: referrer } = await supabase
+            .from("profiles")
+            .select("id, referral_count, referral_credits")
+            .eq("referral_code", refCode)
+            .single();
+
+          if (referrer && referrer.referral_count < 2) {
+            // Give referrer +3 credits
+            await supabase
+              .from("profiles")
+              .update({
+                referral_credits: (referrer.referral_credits ?? 0) + 3,
+                referral_count: (referrer.referral_count ?? 0) + 1,
+              })
+              .eq("id", referrer.id);
+
+            // Link new user to referrer
+            await supabase
+              .from("profiles")
+              .update({ referred_by: referrer.id })
+              .eq("id", signUpData.user.id);
+          }
+        }
+
         setMessage("Controleer je e-mail voor een bevestigingslink.");
       }
     }
@@ -110,6 +154,12 @@ export default function LoginPage() {
 
         {/* Form Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {refCode && !isLogin && !isForgotPassword && (
+            <div className="bg-green-50 text-green-700 text-sm p-3 rounded-lg mb-4">
+              Je bent uitgenodigd door een collega — maak je account aan en start direct.
+            </div>
+          )}
+
           <h2 className="text-xl font-semibold text-slate-800 mb-6">
             {isForgotPassword ? "Wachtwoord resetten" : isLogin ? "Inloggen" : "Account aanmaken"}
           </h2>
@@ -199,6 +249,23 @@ export default function LoginPage() {
                     />
                   </div>
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    WhatsApp-nummer <span className="text-slate-400 font-normal">(optioneel)</span>
+                  </label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                      type="tel"
+                      value={whatsappNumber}
+                      onChange={(e) => setWhatsappNumber(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition text-slate-800"
+                      placeholder="+31 6 12345678"
+                    />
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">Voor updates via WhatsApp</p>
+                </div>
               </>
             )}
 
@@ -260,5 +327,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 text-white animate-spin" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
