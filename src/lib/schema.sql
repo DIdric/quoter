@@ -278,7 +278,12 @@ create policy "Admins can read admin_users"
 --   ADD COLUMN IF NOT EXISTS trial_until date DEFAULT NULL;
 --
 -- -- Activate trial for a user (set in Supabase dashboard or via SQL):
--- -- UPDATE public.profiles SET trial_until = CURRENT_DATE + INTERVAL '30 days' WHERE email = 'tester@example.com';
+-- -- UPDATE public.profiles SET trial_until = CURRENT_DATE + INTERVAL '30 days'
+-- -- WHERE id = (SELECT id FROM auth.users WHERE email = 'tester@example.com');
+-- --
+-- -- Multiple testers at once:
+-- -- UPDATE public.profiles SET trial_until = CURRENT_DATE + INTERVAL '30 days'
+-- -- WHERE id IN (SELECT id FROM auth.users WHERE email IN ('a@x.com', 'b@x.com'));
 --
 -- -- n8n SQL: find trial users expiring in 3 days (for upsell notification):
 -- -- SELECT p.id, u.email, p.trial_until, p.whatsapp_number, p.whatsapp_opt_in, p.email_opt_in
