@@ -32,9 +32,11 @@ export async function updateSession(request: NextRequest) {
   // Redirect unauthenticated users to login
   if (
     !user &&
+    request.nextUrl.pathname !== "/" &&
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/auth") &&
     !request.nextUrl.pathname.startsWith("/share") &&
+    !request.nextUrl.pathname.startsWith("/ref") &&
     !request.nextUrl.pathname.startsWith("/api/stripe/webhook")
   ) {
     const url = request.nextUrl.clone();
