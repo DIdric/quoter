@@ -140,7 +140,17 @@ export function LandingPage() {
         .lp-nav-logo {
           display: flex;
           align-items: center;
+          gap: 12px;
           text-decoration: none;
+        }
+        .lp-nav-tagline {
+          font-size: 13px;
+          font-weight: 400;
+          color: rgba(255,255,255,0.55);
+          white-space: nowrap;
+        }
+        @media (max-width: 768px) {
+          .lp-nav-tagline { display: none; }
         }
         .lp-nav-cta {
           background: var(--green);
@@ -175,10 +185,16 @@ export function LandingPage() {
           gap: 10px;
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 640px) {
           .lp-nav { padding: 12px 16px; }
-          .lp-nav-login { padding: 8px 14px; font-size: 13px; }
-          .lp-nav-cta { padding: 8px 14px; font-size: 13px; }
+          .lp-nav-login { padding: 8px 12px; font-size: 13px; }
+          .lp-nav-cta { padding: 8px 12px; font-size: 13px; }
+        }
+        @media (max-width: 380px) {
+          .lp-nav { padding: 10px 12px; }
+          .lp-nav-right { gap: 6px; }
+          .lp-nav-login { padding: 7px 8px; font-size: 12px; }
+          .lp-nav-cta { padding: 7px 8px; font-size: 12px; }
         }
 
         /* ── HERO ── */
@@ -187,8 +203,9 @@ export function LandingPage() {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
-          justify-content: flex-end;
-          padding: 0 48px 80px;
+          justify-content: center;
+          align-items: center;
+          padding: 0 48px;
           overflow: hidden;
         }
         .lp-hero-bg {
@@ -202,13 +219,13 @@ export function LandingPage() {
           position: absolute;
           inset: 0;
           background:
-            linear-gradient(to right, rgba(17,17,17,0.82) 0%, rgba(17,17,17,0.35) 55%, rgba(17,17,17,0.05) 100%),
-            linear-gradient(to top, rgba(17,17,17,0.96) 0%, rgba(17,17,17,0.0) 50%);
+            linear-gradient(to bottom, rgba(17,17,17,0.45) 0%, rgba(17,17,17,0.55) 60%, rgba(17,17,17,1) 100%);
         }
         .lp-hero-content {
           position: relative;
           z-index: 2;
-          max-width: 760px;
+          max-width: 720px;
+          text-align: center;
           opacity: 0;
           transform: translateY(28px);
           animation: lpFadeUp 0.9s ease 0.3s forwards;
@@ -225,7 +242,7 @@ export function LandingPage() {
           border: 1px solid rgba(58,222,106,0.25);
           padding: 6px 14px;
           border-radius: 100px;
-          margin-bottom: 28px;
+          margin: 0 auto 28px;
           text-transform: uppercase;
         }
         .lp-dot {
@@ -248,17 +265,17 @@ export function LandingPage() {
           font-style: normal;
           color: var(--green);
         }
-        .lp-hero-sub {
-          font-size: clamp(16px, 2vw, 20px);
-          color: rgba(255,255,255,0.72);
-          font-weight: 300;
-          max-width: 520px;
-          line-height: 1.55;
+        .lp-hero-subtitle {
+          font-size: clamp(18px, 2.2vw, 24px);
+          color: rgba(255,255,255,0.9);
+          font-weight: 400;
+          line-height: 1.4;
           margin-bottom: 40px;
         }
         .lp-hero-actions {
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 16px;
           flex-wrap: wrap;
         }
@@ -338,6 +355,31 @@ export function LandingPage() {
             animation: lpFadeUp 0.9s ease 0.7s forwards;
           }
           .lp-stat-pill { text-align: left; flex: 1; min-width: 120px; }
+        }
+
+        /* ── VIDEO ── */
+        .lp-video {
+          background: var(--black);
+          padding: 80px 48px 100px;
+        }
+        .lp-video-wrap {
+          max-width: 900px;
+          margin: 0 auto;
+          border-radius: 16px;
+          overflow: hidden;
+          border: 1px solid rgba(58,222,106,0.15);
+          box-shadow: 0 0 60px rgba(58,222,106,0.06);
+          aspect-ratio: 16 / 9;
+          background: #0d0d0d;
+        }
+        .lp-video-wrap iframe {
+          width: 100%;
+          height: 100%;
+          display: block;
+          border: none;
+        }
+        @media (max-width: 640px) {
+          .lp-video { padding: 0 16px 64px; }
         }
 
         /* ── PIJN ── */
@@ -497,6 +539,12 @@ export function LandingPage() {
           color: var(--diepgroen);
           letter-spacing: 0.07em;
           text-transform: uppercase;
+        }
+        .lp-hoe-closing {
+          margin-top: 48px;
+          font-size: 17px;
+          color: #888;
+          text-align: center;
         }
         @media (max-width: 768px) {
           .lp-hoe { padding: 80px 20px; border-radius: 12px 12px 0 0; }
@@ -1037,6 +1085,7 @@ export function LandingPage() {
         <nav className={`lp-nav${scrolled ? ' scrolled' : ''}`}>
           <a href="/" className="lp-nav-logo">
             <img src="/Logo Quoter.svg" alt="Quoter" style={{ height: 28 }} />
+            <span className="lp-nav-tagline">Professionele Offertes voor Aannemers</span>
           </a>
           <div className="lp-nav-right">
             <button onClick={() => setLoginOpen(true)} className="lp-nav-login">Inloggen</button>
@@ -1057,14 +1106,13 @@ export function LandingPage() {
             <h1 className="lp-h1">
               Je avond<br />is van <em>jou.</em>
             </h1>
-            <p className="lp-hero-sub">
-              Voor de vakman die briljant is in bouwen — maar verdrinkt in offertes,
-              nacalculaties en vergeten meerwerk. Quoter maakt je offerte in 10 minuten.
+            <p className="lp-hero-subtitle">
+              Quoter maakt je offerte in 10 minuten.
             </p>
             <div className="lp-hero-actions">
-              <Link href="/auth/signup" className="lp-btn-primary">
+              <a href="#partner" className="lp-btn-primary">
                 Gratis testen &rarr;
-              </Link>
+              </a>
               <a href="#hoe" className="lp-btn-ghost">
                 Hoe het werkt
               </a>
@@ -1084,6 +1132,18 @@ export function LandingPage() {
               <span className="lp-stat-number">€0</span>
               <span className="lp-stat-label">meerwerk onbetaald</span>
             </div>
+          </div>
+        </section>
+
+        {/* VIDEO */}
+        <section className="lp-video">
+          <div className="lp-video-wrap">
+            <iframe
+              src="https://www.youtube.com/embed/qEENL22jlco"
+              title="Quoter introductievideo"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
           </div>
         </section>
 
@@ -1126,22 +1186,23 @@ export function LandingPage() {
               <div className="lp-step">
                 <div className="lp-step-num">01</div>
                 <div className="lp-step-title">Omschrijven</div>
-                <p className="lp-step-desc">Klik op 'Nieuwe offerte'. Typ of spreek in voor wie de offerte is en geef een omschrijving van het project — gewoon in mensentaal. Je kan ook een foto of tekening uploaden. De A.I. selecteert automatisch de juiste modules. Klik op genereren.</p>
+                <p className="lp-step-desc">Klik op 'Nieuwe offerte'. Typ of spreek in voor wie de offerte is en geef een omschrijving van het project — gewoon in mensentaal. Je kan ook een foto of tekening uploaden. De A.I. selecteert al automatisch de juiste modules. Klik op genereren.</p>
                 <div className="lp-step-detail">→ Tekst / Spraak / Foto</div>
               </div>
               <div className="lp-step">
                 <div className="lp-step-num">02</div>
                 <div className="lp-step-title">Aanpassen</div>
-                <p className="lp-step-desc">De A.I. heeft al het harde werk gedaan — er staat direct een complete offerte klaar. Pas links aan wat je wilt, zie rechts de preview. Kies uit drie smaken: gedetailleerd, per module of hoogover.</p>
+                <p className="lp-step-desc">De A.I. heeft al het harde werk gedaan — er staat al een hele offerte in concept klaar. Pas links aan wat je wilt veranderen totdat hij helemaal klopt. Rechts zie je de preview hoe de offerte eruit ziet. Kies uit 3 smaken: gedetailleerd, per module of hoogover.</p>
                 <div className="lp-step-detail">→ Gedetailleerd / Per module / Hoogover</div>
               </div>
               <div className="lp-step">
                 <div className="lp-step-num">03</div>
                 <div className="lp-step-title">Versturen</div>
-                <p className="lp-step-desc">Download de PDF, deel een link, of stuur direct via e-mail of WhatsApp. Je offerte wordt automatisch opgeslagen zodat je er altijd bij kan.</p>
+                <p className="lp-step-desc">Je kan nu direct je offerte versturen. Download de PDF of deel een link, of stuur hem direct via mail of WhatsApp. Je offerte wordt automatisch opgeslagen zodat je er later altijd weer bij kan.</p>
                 <div className="lp-step-detail">→ PDF / Link / E-mail / WhatsApp</div>
               </div>
             </div>
+            <p className="lp-hoe-closing">Dat is alles. Zo makkelijk is het met Quoter.</p>
           </div>
         </section>
 
@@ -1261,7 +1322,7 @@ export function LandingPage() {
                   <li>PDF download</li>
                   <li>Deelbare link</li>
                 </ul>
-                <Link href="/auth/signup" className="lp-plan-cta outline">Gratis starten</Link>
+                <a href="#partner" className="lp-plan-cta outline">Gratis starten</a>
               </div>
               <div className="lp-plan featured">
                 <div className="lp-plan-name">
@@ -1277,7 +1338,7 @@ export function LandingPage() {
                   <li>Marge-inzicht per project</li>
                   <li>Prioriteit support</li>
                 </ul>
-                <Link href="#partner" className="lp-plan-cta solid">Pro starten &rarr;</Link>
+                <a href={process.env.NEXT_PUBLIC_STRIPE_PRO_PAYMENT_LINK ?? '#partner'} className="lp-plan-cta solid">Pro starten &rarr;</a>
               </div>
             </div>
           </div>
@@ -1289,7 +1350,7 @@ export function LandingPage() {
             <img src="/Logo Quoter.svg" alt="Quoter" style={{ height: 24 }} />
           </div>
           <div className="lp-footer-links">
-            <a href="mailto:hallo@quoter.nl">hallo@quoter.nl</a>
+            <a href="mailto:support@quoter.nu">support@quoter.nu</a>
             <a href="/privacy">Privacy</a>
             <a href="/voorwaarden">Voorwaarden</a>
           </div>
