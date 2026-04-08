@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getProfileCompletion } from "@/lib/profile-complete";
 import {
   LayoutDashboard,
   FolderOpen,
@@ -20,7 +21,7 @@ import {
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/projects", label: "Projecten", icon: FolderOpen },
+  { href: "/projects", label: "Offertes", icon: FolderOpen },
   { href: "/materials", label: "Materialen", icon: Package },
   { href: "/settings", label: "Instellingen", icon: Settings },
 ];
@@ -32,6 +33,7 @@ export default function Sidebar() {
   const [isPro, setIsPro] = useState(false);
   const [quotesUsed, setQuotesUsed] = useState<number | null>(null);
   const [quotesLimit, setQuotesLimit] = useState<number>(3);
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
   const pathname = usePathname();
   const supabase = createClient();
 
@@ -48,13 +50,17 @@ export default function Sidebar() {
       if (!user) return;
       supabase
         .from("profiles")
-        .select("subscription_tier, free_quotes_used, referral_credits")
+        .select("subscription_tier, free_quotes_used, referral_credits, business_name, logo_url, business_address, business_phone, business_email, kvk_number, btw_number, iban, hourly_rate, margin_percentage")
         .eq("id", user.id)
         .single()
         .then(({ data }) => {
           const tier = data?.subscription_tier ?? "free";
           setIsFree(tier === "free");
           setIsPro(tier === "pro");
+          if (data) {
+            const { isComplete } = getProfileCompletion(data);
+            setProfileIncomplete(!isComplete);
+          }
 
           if (tier === "free") {
             // Lifetime quota: 3 base + min(referral_credits, 6)
@@ -172,6 +178,7 @@ export default function Sidebar() {
         <nav className="flex-1 px-3 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
+            const showBadge = item.href === "/settings" && profileIncomplete;
             return (
               <Link
                 key={item.href}
@@ -184,7 +191,10 @@ export default function Sidebar() {
                 }`}
               >
                 <item.icon className="w-5 h-5" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {showBadge && (
+                  <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
+                )}
               </Link>
             );
           })}

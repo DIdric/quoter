@@ -30,6 +30,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const ALLOWED_TYPES: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/svg+xml": "svg",
+    };
+    const MAX_SIZE = 2 * 1024 * 1024; // 2MB
+
+    if (!ALLOWED_TYPES[file.type]) {
+      return NextResponse.json({ error: "Alleen JPG, PNG, WebP of SVG toegestaan" }, { status: 415 });
+    }
+    if (file.size > MAX_SIZE) {
+      return NextResponse.json({ error: "Bestand mag maximaal 2MB zijn" }, { status: 413 });
+    }
+
     const admin = getServiceClient();
 
     // Ensure logos bucket exists (shared with company logos)
@@ -39,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store under user's keurmerken subfolder with a unique filename
-    const fileExt = file.name.split(".").pop()?.toLowerCase() || "png";
+    const fileExt = ALLOWED_TYPES[file.type];
     const uniqueId = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const filePath = `${user.id}/keurmerken/${uniqueId}.${fileExt}`;
 

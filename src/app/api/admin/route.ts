@@ -57,10 +57,22 @@ export async function GET(request: Request) {
     );
     const totalRequests = usageData?.length ?? 0;
 
+    // Tier breakdown
+    const { data: tierData } = await service
+      .from("profiles")
+      .select("subscription_tier");
+
+    const tierCounts = { free: 0, pro: 0, business: 0 };
+    (tierData ?? []).forEach((p) => {
+      const t = p.subscription_tier as keyof typeof tierCounts;
+      if (t in tierCounts) tierCounts[t]++;
+    });
+
     return NextResponse.json({
       totalUsers: totalUsers ?? 0,
       totalQuotes: totalQuotes ?? 0,
       totalDefaultMaterials: totalMaterials ?? 0,
+      tierCounts,
       last30Days: {
         totalTokens,
         totalCost: Math.round(totalCost * 100) / 100,
@@ -116,6 +128,34 @@ export async function GET(request: Request) {
     }));
 
     return NextResponse.json({ users });
+  }
+
+  if (action === "quotes-feed") {
+    const days = parseInt(searchParams.get("days") ?? "30");
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const { data: quotes } = await service
+      .from("quotes")
+      .select("id, user_id, client_name, quote_number, status, created_at")
+      .gte("created_at", since.toISOString())
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    const userIds = [...new Set((quotes ?? []).map((q) => q.user_id))];
+    const { data: profiles } = await service
+      .from("profiles")
+      .select("id, business_name")
+      .in("id", userIds);
+
+    const profileMap = new Map((profiles ?? []).map((p) => [p.id, p.business_name ?? "—"]));
+
+    return NextResponse.json({
+      quotes: (quotes ?? []).map((q) => ({
+        ...q,
+        business_name: profileMap.get(q.user_id) ?? "—",
+      })),
+    });
   }
 
   if (action === "usage") {
@@ -209,6 +249,19 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const service = getServiceClient();
+
+  if (body.action === "update-user-tier") {
+    const { userId, tier } = body;
+    if (!userId || !["free", "pro", "business"].includes(tier)) {
+      return NextResponse.json({ error: "Invalid userId or tier" }, { status: 400 });
+    }
+    const { error } = await service
+      .from("profiles")
+      .update({ subscription_tier: tier })
+      .eq("id", userId);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true });
+  }
 
   if (body.action === "upsert-material") {
     const { id, name, category, unit, cost_price, source, source_url, article_number } =

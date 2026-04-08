@@ -1,5 +1,6 @@
 import Sidebar from "@/components/sidebar";
 import { HelpdeskChat } from "@/components/helpdesk-chat";
+import { OnboardingTrigger } from "@/components/onboarding-trigger";
 
 export default function DashboardLayout({
   children,
@@ -15,6 +16,7 @@ export default function DashboardLayout({
         </main>
       </div>
       <HelpdeskChat />
+      <OnboardingTrigger />
     </div>
   );
 }

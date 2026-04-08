@@ -43,7 +43,7 @@ HOE WERKT HET FREEMIUM MODEL?
 De gratis versie (Free) geeft je 3 offertes per maand. Met Pro (betaald) krijg je onbeperkt offertes plus extra functies. Je bekijkt en wijzigt je abonnement via Instellingen → "Abonnement".
 
 ALS JE HET ANTWOORD NIET WEET:
-Geef eerlijk aan dat je het niet weet. Verwijs dan naar het supportteam: support@quoter.nl. Zeg nooit iets verzinnen over functies die je niet kent.`;
+Geef eerlijk aan dat je het niet weet. Verwijs dan naar het supportteam: support@quoter.nu. Zeg nooit iets verzinnen over functies die je niet kent.`;
 
 interface ChatMessage {
   role: "user" | "assistant";

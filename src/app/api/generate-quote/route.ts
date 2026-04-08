@@ -156,10 +156,11 @@ export async function POST(request: Request) {
     .select("*")
     .eq("user_id", user.id);
 
-  // Also fetch default materials for reference pricing
+  // Also fetch default materials for reference pricing (capped to limit input tokens)
   const { data: defaultMaterials } = await supabase
     .from("default_materials")
-    .select("name, unit, cost_price");
+    .select("name, unit, cost_price")
+    .limit(200);
 
   const body = await request.json();
 
@@ -340,6 +341,14 @@ ${body.ai_input}${translationInstruction}`;
           quoteData.total_excl_btw = totalExclBtw;
           quoteData.btw_amount = btwAmount;
           quoteData.total_incl_btw = totalInclBtw;
+
+          // Sync closing text price with recalculated total
+          if (typeof quoteData.closing === "string" && totalInclBtw > 0) {
+            quoteData.closing = quoteData.closing.replace(
+              /€\s?[\d.,]+/g,
+              `€${totalInclBtw.toLocaleString("nl-NL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            );
+          }
         }
 
         // Store language
