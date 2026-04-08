@@ -269,3 +269,20 @@ create policy "Admins can read admin_users"
 -- END;
 -- $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- ============================================================
+
+-- ============================================================
+-- Migration: Add trial_until for beta tester / trial flow
+-- Run in Supabase SQL editor:
+-- ============================================================
+-- ALTER TABLE public.profiles
+--   ADD COLUMN IF NOT EXISTS trial_until date DEFAULT NULL;
+--
+-- -- Activate trial for a user (set in Supabase dashboard or via SQL):
+-- -- UPDATE public.profiles SET trial_until = CURRENT_DATE + INTERVAL '30 days' WHERE email = 'tester@example.com';
+--
+-- -- n8n SQL: find trial users expiring in 3 days (for upsell notification):
+-- -- SELECT p.id, u.email, p.trial_until, p.whatsapp_number, p.whatsapp_opt_in, p.email_opt_in
+-- -- FROM public.profiles p
+-- -- JOIN auth.users u ON u.id = p.id
+-- -- WHERE p.trial_until = CURRENT_DATE + INTERVAL '3 days';
+-- ============================================================

@@ -35,6 +35,8 @@ export interface UsageStatus {
   reason?: string;
   totalLimit: number;
   referralCode: string | null;
+  isTrial: boolean;
+  trialUntil: string | null;
 }
 
 const FREE_BASE_LIMIT = 3;
@@ -54,13 +56,30 @@ export async function checkUsageQuota(userId: string): Promise<UsageStatus> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("subscription_tier, free_quotes_used, referral_credits, referral_code")
+    .select("subscription_tier, free_quotes_used, referral_credits, referral_code, trial_until")
     .eq("id", userId)
     .single();
 
   const tier: SubscriptionTier = profile?.subscription_tier ?? "free";
   const limits = TIER_LIMITS[tier];
   const referralCode: string | null = profile?.referral_code ?? null;
+  const trialUntil: string | null = profile?.trial_until ?? null;
+  const isInTrial = trialUntil !== null && new Date(trialUntil) > new Date();
+
+  // Trial users — unlimited access until trial_until date
+  if (isInTrial) {
+    return {
+      tier,
+      limits: TIER_LIMITS["business"],
+      quotesUsed: 0,
+      tokensUsed: 0,
+      allowed: true,
+      totalLimit: -1,
+      referralCode,
+      isTrial: true,
+      trialUntil,
+    };
+  }
 
   // Business tier — unlimited
   if (tier === "business") {
@@ -72,6 +91,8 @@ export async function checkUsageQuota(userId: string): Promise<UsageStatus> {
       allowed: true,
       totalLimit: -1,
       referralCode,
+      isTrial: false,
+      trialUntil: null,
     };
   }
 
@@ -110,6 +131,8 @@ export async function checkUsageQuota(userId: string): Promise<UsageStatus> {
         reason: `Je hebt je maandlimiet van ${limits.quotesPerMonth} offertes bereikt. Upgrade naar Business voor meer.`,
         totalLimit: limits.quotesPerMonth,
         referralCode,
+        isTrial: false,
+        trialUntil: null,
       };
     }
 
@@ -123,6 +146,8 @@ export async function checkUsageQuota(userId: string): Promise<UsageStatus> {
         reason: `Je token-limiet voor deze maand is bereikt. Upgrade voor meer capaciteit.`,
         totalLimit: limits.quotesPerMonth,
         referralCode,
+        isTrial: false,
+        trialUntil: null,
       };
     }
 
@@ -134,6 +159,8 @@ export async function checkUsageQuota(userId: string): Promise<UsageStatus> {
       allowed: true,
       totalLimit: limits.quotesPerMonth,
       referralCode,
+      isTrial: false,
+      trialUntil: null,
     };
   }
 
@@ -155,6 +182,8 @@ export async function checkUsageQuota(userId: string): Promise<UsageStatus> {
       reason: `Je ${FREE_BASE_LIMIT} gratis offertes zijn op. Nodig een collega uit via je referral link of upgrade naar Pro.`,
       totalLimit,
       referralCode,
+      isTrial: false,
+      trialUntil: null,
     };
   }
 
@@ -166,5 +195,7 @@ export async function checkUsageQuota(userId: string): Promise<UsageStatus> {
     allowed: true,
     totalLimit,
     referralCode,
+    isTrial: false,
+    trialUntil: null,
   };
 }

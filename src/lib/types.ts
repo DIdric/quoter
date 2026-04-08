@@ -41,6 +41,7 @@ export interface Profile {
   whatsapp_opt_in: boolean;
   email_opt_in: boolean;
   referral_count: number;
+  trial_until: string | null;
 }
 
 export interface Material {

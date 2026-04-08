@@ -31,6 +31,8 @@ export default function Sidebar() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isFree, setIsFree] = useState(false);
   const [isPro, setIsPro] = useState(false);
+  const [isTrial, setIsTrial] = useState(false);
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number>(0);
   const [quotesUsed, setQuotesUsed] = useState<number | null>(null);
   const [quotesLimit, setQuotesLimit] = useState<number>(3);
   const [profileIncomplete, setProfileIncomplete] = useState(false);
@@ -50,7 +52,7 @@ export default function Sidebar() {
       if (!user) return;
       supabase
         .from("profiles")
-        .select("subscription_tier, free_quotes_used, referral_credits, business_name, logo_url, business_address, business_phone, business_email, kvk_number, btw_number, iban, hourly_rate, margin_percentage")
+        .select("subscription_tier, free_quotes_used, referral_credits, trial_until, business_name, logo_url, business_address, business_phone, business_email, kvk_number, btw_number, iban, hourly_rate, margin_percentage")
         .eq("id", user.id)
         .single()
         .then(({ data }) => {
@@ -60,6 +62,15 @@ export default function Sidebar() {
           if (data) {
             const { isComplete } = getProfileCompletion(data);
             setProfileIncomplete(!isComplete);
+          }
+
+          // Trial check
+          const trialUntil = data?.trial_until ? new Date(data.trial_until) : null;
+          const now = new Date();
+          if (trialUntil && trialUntil > now) {
+            const msLeft = trialUntil.getTime() - now.getTime();
+            setTrialDaysLeft(Math.ceil(msLeft / (1000 * 60 * 60 * 24)));
+            setIsTrial(true);
           }
 
           if (tier === "free") {
@@ -214,8 +225,22 @@ export default function Sidebar() {
           </div>
         )}
 
-        {/* Upgrade nudge (free / pro users) */}
-        {(isFree || isPro) && (
+        {/* Trial badge */}
+        {isTrial && (
+          <div className="px-3 mb-2">
+            <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <p className="text-xs font-medium text-amber-400">
+                Trial actief
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {trialDaysLeft} {trialDaysLeft === 1 ? "dag" : "dagen"} resterend
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Upgrade nudge (free / pro users, not on trial) */}
+        {!isTrial && (isFree || isPro) && (
           <div className="px-3 mb-2">
             {quotesUsed !== null && (
               <p className="text-xs text-slate-400 px-3 mb-1.5">
