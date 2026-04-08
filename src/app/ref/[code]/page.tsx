@@ -6,5 +6,5 @@ interface Props {
 
 export default async function ReferralPage({ params }: Props) {
   const { code } = await params;
-  redirect(`/login?ref=${encodeURIComponent(code)}&signup=1`);
+  redirect(`/?ref=${encodeURIComponent(code)}&signup=1`);
 }
