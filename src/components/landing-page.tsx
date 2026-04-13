@@ -1272,16 +1272,15 @@ export function LandingPage() {
             <div className="lp-partner-left">
               <span className="lp-section-label">Design Partner Programma</span>
               <h2 className="lp-partner-h2">
-                Wees één van de<br />eerste <span className="accent">3 bouwers.</span>
+                Wees één van de<br />eerste <span className="accent">20 bouwers.</span>
               </h2>
-              <p>We zoeken drie aannemers die als eerste mogen testen. Jij krijgt volledige toegang en levenslange korting. Wij vragen 10 minuten feedback per week. Dat is alles.</p>
+              <p>We zoeken twintig aannemers die als eerste mogen testen. Jij krijgt volledige toegang en 30 dagen gratis. Wij vragen 10 minuten feedback per week. Dat is alles.</p>
               <div className="lp-perks">
                 {[
                   'Volledige toegang tot Quoter',
                   'Onbeperkt offertes genereren',
                   'Directe lijn met het team',
-                  'Levenslange korting als founding user',
-                  'Eerste 2 weken volledig gratis',
+                  'Eerste 30 dagen volledig gratis',
                 ].map((perk) => (
                   <div key={perk} className="lp-perk">
                     <div className="lp-perk-check">
@@ -1298,7 +1297,7 @@ export function LandingPage() {
             <div className="lp-partner-card">
               <span className="lp-partner-badge">Beperkte plaatsen</span>
               <div className="lp-partner-price">Gratis <span>/ 30 dagen</span></div>
-              <div className="lp-partner-sub">Daarna €49 /maand &bull; Founding user korting</div>
+              <div className="lp-partner-sub">Daarna €49 /maand</div>
               {formSubmitted ? (
                 <div style={{ textAlign: 'center', padding: '32px 0', color: '#3ADE6A', fontFamily: 'var(--font-mono)', fontSize: '14px' }}>
                   Aanmelding ontvangen ✓<br />
