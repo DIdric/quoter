@@ -91,7 +91,7 @@ export function LandingPage() {
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password: loginPassword })
     if (error) {
-      setLoginError('E-mailadres of wachtwoord klopt niet.')
+      setLoginError(error.message || 'E-mailadres of wachtwoord klopt niet.')
       setLoginLoading(false)
     } else {
       window.location.href = '/dashboard'
