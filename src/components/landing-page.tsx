@@ -24,12 +24,40 @@ const monoFont = IBM_Plex_Mono({
 export function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
   const [formSubmitted, setFormSubmitted] = useState(false)
+  const [formLoading, setFormLoading] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [slotsFull, setSlotsFull] = useState(false)
   const [formData, setFormData] = useState({ name: '', company: '', email: '', phone: '', info: '' })
   const [loginOpen, setLoginOpen] = useState(false)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
   const [loginError, setLoginError] = useState('')
   const [loginLoading, setLoginLoading] = useState(false)
+
+  async function handlePartnerSignup() {
+    if (!formData.name.trim() || !formData.email.trim()) return
+    setFormLoading(true)
+    setFormError('')
+    try {
+      const res = await fetch('/api/partner-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setFormError(data.error || 'Er ging iets mis. Probeer het opnieuw.')
+      } else if (data.slotsAvailable === false) {
+        setSlotsFull(true)
+      } else {
+        setFormSubmitted(true)
+      }
+    } catch {
+      setFormError('Er ging iets mis. Probeer het opnieuw.')
+    } finally {
+      setFormLoading(false)
+    }
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -1269,12 +1297,24 @@ export function LandingPage() {
 
             <div className="lp-partner-card">
               <span className="lp-partner-badge">Beperkte plaatsen</span>
-              <div className="lp-partner-price">Gratis <span>/ 2 weken</span></div>
+              <div className="lp-partner-price">Gratis <span>/ 30 dagen</span></div>
               <div className="lp-partner-sub">Daarna €49 /maand &bull; Founding user korting</div>
               {formSubmitted ? (
                 <div style={{ textAlign: 'center', padding: '32px 0', color: '#3ADE6A', fontFamily: 'var(--font-mono)', fontSize: '14px' }}>
                   Aanmelding ontvangen ✓<br />
-                  <span style={{ color: '#555', fontSize: '12px', marginTop: 8, display: 'block' }}>We nemen binnen 24 uur contact op.</span>
+                  <span style={{ color: '#7A7A7A', fontSize: '12px', marginTop: 8, display: 'block' }}>Check je inbox — je uitnodiging is onderweg.</span>
+                </div>
+              ) : slotsFull ? (
+                <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                  <div style={{ color: '#3ADE6A', fontFamily: 'var(--font-mono)', fontSize: '14px', marginBottom: 12 }}>
+                    Design Partner programma is vol.
+                  </div>
+                  <div style={{ color: '#7A7A7A', fontSize: '13px', marginBottom: 20 }}>
+                    Alle 20 plaatsen zijn bezet. Je kan wel gratis starten.
+                  </div>
+                  <a href="/login" className="lp-form-submit" style={{ display: 'block', textAlign: 'center', textDecoration: 'none' }}>
+                    Gratis starten &rarr;
+                  </a>
                 </div>
               ) : (
                 <>
@@ -1293,13 +1333,18 @@ export function LandingPage() {
                   <div className="lp-form-group">
                     <textarea rows={3} placeholder="Kort: wat voor klussen doe je? (optioneel)" value={formData.info} onChange={e => setFormData(f => ({ ...f, info: e.target.value }))} />
                   </div>
+                  {formError && (
+                    <div style={{ color: '#ff6b6b', fontSize: '13px', marginBottom: 8 }}>{formError}</div>
+                  )}
                   <button
                     className="lp-form-submit"
-                    onClick={() => { if (formData.name.trim() && formData.email.trim()) setFormSubmitted(true) }}
+                    onClick={handlePartnerSignup}
+                    disabled={formLoading}
+                    style={formLoading ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
                   >
-                    Meld me aan als Design Partner &rarr;
+                    {formLoading ? 'Aanmelden...' : 'Meld me aan als Design Partner →'}
                   </button>
-                  <div className="lp-form-note">We nemen binnen 24 uur contact op.</div>
+                  <div className="lp-form-note">Je ontvangt direct een uitnodigingsmail.</div>
                 </>
               )}
             </div>
