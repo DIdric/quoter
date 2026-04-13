@@ -28,6 +28,10 @@ export function LandingPage() {
   const [formError, setFormError] = useState('')
   const [slotsFull, setSlotsFull] = useState(false)
   const [formData, setFormData] = useState({ name: '', company: '', email: '', phone: '', info: '' })
+  const [registerPassword, setRegisterPassword] = useState('')
+  const [registerLoading, setRegisterLoading] = useState(false)
+  const [registerDone, setRegisterDone] = useState(false)
+  const [registerError, setRegisterError] = useState('')
   const [loginOpen, setLoginOpen] = useState(false)
   const [loginEmail, setLoginEmail] = useState('')
   const [loginPassword, setLoginPassword] = useState('')
@@ -57,6 +61,27 @@ export function LandingPage() {
     } finally {
       setFormLoading(false)
     }
+  }
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault()
+    setRegisterLoading(true)
+    setRegisterError('')
+    const supabase = createClient()
+    const { error } = await supabase.auth.signUp({
+      email: formData.email.toLowerCase().trim(),
+      password: registerPassword,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+        data: { business_name: formData.company?.trim() || formData.name.trim() },
+      },
+    })
+    if (error) {
+      setRegisterError(error.message === 'User already registered' ? 'Dit e-mailadres is al in gebruik. Gebruik de inlogknop bovenin.' : error.message)
+    } else {
+      setRegisterDone(true)
+    }
+    setRegisterLoading(false)
   }
 
   async function handleLogin(e: React.FormEvent) {
@@ -1299,10 +1324,41 @@ export function LandingPage() {
               <div className="lp-partner-price">Gratis <span>/ 30 dagen</span></div>
               <div className="lp-partner-sub">Daarna €49 /maand</div>
               {formSubmitted ? (
-                <div style={{ textAlign: 'center', padding: '32px 0', color: '#3ADE6A', fontFamily: 'var(--font-mono)', fontSize: '14px' }}>
-                  Aanmelding ontvangen ✓<br />
-                  <span style={{ color: '#7A7A7A', fontSize: '12px', marginTop: 8, display: 'block' }}>Check je inbox — je uitnodiging is onderweg.</span>
-                </div>
+                registerDone ? (
+                  <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                    <div style={{ color: '#3ADE6A', fontFamily: 'var(--font-mono)', fontSize: '14px', marginBottom: 8 }}>Account aangemaakt ✓</div>
+                    <div style={{ color: '#7A7A7A', fontSize: '12px' }}>Check je inbox voor de bevestigingslink.</div>
+                  </div>
+                ) : (
+                  <form onSubmit={handleRegister} style={{ marginTop: 8 }}>
+                    <div style={{ color: '#3ADE6A', fontFamily: 'var(--font-mono)', fontSize: '13px', marginBottom: 16 }}>Aanmelding ontvangen ✓ Kies nu je wachtwoord.</div>
+                    <div className="lp-form-group">
+                      <input type="email" value={formData.email} readOnly style={{ opacity: 0.5, cursor: 'default' }} />
+                    </div>
+                    <div className="lp-form-group">
+                      <input
+                        type="password"
+                        placeholder="Kies een wachtwoord"
+                        value={registerPassword}
+                        onChange={e => setRegisterPassword(e.target.value)}
+                        minLength={6}
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    {registerError && (
+                      <div style={{ color: '#ff6b6b', fontSize: '13px', marginBottom: 8 }}>{registerError}</div>
+                    )}
+                    <button
+                      type="submit"
+                      className="lp-form-submit"
+                      disabled={registerLoading}
+                      style={registerLoading ? { opacity: 0.6, cursor: 'not-allowed' } : {}}
+                    >
+                      {registerLoading ? 'Account aanmaken...' : 'Account aanmaken →'}
+                    </button>
+                  </form>
+                )
               ) : slotsFull ? (
                 <div style={{ textAlign: 'center', padding: '32px 0' }}>
                   <div style={{ color: '#3ADE6A', fontFamily: 'var(--font-mono)', fontSize: '14px', marginBottom: 12 }}>
