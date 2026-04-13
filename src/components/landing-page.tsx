@@ -1126,7 +1126,7 @@ export function LandingPage() {
                 </button>
               </form>
               <div className="lp-modal-footer">
-                <a href="/auth/reset-password">Wachtwoord vergeten?</a>
+                <a href="/auth/forgot-password">Wachtwoord vergeten?</a>
                 &nbsp;·&nbsp;
                 Nog geen account? <a href="#partner" onClick={() => setLoginOpen(false)}>Aanmelden</a>
               </div>
