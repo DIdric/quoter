@@ -32,6 +32,16 @@ export interface Profile {
   keurmerken: Keurmerk[];
   subscription_tier: "free" | "pro" | "business";
   stripe_customer_id: string | null;
+  referral_code: string | null;
+  referred_by: string | null;
+  referral_credits: number;
+  free_quotes_used: number;
+  lead_score: number;
+  whatsapp_number: string | null;
+  whatsapp_opt_in: boolean;
+  email_opt_in: boolean;
+  referral_count: number;
+  trial_until: string | null;
 }
 
 export interface Material {

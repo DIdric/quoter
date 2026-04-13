@@ -222,3 +222,72 @@ create policy "Admins can read admin_users"
 -- ALTER TABLE public.quotes DROP CONSTRAINT IF EXISTS quotes_status_check;
 -- ALTER TABLE public.quotes ADD CONSTRAINT quotes_status_check CHECK (status IN ('draft', 'final', 'completed'));
 -- ============================================================
+
+-- ============================================================
+-- Migration: Referral & Lead Flow (freemium groei engine)
+-- Project: uobaibqwoarcvdmvqubm
+-- Run this in the Supabase SQL Editor
+-- ============================================================
+--
+-- ALTER TABLE public.profiles
+--   ADD COLUMN IF NOT EXISTS referral_code      TEXT UNIQUE,
+--   ADD COLUMN IF NOT EXISTS referred_by        UUID REFERENCES auth.users(id),
+--   ADD COLUMN IF NOT EXISTS referral_credits   INTEGER NOT NULL DEFAULT 0,
+--   ADD COLUMN IF NOT EXISTS free_quotes_used   INTEGER NOT NULL DEFAULT 0,
+--   ADD COLUMN IF NOT EXISTS lead_score         INTEGER NOT NULL DEFAULT 0,
+--   ADD COLUMN IF NOT EXISTS whatsapp_number    TEXT,
+--   ADD COLUMN IF NOT EXISTS referral_count     INTEGER NOT NULL DEFAULT 0;
+--
+-- -- Genereer referral codes voor bestaande gebruikers
+-- UPDATE public.profiles
+-- SET referral_code = UPPER(SUBSTR(MD5(id::text), 1, 8))
+-- WHERE referral_code IS NULL;
+--
+-- -- Trigger: increment free_quotes_used bij elke nieuwe quote (free tier only)
+-- CREATE OR REPLACE FUNCTION increment_quote_count()
+-- RETURNS TRIGGER AS $$
+-- BEGIN
+--   UPDATE public.profiles
+--   SET free_quotes_used = free_quotes_used + 1
+--   WHERE id = NEW.user_id
+--   AND subscription_tier = 'free';
+--   RETURN NEW;
+-- END;
+-- $$ LANGUAGE plpgsql SECURITY DEFINER;
+--
+-- CREATE TRIGGER on_quote_created
+--   AFTER INSERT ON public.quotes
+--   FOR EACH ROW EXECUTE FUNCTION increment_quote_count();
+--
+-- -- Update handle_new_user trigger om referral_code te genereren bij signup
+-- CREATE OR REPLACE FUNCTION public.handle_new_user()
+-- RETURNS TRIGGER AS $$
+-- BEGIN
+--   INSERT INTO public.profiles (id, referral_code)
+--   VALUES (new.id, UPPER(SUBSTR(MD5(new.id::text), 1, 8)));
+--   RETURN new;
+-- END;
+-- $$ LANGUAGE plpgsql SECURITY DEFINER;
+-- ============================================================
+
+-- ============================================================
+-- Migration: Add trial_until for beta tester / trial flow
+-- Run in Supabase SQL editor:
+-- ============================================================
+-- ALTER TABLE public.profiles
+--   ADD COLUMN IF NOT EXISTS trial_until date DEFAULT NULL;
+--
+-- -- Activate trial for a user (set in Supabase dashboard or via SQL):
+-- -- UPDATE public.profiles SET trial_until = CURRENT_DATE + INTERVAL '30 days'
+-- -- WHERE id = (SELECT id FROM auth.users WHERE email = 'tester@example.com');
+-- --
+-- -- Multiple testers at once:
+-- -- UPDATE public.profiles SET trial_until = CURRENT_DATE + INTERVAL '30 days'
+-- -- WHERE id IN (SELECT id FROM auth.users WHERE email IN ('a@x.com', 'b@x.com'));
+--
+-- -- n8n SQL: find trial users expiring in 3 days (for upsell notification):
+-- -- SELECT p.id, u.email, p.trial_until, p.whatsapp_number, p.whatsapp_opt_in, p.email_opt_in
+-- -- FROM public.profiles p
+-- -- JOIN auth.users u ON u.id = p.id
+-- -- WHERE p.trial_until = CURRENT_DATE + INTERVAL '3 days';
+-- ============================================================

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getProfileCompletion } from "@/lib/profile-complete";
 import {
   LayoutDashboard,
   FolderOpen,
@@ -20,7 +21,7 @@ import {
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/projects", label: "Projecten", icon: FolderOpen },
+  { href: "/projects", label: "Offertes", icon: FolderOpen },
   { href: "/materials", label: "Materialen", icon: Package },
   { href: "/settings", label: "Instellingen", icon: Settings },
 ];
@@ -29,8 +30,12 @@ export default function Sidebar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isFree, setIsFree] = useState(false);
+  const [isPro, setIsPro] = useState(false);
+  const [isTrial, setIsTrial] = useState(false);
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number>(0);
   const [quotesUsed, setQuotesUsed] = useState<number | null>(null);
-  const [quotesLimit, setQuotesLimit] = useState<number>(10);
+  const [quotesLimit, setQuotesLimit] = useState<number>(3);
+  const [profileIncomplete, setProfileIncomplete] = useState(false);
   const pathname = usePathname();
   const supabase = createClient();
 
@@ -47,18 +52,35 @@ export default function Sidebar() {
       if (!user) return;
       supabase
         .from("profiles")
-        .select("subscription_tier")
+        .select("subscription_tier, free_quotes_used, referral_credits, trial_until, business_name, logo_url, business_address, business_phone, business_email, kvk_number, btw_number, iban, hourly_rate, margin_percentage")
         .eq("id", user.id)
         .single()
         .then(({ data }) => {
           const tier = data?.subscription_tier ?? "free";
-          const showNudge = tier === "free" || tier === "pro";
-          setIsFree(showNudge);
-          // Set quota limit based on tier
-          setQuotesLimit(tier === "free" ? 10 : tier === "pro" ? 50 : -1);
+          setIsFree(tier === "free");
+          setIsPro(tier === "pro");
+          if (data) {
+            const { isComplete } = getProfileCompletion(data);
+            setProfileIncomplete(!isComplete);
+          }
 
-          if (showNudge) {
-            // Load quotes used this month
+          // Trial check
+          const trialUntil = data?.trial_until ? new Date(data.trial_until) : null;
+          const now = new Date();
+          if (trialUntil && trialUntil > now) {
+            const msLeft = trialUntil.getTime() - now.getTime();
+            setTrialDaysLeft(Math.ceil(msLeft / (1000 * 60 * 60 * 24)));
+            setIsTrial(true);
+          }
+
+          if (tier === "free") {
+            // Lifetime quota: 3 base + min(referral_credits, 6)
+            const extra = Math.min(data?.referral_credits ?? 0, 6);
+            setQuotesLimit(3 + extra);
+            setQuotesUsed(data?.free_quotes_used ?? 0);
+          } else if (tier === "pro") {
+            // Monthly quota from token_usage
+            setQuotesLimit(50);
             const now = new Date();
             const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
             supabase
@@ -77,7 +99,7 @@ export default function Sidebar() {
 
   async function handleLogout() {
     await supabase.auth.signOut();
-    window.location.href = "/login";
+    window.location.href = "/";
   }
 
   return (
@@ -167,6 +189,7 @@ export default function Sidebar() {
         <nav className="flex-1 px-3 space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
+            const showBadge = item.href === "/settings" && profileIncomplete;
             return (
               <Link
                 key={item.href}
@@ -179,7 +202,10 @@ export default function Sidebar() {
                 }`}
               >
                 <item.icon className="w-5 h-5" />
-                {item.label}
+                <span className="flex-1">{item.label}</span>
+                {showBadge && (
+                  <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
+                )}
               </Link>
             );
           })}
@@ -199,12 +225,26 @@ export default function Sidebar() {
           </div>
         )}
 
-        {/* Upgrade nudge (free / pro users) */}
-        {isFree && (
+        {/* Trial badge */}
+        {isTrial && (
+          <div className="px-3 mb-2">
+            <div className="px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <p className="text-xs font-medium text-amber-400">
+                Trial actief
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {trialDaysLeft} {trialDaysLeft === 1 ? "dag" : "dagen"} resterend
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Upgrade nudge (free / pro users, not on trial) */}
+        {!isTrial && (isFree || isPro) && (
           <div className="px-3 mb-2">
             {quotesUsed !== null && (
               <p className="text-xs text-slate-400 px-3 mb-1.5">
-                {quotesUsed} / {quotesLimit} offertes deze maand
+                {quotesUsed} / {quotesLimit} offertes{isFree ? "" : " deze maand"}
               </p>
             )}
             <Link
