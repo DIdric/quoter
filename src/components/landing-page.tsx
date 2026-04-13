@@ -35,7 +35,7 @@ export function LandingPage() {
   const [loginLoading, setLoginLoading] = useState(false)
 
   async function handlePartnerSignup() {
-    if (!formData.name.trim() || !formData.email.trim()) return
+    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim()) return
     setFormLoading(true)
     setFormError('')
     try {
@@ -1327,7 +1327,8 @@ export function LandingPage() {
                     <input type="email" placeholder="E-mailadres" value={formData.email} onChange={e => setFormData(f => ({ ...f, email: e.target.value }))} />
                   </div>
                   <div className="lp-form-group">
-                    <input type="tel" placeholder="Telefoonnummer (optioneel)" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} />
+                    <input type="tel" placeholder="Telefoonnummer" value={formData.phone} onChange={e => setFormData(f => ({ ...f, phone: e.target.value }))} required />
+                    <div style={{ fontSize: '11px', color: '#7A7A7A', marginTop: 4 }}>Voor de WhatsApp testgroep</div>
                   </div>
                   <div className="lp-form-group">
                     <textarea rows={3} placeholder="Kort: wat voor klussen doe je? (optioneel)" value={formData.info} onChange={e => setFormData(f => ({ ...f, info: e.target.value }))} />
