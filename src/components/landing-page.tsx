@@ -1322,7 +1322,6 @@ export function LandingPage() {
             <div className="lp-partner-card">
               <span className="lp-partner-badge">Beperkte plaatsen</span>
               <div className="lp-partner-price">Gratis <span>/ 30 dagen</span></div>
-              <div className="lp-partner-sub">Daarna €49 /maand</div>
               {formSubmitted ? (
                 registerDone ? (
                   <div style={{ textAlign: 'center', padding: '32px 0' }}>
