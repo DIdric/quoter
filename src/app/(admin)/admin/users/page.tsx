@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Users, Loader2, ChevronDown } from "lucide-react";
 
-type Tier = "free" | "pro" | "business";
+type Tier = "free" | "pro" | "pro_plus" | "business" | "business_plus";
 
 interface UserData {
   id: string;
@@ -23,7 +23,9 @@ interface UserData {
 const TIER_STYLES: Record<Tier, string> = {
   free: "bg-slate-100 text-slate-600",
   pro: "bg-blue-100 text-blue-700",
+  pro_plus: "bg-violet-100 text-violet-700",
   business: "bg-amber-100 text-amber-700",
+  business_plus: "bg-emerald-100 text-emerald-700",
 };
 
 function TierBadge({ tier }: { tier: Tier }) {
@@ -69,7 +71,7 @@ function TierSelect({ userId, current, onChanged }: { userId: string; current: T
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute left-0 top-full mt-1 z-20 bg-white border border-slate-200 rounded-lg shadow-lg py-1 min-w-[110px]">
-            {(["free", "pro", "business"] as Tier[]).map((t) => (
+            {(["free", "pro", "pro_plus", "business", "business_plus"] as Tier[]).map((t) => (
               <button
                 key={t}
                 onClick={() => changeTier(t)}

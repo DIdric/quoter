@@ -30,7 +30,7 @@ export interface Profile {
   estimation_style?: string;
   tone_style?: string;
   keurmerken: Keurmerk[];
-  subscription_tier: "free" | "pro" | "business";
+  subscription_tier: "free" | "pro" | "pro_plus" | "business" | "business_plus";
   stripe_customer_id: string | null;
   referral_code: string | null;
   referred_by: string | null;

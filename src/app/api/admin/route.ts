@@ -256,7 +256,7 @@ export async function POST(request: Request) {
 
   if (body.action === "update-user-tier") {
     const { userId, tier } = body;
-    if (!userId || !["free", "pro", "business"].includes(tier)) {
+    if (!userId || !["free", "pro", "pro_plus", "business", "business_plus"].includes(tier)) {
       return NextResponse.json({ error: "Invalid userId or tier" }, { status: 400 });
     }
     const { error } = await service

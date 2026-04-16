@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 
-export type SubscriptionTier = "free" | "pro" | "business";
+export type SubscriptionTier = "free" | "pro" | "pro_plus" | "business" | "business_plus";
 
 export interface TierLimits {
   label: string;
@@ -16,11 +16,21 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
   },
   pro: {
     label: "Pro",
-    quotesPerMonth: 50,
-    maxTokensPerMonth: 1_500_000,
+    quotesPerMonth: 10,
+    maxTokensPerMonth: 500_000,
+  },
+  pro_plus: {
+    label: "Pro+",
+    quotesPerMonth: 25,
+    maxTokensPerMonth: 1_000_000,
   },
   business: {
     label: "Business",
+    quotesPerMonth: 50,
+    maxTokensPerMonth: 2_000_000,
+  },
+  business_plus: {
+    label: "Business+",
     quotesPerMonth: -1, // unlimited
     maxTokensPerMonth: -1,
   },
@@ -60,17 +70,22 @@ export async function checkUsageQuota(userId: string): Promise<UsageStatus> {
     .eq("id", userId)
     .single();
 
-  const tier: SubscriptionTier = profile?.subscription_tier ?? "free";
-  const limits = TIER_LIMITS[tier];
+  const rawTier: SubscriptionTier = profile?.subscription_tier ?? "free";
   const referralCode: string | null = profile?.referral_code ?? null;
   const trialUntil: string | null = profile?.trial_until ?? null;
   const isInTrial = trialUntil !== null && new Date(trialUntil) > new Date();
+  const trialExpired = trialUntil !== null && !isInTrial;
 
-  // Trial users — unlimited access until trial_until date
+  // Trial expired without paid subscription → treat as free
+  const tier: SubscriptionTier =
+    trialExpired && !profile?.stripe_customer_id ? "free" : rawTier;
+  const limits = TIER_LIMITS[tier];
+
+  // Active trial — unlimited access until trial_until date
   if (isInTrial) {
     return {
-      tier,
-      limits: TIER_LIMITS["business"],
+      tier: rawTier,
+      limits: TIER_LIMITS["business_plus"],
       quotesUsed: 0,
       tokensUsed: 0,
       allowed: true,
@@ -78,6 +93,21 @@ export async function checkUsageQuota(userId: string): Promise<UsageStatus> {
       referralCode,
       isTrial: true,
       trialUntil,
+    };
+  }
+
+  // Business+ tier — unlimited
+  if (tier === "business_plus") {
+    return {
+      tier,
+      limits,
+      quotesUsed: 0,
+      tokensUsed: 0,
+      allowed: true,
+      totalLimit: -1,
+      referralCode,
+      isTrial: false,
+      trialUntil: null,
     };
   }
 
@@ -96,8 +126,8 @@ export async function checkUsageQuota(userId: string): Promise<UsageStatus> {
     };
   }
 
-  // Pro tier — monthly quota
-  if (tier === "pro") {
+  // Pro / Pro+ / Business — monthly quota
+  if (tier === "pro" || tier === "pro_plus" || tier === "business") {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
@@ -128,7 +158,7 @@ export async function checkUsageQuota(userId: string): Promise<UsageStatus> {
         quotesUsed: used,
         tokensUsed,
         allowed: false,
-        reason: `Je hebt je maandlimiet van ${limits.quotesPerMonth} offertes bereikt. Upgrade naar Business voor meer.`,
+        reason: `Je hebt je maandlimiet van ${limits.quotesPerMonth} offertes bereikt. Upgrade naar een hoger plan voor meer.`,
         totalLimit: limits.quotesPerMonth,
         referralCode,
         isTrial: false,

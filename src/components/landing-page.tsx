@@ -847,9 +847,15 @@ export function LandingPage() {
         }
         .lp-pricing-row {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 12px;
           text-align: left;
+        }
+        @media (max-width: 1100px) {
+          .lp-pricing-row { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 700px) {
+          .lp-pricing-row { grid-template-columns: 1fr; }
         }
         .lp-plan {
           background: #161616;
@@ -1416,21 +1422,57 @@ export function LandingPage() {
               <div className="lp-plan">
                 <div className="lp-plan-name">Gratis</div>
                 <div className="lp-plan-price">€0 <sub>/maand</sub></div>
-                <div className="lp-plan-desc">Om te voelen hoe het werkt.</div>
+                <div className="lp-plan-desc">Probeer het uit.</div>
                 <ul className="lp-plan-features">
-                  <li>3 offertes genereren</li>
+                  <li>3 offertes</li>
                   <li>PDF download</li>
                   <li>Deelbare link</li>
                 </ul>
                 <a href="#partner" className="lp-plan-cta outline">Gratis starten</a>
               </div>
+              <div className="lp-plan">
+                <div className="lp-plan-name">Pro</div>
+                <div className="lp-plan-price">€19,90 <sub>/maand</sub></div>
+                <div className="lp-plan-desc">Voor wie regelmatig offertes maakt.</div>
+                <ul className="lp-plan-features">
+                  <li>10 offertes per maand</li>
+                  <li>PDF, link &amp; dashboard</li>
+                  <li>Eigen logo &amp; huisstijl</li>
+                </ul>
+                <a href="#partner" className="lp-plan-cta outline">Pro starten</a>
+              </div>
+              <div className="lp-plan">
+                <div className="lp-plan-name">Pro+</div>
+                <div className="lp-plan-price">€39,90 <sub>/maand</sub></div>
+                <div className="lp-plan-desc">Voor de groeiende ondernemer.</div>
+                <ul className="lp-plan-features">
+                  <li>25 offertes per maand</li>
+                  <li>PDF, link &amp; dashboard</li>
+                  <li>Eigen logo &amp; huisstijl</li>
+                  <li>Marge-inzicht per project</li>
+                </ul>
+                <a href="#partner" className="lp-plan-cta outline">Pro+ starten</a>
+              </div>
               <div className="lp-plan featured">
                 <div className="lp-plan-name">
-                  Pro
-                  <span className="lp-plan-badge">— Aanbevolen</span>
+                  Business
+                  <span className="lp-plan-badge">— Meest gekozen</span>
                 </div>
-                <div className="lp-plan-price">€49 <sub>/maand</sub></div>
+                <div className="lp-plan-price">€49,90 <sub>/maand</sub></div>
                 <div className="lp-plan-desc">Voor de aannemer die tijd terugwil.</div>
+                <ul className="lp-plan-features">
+                  <li>50 offertes per maand</li>
+                  <li>PDF, link &amp; dashboard</li>
+                  <li>Eigen logo &amp; huisstijl</li>
+                  <li>Marge-inzicht per project</li>
+                  <li>Prioriteit support</li>
+                </ul>
+                <a href="#partner" className="lp-plan-cta solid">Business starten &rarr;</a>
+              </div>
+              <div className="lp-plan">
+                <div className="lp-plan-name">Business+</div>
+                <div className="lp-plan-price">€69,90 <sub>/maand</sub></div>
+                <div className="lp-plan-desc">Voor drukke aannemers zonder limiet.</div>
                 <ul className="lp-plan-features">
                   <li>Onbeperkt offertes</li>
                   <li>PDF, link &amp; dashboard</li>
@@ -1438,7 +1480,7 @@ export function LandingPage() {
                   <li>Marge-inzicht per project</li>
                   <li>Prioriteit support</li>
                 </ul>
-                <a href={process.env.NEXT_PUBLIC_STRIPE_PRO_PAYMENT_LINK ?? '#partner'} className="lp-plan-cta solid">Pro starten &rarr;</a>
+                <a href="#partner" className="lp-plan-cta outline">Business+ starten</a>
               </div>
             </div>
           </div>
