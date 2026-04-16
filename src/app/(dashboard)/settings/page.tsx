@@ -1042,28 +1042,27 @@ function PasswordChangeCard() {
   );
 }
 
-const PLAN_FEATURES: Record<string, { price: number; features: string[] }> = {
+const PLAN_FEATURES: Record<string, { price: number; featured?: boolean; features: string[] }> = {
   free: {
     price: 0,
-    features: ["10 AI-offertes per maand", "PDF export", "Eigen materialen"],
+    features: ["3 offertes", "PDF export", "Deelbare link"],
   },
   pro: {
-    price: 19,
-    features: [
-      "50 AI-offertes per maand",
-      "PDF export",
-      "Eigen materialen",
-      "E-mail support",
-    ],
+    price: 19.9,
+    features: ["10 offertes per maand", "PDF export", "Eigen logo & huisstijl"],
+  },
+  pro_plus: {
+    price: 39.9,
+    features: ["25 offertes per maand", "PDF export", "Eigen logo & huisstijl", "Marge-inzicht"],
   },
   business: {
-    price: 49,
-    features: [
-      "Onbeperkt AI-offertes",
-      "Alles van Pro",
-      "Prioriteit support",
-      "Meerdere gebruikers (binnenkort)",
-    ],
+    price: 49.9,
+    featured: true,
+    features: ["50 offertes per maand", "PDF export", "Eigen logo & huisstijl", "Marge-inzicht", "Prioriteit support"],
+  },
+  business_plus: {
+    price: 69.9,
+    features: ["Onbeperkt offertes", "PDF export", "Eigen logo & huisstijl", "Marge-inzicht", "Prioriteit support"],
   },
 };
 
@@ -1083,10 +1082,10 @@ function SubscriptionCard({
   onPortal: () => void;
 }) {
   const limits = TIER_LIMITS[tier];
-  const plans = ["free", "pro", "business"] as const;
+  const plans = ["free", "pro", "pro_plus", "business", "business_plus"] as const;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 max-w-2xl mt-6">
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 mt-6">
       <div className="p-4 md:p-6 border-b border-slate-200">
         <div className="flex items-center gap-2">
           <Zap className="w-5 h-5 text-brand-500" />
@@ -1118,7 +1117,7 @@ function SubscriptionCard({
         )}
       </div>
 
-      <div className="p-4 md:p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="p-4 md:p-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {plans.map((planId) => {
           const plan = PLAN_FEATURES[planId];
           const isCurrent = planId === tier;
@@ -1128,23 +1127,30 @@ function SubscriptionCard({
           return (
             <div
               key={planId}
-              className={`rounded-lg border-2 p-4 ${
+              className={`rounded-lg border-2 p-4 relative ${
                 isCurrent
                   ? "border-brand-500 bg-brand-50/50"
+                  : plan.featured
+                  ? "border-amber-400 bg-amber-50/30"
                   : "border-slate-200"
               }`}
             >
+              {plan.featured && !isCurrent && (
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-amber-400 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap">
+                  Meest gekozen
+                </div>
+              )}
               <div className="text-sm font-semibold text-slate-800 mb-1">
                 {TIER_LIMITS[planId].label}
               </div>
-              <div className="text-2xl font-bold text-slate-800">
+              <div className="text-xl font-bold text-slate-800">
                 {plan.price === 0 ? (
                   "Gratis"
                 ) : (
                   <>
-                    &euro;{plan.price}
-                    <span className="text-sm font-normal text-slate-500">
-                      /maand
+                    &euro;{plan.price.toFixed(2).replace(".", ",")}
+                    <span className="text-xs font-normal text-slate-500">
+                      /mnd
                     </span>
                   </>
                 )}
