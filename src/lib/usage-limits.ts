@@ -66,25 +66,26 @@ export async function checkUsageQuota(userId: string): Promise<UsageStatus> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("subscription_tier, free_quotes_used, referral_credits, referral_code, trial_until")
+    .select("subscription_tier, free_quotes_used, referral_credits, referral_code, trial_until, stripe_customer_id")
     .eq("id", userId)
     .single();
 
-  const rawTier: SubscriptionTier = profile?.subscription_tier ?? "free";
   const referralCode: string | null = profile?.referral_code ?? null;
   const trialUntil: string | null = profile?.trial_until ?? null;
   const isInTrial = trialUntil !== null && new Date(trialUntil) > new Date();
   const trialExpired = trialUntil !== null && !isInTrial;
 
   // Trial expired without paid subscription → treat as free
-  const tier: SubscriptionTier =
-    trialExpired && !profile?.stripe_customer_id ? "free" : rawTier;
+  let tier: SubscriptionTier = profile?.subscription_tier ?? "free";
+  if (trialExpired && !profile?.stripe_customer_id) {
+    tier = "free";
+  }
   const limits = TIER_LIMITS[tier];
 
   // Active trial — unlimited access until trial_until date
   if (isInTrial) {
     return {
-      tier: rawTier,
+      tier: profile?.subscription_tier ?? "free",
       limits: TIER_LIMITS["business_plus"],
       quotesUsed: 0,
       tokensUsed: 0,
@@ -98,21 +99,6 @@ export async function checkUsageQuota(userId: string): Promise<UsageStatus> {
 
   // Business+ tier — unlimited
   if (tier === "business_plus") {
-    return {
-      tier,
-      limits,
-      quotesUsed: 0,
-      tokensUsed: 0,
-      allowed: true,
-      totalLimit: -1,
-      referralCode,
-      isTrial: false,
-      trialUntil: null,
-    };
-  }
-
-  // Business tier — unlimited
-  if (tier === "business") {
     return {
       tier,
       limits,
