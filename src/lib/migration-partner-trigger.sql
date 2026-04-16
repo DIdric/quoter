@@ -21,6 +21,13 @@ BEGIN
     NEW.subscription_tier := 'pro';
     NEW.trial_until := (CURRENT_DATE + INTERVAL '30 days')::text;
 
+    -- Kopieer phone naar business_phone als die nog leeg is
+    SELECT phone INTO NEW.business_phone
+    FROM public.partner_signups
+    WHERE lower(email) = lower(partner_email)
+      AND phone IS NOT NULL
+    LIMIT 1;
+
     -- Koppel user_id aan aanmelding
     UPDATE public.partner_signups
     SET user_id = NEW.id
