@@ -11,8 +11,10 @@ interface UserData {
   business_email: string | null;
   business_city: string | null;
   auth_email: string | null;
+  whatsapp_number: string | null;
   subscription_tier: Tier;
   created_at: string;
+  last_active: string | null;
   quote_count: number;
   total_tokens: number;
   total_cost: number;
@@ -117,7 +119,7 @@ export default function AdminUsersPage() {
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
         {users.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[750px]">
+            <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="border-b border-slate-200">
                   <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
@@ -125,6 +127,9 @@ export default function AdminUsersPage() {
                   </th>
                   <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
                     E-mail
+                  </th>
+                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
+                    Telefoon
                   </th>
                   <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
                     Tier
@@ -139,7 +144,7 @@ export default function AdminUsersPage() {
                     API Kosten
                   </th>
                   <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
-                    Aangemeld
+                    Laatste activiteit
                   </th>
                 </tr>
               </thead>
@@ -166,6 +171,9 @@ export default function AdminUsersPage() {
                         </div>
                       )}
                     </td>
+                    <td className="px-4 py-3 md:px-6 md:py-4 text-slate-600">
+                      {user.whatsapp_number || "—"}
+                    </td>
                     <td className="px-4 py-3 md:px-6 md:py-4">
                       <TierSelect
                         userId={user.id}
@@ -183,7 +191,9 @@ export default function AdminUsersPage() {
                       €{user.total_cost.toFixed(2)}
                     </td>
                     <td className="px-4 py-3 md:px-6 md:py-4 text-slate-600">
-                      {new Date(user.created_at).toLocaleDateString("nl-NL")}
+                      {user.last_active
+                        ? new Date(user.last_active).toLocaleDateString("nl-NL")
+                        : "—"}
                     </td>
                   </tr>
                 ))}

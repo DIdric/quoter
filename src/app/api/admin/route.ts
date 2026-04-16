@@ -91,8 +91,10 @@ export async function GET(request: Request) {
     // Get auth emails from Supabase Auth
     const { data: authData } = await service.auth.admin.listUsers();
     const authEmailMap = new Map<string, string>();
+    const authLastSignInMap = new Map<string, string>();
     (authData?.users ?? []).forEach((u) => {
       if (u.email) authEmailMap.set(u.id, u.email);
+      if (u.last_sign_in_at) authLastSignInMap.set(u.id, u.last_sign_in_at);
     });
 
     // Get quote counts per user
@@ -122,6 +124,7 @@ export async function GET(request: Request) {
     const users = (profiles ?? []).map((p) => ({
       ...p,
       auth_email: authEmailMap.get(p.id) ?? null,
+      last_active: authLastSignInMap.get(p.id) ?? null,
       quote_count: quoteCountMap.get(p.id) ?? 0,
       total_tokens: tokenMap.get(p.id)?.tokens ?? 0,
       total_cost: Math.round((tokenMap.get(p.id)?.cost ?? 0) * 100) / 100,
