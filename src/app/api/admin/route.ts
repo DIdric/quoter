@@ -97,6 +97,17 @@ export async function GET(request: Request) {
       if (u.last_sign_in_at) authLastSignInMap.set(u.id, u.last_sign_in_at);
     });
 
+    // Get phone numbers from partner_signups
+    const { data: partnerData } = await service
+      .from("partner_signups")
+      .select("user_id, phone")
+      .not("user_id", "is", null);
+
+    const phoneMap = new Map<string, string>();
+    (partnerData ?? []).forEach((p) => {
+      if (p.user_id && p.phone) phoneMap.set(p.user_id, p.phone);
+    });
+
     // Get quote counts per user
     const { data: quoteCounts } = await service
       .from("quotes")
@@ -125,6 +136,7 @@ export async function GET(request: Request) {
       ...p,
       auth_email: authEmailMap.get(p.id) ?? null,
       last_active: authLastSignInMap.get(p.id) ?? null,
+      phone: phoneMap.get(p.id) ?? null,
       quote_count: quoteCountMap.get(p.id) ?? 0,
       total_tokens: tokenMap.get(p.id)?.tokens ?? 0,
       total_cost: Math.round((tokenMap.get(p.id)?.cost ?? 0) * 100) / 100,

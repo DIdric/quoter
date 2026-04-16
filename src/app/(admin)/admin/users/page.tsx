@@ -11,7 +11,7 @@ interface UserData {
   business_email: string | null;
   business_city: string | null;
   auth_email: string | null;
-  whatsapp_number: string | null;
+  phone: string | null;
   subscription_tier: Tier;
   created_at: string;
   last_active: string | null;
@@ -144,6 +144,9 @@ export default function AdminUsersPage() {
                     API Kosten
                   </th>
                   <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
+                    Aangemeld
+                  </th>
+                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
                     Laatste activiteit
                   </th>
                 </tr>
@@ -172,7 +175,7 @@ export default function AdminUsersPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 md:px-6 md:py-4 text-slate-600">
-                      {user.whatsapp_number || "—"}
+                      {user.phone || "—"}
                     </td>
                     <td className="px-4 py-3 md:px-6 md:py-4">
                       <TierSelect
@@ -189,6 +192,9 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-4 py-3 md:px-6 md:py-4 text-right text-slate-800">
                       €{user.total_cost.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3 md:px-6 md:py-4 text-slate-600">
+                      {new Date(user.created_at).toLocaleDateString("nl-NL")}
                     </td>
                     <td className="px-4 py-3 md:px-6 md:py-4 text-slate-600">
                       {user.last_active
