@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Users, Loader2, ChevronDown } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Users, Loader2, ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 
 type Tier = "free" | "pro" | "pro_plus" | "business" | "business_plus";
+type SortKey = keyof UserData;
+type SortDir = "asc" | "desc";
 
 interface UserData {
   id: string;
@@ -19,6 +21,10 @@ interface UserData {
   total_tokens: number;
   total_cost: number;
 }
+
+const TIER_ORDER: Record<Tier, number> = {
+  free: 0, pro: 1, pro_plus: 2, business: 3, business_plus: 4,
+};
 
 const TIER_STYLES: Record<Tier, string> = {
   free: "bg-slate-100 text-slate-600",
@@ -55,11 +61,7 @@ function TierSelect({ userId, current, onChanged }: { userId: string; current: T
 
   return (
     <div className="relative inline-block">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        disabled={saving}
-        className="flex items-center gap-1 group"
-      >
+      <button onClick={() => setOpen((v) => !v)} disabled={saving} className="flex items-center gap-1 group">
         <TierBadge tier={current} />
         {saving ? (
           <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
@@ -87,9 +89,18 @@ function TierSelect({ userId, current, onChanged }: { userId: string; current: T
   );
 }
 
+function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; sortDir: SortDir }) {
+  if (col !== sortKey) return <ChevronsUpDown className="w-3.5 h-3.5 text-slate-300 ml-1 inline" />;
+  return sortDir === "asc"
+    ? <ChevronUp className="w-3.5 h-3.5 text-slate-500 ml-1 inline" />
+    : <ChevronDown className="w-3.5 h-3.5 text-slate-500 ml-1 inline" />;
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortKey, setSortKey] = useState<SortKey>("created_at");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
 
   useEffect(() => {
     fetch("/api/admin?action=users")
@@ -102,6 +113,33 @@ export default function AdminUsersPage() {
     setUsers((prev) => prev.map((u) => u.id === userId ? { ...u, subscription_tier: tier } : u));
   }
 
+  function handleSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDir((d) => d === "asc" ? "desc" : "asc");
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  const sorted = useMemo(() => {
+    return [...users].sort((a, b) => {
+      let av: string | number | null = a[sortKey] as string | number | null;
+      let bv: string | number | null = b[sortKey] as string | number | null;
+
+      if (sortKey === "subscription_tier") {
+        av = TIER_ORDER[a.subscription_tier] ?? 0;
+        bv = TIER_ORDER[b.subscription_tier] ?? 0;
+      }
+
+      if (av === null || av === undefined) return 1;
+      if (bv === null || bv === undefined) return -1;
+
+      const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+      return sortDir === "asc" ? cmp : -cmp;
+    });
+  }, [users, sortKey, sortDir]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -109,6 +147,16 @@ export default function AdminUsersPage() {
       </div>
     );
   }
+
+  const th = (label: string, key: SortKey, align: "left" | "right" = "left") => (
+    <th
+      className={`px-4 py-3 md:px-6 text-sm font-medium text-slate-500 cursor-pointer select-none hover:text-slate-700 transition ${align === "right" ? "text-right" : "text-left"}`}
+      onClick={() => handleSort(key)}
+    >
+      {label}
+      <SortIcon col={key} sortKey={sortKey} sortDir={sortDir} />
+    </th>
+  );
 
   return (
     <div>
@@ -119,66 +167,38 @@ export default function AdminUsersPage() {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-        {users.length > 0 ? (
+        {sorted.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px]">
               <thead>
                 <tr className="border-b border-slate-200">
-                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
-                    Bedrijf
-                  </th>
-                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
-                    E-mail
-                  </th>
-                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
-                    Telefoon
-                  </th>
-                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
-                    Tier
-                  </th>
-                  <th className="text-right px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
-                    Offertes
-                  </th>
-                  <th className="text-right px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
-                    Tokens
-                  </th>
-                  <th className="text-right px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
-                    API Kosten
-                  </th>
-                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
-                    Aangemeld
-                  </th>
-                  <th className="text-left px-4 py-3 md:px-6 text-sm font-medium text-slate-500">
-                    Laatste activiteit
-                  </th>
+                  {th("Bedrijf", "business_name")}
+                  {th("E-mail", "auth_email")}
+                  {th("Telefoon", "phone")}
+                  {th("Tier", "subscription_tier")}
+                  {th("Offertes", "quote_count", "right")}
+                  {th("Tokens", "total_tokens", "right")}
+                  {th("API Kosten", "total_cost", "right")}
+                  {th("Aangemeld", "created_at")}
+                  {th("Laatste activiteit", "last_active")}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {users.map((user) => (
+                {sorted.map((user) => (
                   <tr key={user.id} className="hover:bg-slate-50 transition">
                     <td className="px-4 py-3 md:px-6 md:py-4">
-                      <div className="font-medium text-slate-800">
-                        {user.business_name || "—"}
-                      </div>
+                      <div className="font-medium text-slate-800">{user.business_name || "—"}</div>
                       {user.business_city && (
-                        <div className="text-xs text-slate-400 mt-0.5">
-                          {user.business_city}
-                        </div>
+                        <div className="text-xs text-slate-400 mt-0.5">{user.business_city}</div>
                       )}
                     </td>
                     <td className="px-4 py-3 md:px-6 md:py-4">
-                      <div className="text-slate-800">
-                        {user.auth_email || "—"}
-                      </div>
+                      <div className="text-slate-800">{user.auth_email || "—"}</div>
                       {user.business_email && user.business_email !== user.auth_email && (
-                        <div className="text-xs text-slate-400 mt-0.5">
-                          Zakelijk: {user.business_email}
-                        </div>
+                        <div className="text-xs text-slate-400 mt-0.5">Zakelijk: {user.business_email}</div>
                       )}
                     </td>
-                    <td className="px-4 py-3 md:px-6 md:py-4 text-slate-600">
-                      {user.phone || "—"}
-                    </td>
+                    <td className="px-4 py-3 md:px-6 md:py-4 text-slate-600">{user.phone || "—"}</td>
                     <td className="px-4 py-3 md:px-6 md:py-4">
                       <TierSelect
                         userId={user.id}
@@ -186,22 +206,14 @@ export default function AdminUsersPage() {
                         onChanged={(t) => handleTierChanged(user.id, t)}
                       />
                     </td>
-                    <td className="px-4 py-3 md:px-6 md:py-4 text-right text-slate-800">
-                      {user.quote_count}
-                    </td>
-                    <td className="px-4 py-3 md:px-6 md:py-4 text-right text-slate-800">
-                      {user.total_tokens.toLocaleString("nl-NL")}
-                    </td>
-                    <td className="px-4 py-3 md:px-6 md:py-4 text-right text-slate-800">
-                      €{user.total_cost.toFixed(2)}
-                    </td>
+                    <td className="px-4 py-3 md:px-6 md:py-4 text-right text-slate-800">{user.quote_count}</td>
+                    <td className="px-4 py-3 md:px-6 md:py-4 text-right text-slate-800">{user.total_tokens.toLocaleString("nl-NL")}</td>
+                    <td className="px-4 py-3 md:px-6 md:py-4 text-right text-slate-800">€{user.total_cost.toFixed(2)}</td>
                     <td className="px-4 py-3 md:px-6 md:py-4 text-slate-600">
                       {new Date(user.created_at).toLocaleDateString("nl-NL")}
                     </td>
                     <td className="px-4 py-3 md:px-6 md:py-4 text-slate-600">
-                      {user.last_active
-                        ? new Date(user.last_active).toLocaleDateString("nl-NL")
-                        : "—"}
+                      {user.last_active ? new Date(user.last_active).toLocaleDateString("nl-NL") : "—"}
                     </td>
                   </tr>
                 ))}
