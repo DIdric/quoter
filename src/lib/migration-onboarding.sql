@@ -36,16 +36,16 @@ BEGIN
   IF NEW.onboarding_completed = true
   AND (OLD.onboarding_completed = false OR OLD.onboarding_completed IS NULL) THEN
     PERFORM net.http_post(
-      url     := 'https://didric.app.n8n.cloud/webhook/onboarding-complete',
-      body    := json_build_object(
+      url  := 'https://didric.app.n8n.cloud/webhook/onboarding-complete',
+      body := jsonb_build_object(
         'user_id',          NEW.id,
         'business_name',    NEW.business_name,
+        'email',            NEW.email,
         'whatsapp_number',  NEW.whatsapp_number,
         'whatsapp_opt_in',  NEW.whatsapp_opt_in,
         'email_opt_in',     NEW.email_opt_in,
         'lead_score',       NEW.lead_score
-      )::text,
-      headers := '{"Content-Type": "application/json"}'::jsonb
+      )
     );
   END IF;
   RETURN NEW;
