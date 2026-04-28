@@ -6,6 +6,15 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, ArrowRight, ArrowLeft } from "lucide-react";
 
+function toE164NL(number: string): string {
+  const n = number.replace(/\s+/g, "").replace(/-/g, "");
+  if (n.startsWith("+")) return n;
+  if (n.startsWith("0031")) return "+" + n.slice(2);
+  if (n.startsWith("06")) return "+31" + n.slice(1);
+  if (n.startsWith("31")) return "+" + n;
+  return n;
+}
+
 type Step = 1 | 2 | 3;
 
 interface FormData {
@@ -96,7 +105,7 @@ export default function OnboardingPage() {
 
     const { error } = await supabase.from("profiles").update({
       whatsapp_opt_in: form.whatsapp_opt_in,
-      whatsapp_number: form.whatsapp_opt_in ? form.whatsapp_number.trim() : null,
+      whatsapp_number: form.whatsapp_opt_in ? toE164NL(form.whatsapp_number) : null,
       email_opt_in: form.email_opt_in,
       onboarding_completed: true,
     }).eq("id", user.id);
